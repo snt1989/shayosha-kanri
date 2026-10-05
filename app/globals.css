@@ -1299,3 +1299,129 @@ table.bulk-grid {
   gap: 6px;
   flex-wrap: wrap;
 }
+
+/* 使い方（Q&A） */
+.help-search {
+  padding: 9px 12px;
+  border: 1px solid var(--slate-300);
+  border-radius: 8px;
+  min-width: 320px;
+  max-width: 100%;
+  font: inherit;
+}
+.help-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.help-chip {
+  border: 1px solid var(--slate-300);
+  background: #fff;
+  color: var(--slate-700);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.help-chip:hover {
+  background: var(--slate-50);
+}
+.help-chip.active {
+  background: var(--sky-600);
+  border-color: var(--sky-600);
+  color: #fff;
+}
+.help-chip:focus-visible,
+.help-item summary:focus-visible {
+  outline: 2px solid var(--sky-600);
+  outline-offset: 2px;
+}
+.help-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.help-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.help-item {
+  border: 1px solid var(--slate-200);
+  border-radius: 10px;
+  background: #fff;
+}
+.help-item[open] {
+  border-color: var(--sky-100);
+  background: var(--sky-50);
+}
+.help-item summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  font-weight: 600;
+  line-height: 1.6;
+  cursor: pointer;
+  list-style: none;
+}
+.help-item summary::-webkit-details-marker {
+  display: none;
+}
+.help-item summary::before {
+  content: 'Q';
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border-radius: 6px;
+  background: var(--sky-100);
+  color: var(--sky-700);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
+}
+.help-item summary::after {
+  content: '▾';
+  flex: none;
+  margin-left: auto;
+  color: var(--slate-500);
+}
+.help-item[open] summary::after {
+  content: '▴';
+}
+.help-answer {
+  padding: 0 14px 14px 46px;
+  font-size: 13.5px;
+  line-height: 1.8;
+  color: var(--slate-700);
+}
+.help-answer p {
+  margin: 0 0 8px;
+}
+.help-answer ol,
+.help-answer ul {
+  margin: 0 0 8px;
+  padding-left: 1.4em;
+}
+.help-answer li + li {
+  margin-top: 4px;
+}
+.help-answer > :last-child {
+  margin-bottom: 0;
+}
+@media (max-width: 560px) {
+  .help-search {
+    min-width: 0;
+    width: 100%;
+  }
+  .help-answer {
+    padding-left: 14px;
+  }
+}
