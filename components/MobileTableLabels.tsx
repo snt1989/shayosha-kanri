@@ -16,6 +16,13 @@ export default function MobileTableLabels() {
           Array.from(tr.children).forEach((td, i) => {
             const label = heads[i] ?? '';
             if (td.getAttribute('data-label') !== label) td.setAttribute('data-label', label);
+            // 値が空（「-」など）の欄は、カードでは出さない（行を短くして見やすくする）
+            const text = (td.textContent || '').trim();
+            const empty = label !== '' && (text === '' || text === '-' || text === '－' || text === '—');
+            if (td.hasAttribute('data-empty') !== empty) {
+              if (empty) td.setAttribute('data-empty', '');
+              else td.removeAttribute('data-empty');
+            }
           });
         });
       });

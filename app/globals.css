@@ -1595,3 +1595,189 @@ table.bulk-grid {
     margin-bottom: 4px;
   }
 }
+
+/* ===== スマホ向け その2：親指で操作しやすく（画面幅 640px 以下） ===== */
+@media (max-width: 640px) {
+  /* 画面下のタブバー：親指が届く位置に固定。アイコンを上、名前を下に並べ、横に送れる */
+  body {
+    padding-bottom: calc(68px + env(safe-area-inset-bottom));
+  }
+  .appbar2 {
+    position: static;
+  }
+  .tabs2 {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    width: auto;
+    gap: 0;
+    padding: 4px 4px calc(4px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.97);
+    border-top: 1px solid var(--slate-200);
+    box-shadow: 0 -2px 10px rgba(15, 23, 42, 0.08);
+  }
+  .tab2 {
+    flex: 1 0 auto;
+    min-width: 74px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px 6px;
+    font-size: 11px;
+    border-radius: 10px;
+    position: relative;
+  }
+  .tab2 > span:first-child {
+    font-size: 21px;
+    line-height: 1;
+  }
+  .tab2 .adminbadge {
+    position: absolute;
+    top: 2px;
+    right: 6px;
+    font-size: 8px;
+    padding: 0 4px;
+  }
+  .tab2.active {
+    background: var(--sky-100);
+    color: var(--sky-700);
+  }
+  .tab2:not(.active) .adminbadge {
+    background: var(--amber-100);
+  }
+
+  /* ログイン関連のボタン：押しやすい大きさに */
+  .headerbtns .btn,
+  .headerbtns .btn-sm {
+    min-height: 40px;
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  .sync-chip {
+    padding: 8px 12px;
+  }
+  .btn-sm {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  /* 入力欄：大きく、縦に1列で */
+  .field {
+    margin-bottom: 14px;
+  }
+  .field label {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    padding: 11px 12px;
+    min-height: 46px;
+    border-radius: 10px;
+  }
+  .field input[type='checkbox'],
+  .field input[type='radio'] {
+    min-height: 0;
+    width: 22px;
+    height: 22px;
+  }
+  .field-row {
+    flex-direction: column;
+    gap: 0;
+  }
+  .field-row-4 {
+    gap: 0;
+  }
+  .field-row-4 > .field {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  .check-row {
+    gap: 12px;
+  }
+
+  /* ポップアップ：画面いっぱいに開き、閉じるボタンと登録ボタンは常に見える位置に */
+  .modal-backdrop {
+    padding: 0;
+    align-items: stretch;
+  }
+  .modal-box,
+  .modal-box-wide,
+  .modal-box-xwide {
+    max-width: none;
+    min-height: 100%;
+    border-radius: 0;
+    padding: 0 16px 16px;
+    box-shadow: none;
+  }
+  .modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin: 0 -16px 14px;
+    padding: 12px 16px;
+    background: #fff;
+    border-bottom: 1px solid var(--slate-200);
+  }
+  .modal-header-dark {
+    background: var(--slate-800);
+  }
+  .modal-box,
+  .modal-box-wide,
+  .modal-box-xwide {
+    display: flex;
+    flex-direction: column;
+  }
+  .modal-footer {
+    margin-top: auto !important;
+  }
+  .modal-close {
+    width: 40px;
+    height: 40px;
+  }
+  .modal-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin: 18px -16px 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: #fff;
+    box-shadow: 0 -2px 10px rgba(15, 23, 42, 0.08);
+  }
+  .modal-footer .btn {
+    flex: 1;
+    justify-content: center;
+    min-height: 46px;
+    font-size: 14px;
+  }
+
+  /* 表のカード：日付など先頭の項目を見出しに、空の項目は出さない。操作ボタンは大きく */
+  table.data-table:not(.reorder-table) td:first-child {
+    font-weight: 800;
+    font-size: 15px;
+    padding-top: 8px;
+    border-bottom: 1px solid var(--slate-200);
+  }
+  table.data-table:not(.reorder-table) td[data-empty] {
+    display: none;
+  }
+  table.data-table:not(.reorder-table) td[data-label=''] {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 0 6px;
+  }
+  table.data-table:not(.reorder-table) td[data-label=''] .btn {
+    min-height: 42px;
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+  .toast,
+  .snackbar {
+    bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+}
