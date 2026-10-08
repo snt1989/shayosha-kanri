@@ -1,26 +1,11 @@
 'use client';
 
 import { AppData } from '@/lib/types';
-import { daysUntil } from '@/lib/utils';
+import { computeAlerts } from '@/lib/alerts';
 
 export default function AlertsPanel({ data, standalone }: { data: AppData; standalone?: boolean }) {
-  const shakenAlerts = data.vehicles
-    .map((v) => ({ v, days: daysUntil(v.shakenDate) }))
-    .filter((x) => x.days !== null && (x.days as number) <= 30)
-    .sort((a, b) => (a.days as number) - (b.days as number));
-
-  const oilAlerts = data.vehicles.filter((v) => v.oilKm - v.odometer <= 1000);
-
-  const licenseAlerts = data.drivers
-    .map((d) => ({ d, days: daysUntil(d.licenseExpiry) }))
-    .filter((x) => x.days !== null && (x.days as number) <= 30)
-    .sort((a, b) => (a.days as number) - (b.days as number));
-
-  const ngAlcohol = data.reports.filter(
-    (r) => parseFloat(r.preAlcohol || '0') > 0 || (r.postDone && parseFloat(r.postAlcohol || '0') > 0)
-  );
-
-  const total = shakenAlerts.length + oilAlerts.length + licenseAlerts.length + ngAlcohol.length;
+  // 条件は lib/alerts.ts（モバイルアプリと共通）
+  const { shaken: shakenAlerts, oil: oilAlerts, license: licenseAlerts, ngAlcohol, total } = computeAlerts(data);
 
   if (total === 0) {
     if (!standalone) return null;
