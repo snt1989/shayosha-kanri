@@ -27,5 +27,7 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: '/((?!_next/static|_next/image|favicon.ico|icon.png|apple-icon.png).*)',
+  // アイコン・マニフェスト・サービスワーカー・オフライン画面は、Basic認証の対象にしない
+  // （ブラウザはこれらを認証情報なしで取得することがあり、401になるとアプリとして入れられなくなる）
+  matcher: '/((?!_next/static|_next/image|favicon.ico|icon.png|apple-icon.png|manifest.webmanifest|sw.js|offline.html|icons/).*)',
 };
