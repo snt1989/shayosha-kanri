@@ -819,6 +819,7 @@ table.data-table {
 
 /* persistent stat bar (shown above every tab) */
 .statbar {
+  width: 100%;
   padding: 16px 20px 0;
   max-width: 1180px;
   margin: 0 auto;
@@ -1423,5 +1424,174 @@ table.bulk-grid {
   }
   .help-answer {
     padding-left: 14px;
+  }
+}
+
+/* ===== スマホ向けの見やすさ（画面幅 640px 以下） ===== */
+@media (max-width: 640px) {
+  body {
+    font-size: 15px;
+  }
+  /* 16px未満だと iPhone が入力時に画面を拡大してしまう */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+  .btn,
+  .btn-sm {
+    min-height: 40px;
+  }
+
+  /* ヘッダー：説明文を省き、タブとボタンは1行で横に送る。上に固定して、どの画面でも切り替えられる */
+  .appbar2 {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    padding: 8px 12px;
+  }
+  .appbar2-row {
+    gap: 8px;
+  }
+  .brand2 .titles2 .sub2 {
+    display: none;
+  }
+  .brand2 .logo2 {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+  }
+  .brand2 .titles2 h1 {
+    font-size: 14.5px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .tabs2,
+  .headerbtns {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .tabs2::-webkit-scrollbar,
+  .headerbtns::-webkit-scrollbar {
+    display: none;
+  }
+  .headerbtns > * {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .tab2 {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  .quickbar {
+    padding: 8px 12px 0;
+    margin-top: 6px !important;
+  }
+  .quickbar .btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+    font-size: 14px;
+  }
+
+  .statbar {
+    padding: 12px 12px 0;
+  }
+  .main {
+    padding: 12px;
+  }
+  .card {
+    padding: 14px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
+  .stat-tile {
+    padding: 12px 14px;
+  }
+  .toolbar,
+  .toolbar2 {
+    align-items: stretch;
+  }
+  .toolbar .search,
+  .toolbar2 .actions {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* 表：横に長くはみ出さないよう、1行を1枚のカードにして、項目名と値を並べる（見出しは MobileTableLabels が付ける） */
+  .table-wrap {
+    overflow: visible;
+  }
+  table.data-table:not(.reorder-table),
+  table.data-table:not(.reorder-table) tbody {
+    display: block;
+    width: 100%;
+  }
+  table.data-table:not(.reorder-table) thead {
+    display: none;
+  }
+  table.data-table:not(.reorder-table) tr {
+    display: block;
+    background: #fff;
+    border: 1px solid var(--slate-200);
+    border-radius: 12px;
+    padding: 6px 12px;
+    margin-bottom: 10px;
+  }
+  table.data-table:not(.reorder-table) td {
+    display: block;
+    overflow: hidden; /* 項目名を左に浮かせ、値は右に寄せる（1つの欄に複数の要素があっても崩れない） */
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--slate-100);
+    white-space: normal;
+    text-align: right;
+    word-break: break-word;
+    font-size: 13.5px;
+  }
+  table.data-table:not(.reorder-table) td:last-child {
+    border-bottom: none;
+  }
+  table.data-table:not(.reorder-table) td::before {
+    content: attr(data-label);
+    float: left;
+    max-width: 40%;
+    margin-right: 14px;
+    text-align: left;
+    color: var(--slate-500);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  table.data-table:not(.reorder-table) td[data-label='']::before,
+  table.data-table:not(.reorder-table) td:not([data-label])::before {
+    display: none;
+  }
+  select {
+    max-width: 100%;
+  }
+  .toolbar select,
+  .toolbar2 select {
+    width: 100%;
+  }
+  .data-table tr:hover td {
+    background: transparent;
+  }
+  .cal-grid {
+    min-width: 560px;
+  }
+  /* 上の集計タイルは2列にして、1画面に収める */
+  .statbar .grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .statbar .stat-tile {
+    padding: 10px 12px;
+  }
+  .statbar .stat-tile .value {
+    font-size: 20px;
+    margin-bottom: 4px;
   }
 }

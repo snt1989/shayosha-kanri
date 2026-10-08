@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import RegisterServiceWorker from '@/components/RegisterServiceWorker';
+import MobileTableLabels from '@/components/MobileTableLabels';
 
 export const metadata: Metadata = {
   title: '社用車管理クラウド（白ナンバー法令対応）',
@@ -12,6 +13,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: '#032553',
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -20,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {children}
         <RegisterServiceWorker />
+        <MobileTableLabels />
       </body>
     </html>
   );
