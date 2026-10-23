@@ -1702,7 +1702,8 @@ table.bulk-grid {
   /* ポップアップ：画面いっぱいに開き、閉じるボタンと登録ボタンは常に見える位置に */
   .modal-backdrop {
     padding: 0;
-    align-items: stretch;
+    /* stretch だと、中身が画面より長いとき白い背景が途中で切れて、後ろの画面が透けて見える */
+    align-items: flex-start;
   }
   .modal-box,
   .modal-box-wide,
@@ -1779,5 +1780,13 @@ table.bulk-grid {
   .toast,
   .snackbar {
     bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 640px) {
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
   }
 }
