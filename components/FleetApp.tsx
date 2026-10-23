@@ -61,10 +61,33 @@ export default function FleetApp() {
   useEffect(() => {
     try {
       const u = new URL(window.location.href);
-      const site = (u.searchParams.get('site') || '').trim().slice(0, 100);
-      if (u.searchParams.has('site')) {
+      let site = (u.searchParams.get('site') || '').trim().slice(0, 100);
+      const ticket = u.searchParams.get('sso');
+      if (u.searchParams.has('site') || u.searchParams.has('sso')) {
         u.searchParams.delete('site');
+        u.searchParams.delete('sso');
         window.history.replaceState(null, '', u.pathname + (u.search || '') + u.hash);
+      }
+      if (ticket) {
+        // 現場管理アプリのログインを引き継ぐ（同じ氏名の運転者がいればログイン済みにする）
+        fetch('/api/sso', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticket }) })
+          .then((r) => r.json())
+          .then((j) => {
+            if (j?.ok && j.driverId) {
+              setCurrentDriverId(j.driverId);
+              try {
+                localStorage.setItem(DRIVER_SESSION_KEY, j.driverId);
+              } catch {
+                // ignore
+              }
+            }
+            const s2 = site || (typeof j?.site === 'string' ? j.site : '');
+            if (s2) setPendingSite(s2);
+          })
+          .catch(() => {
+            if (site) setPendingSite(site);
+          });
+        site = '';
       }
       if (site) setPendingSite(site);
     } catch {
@@ -320,7 +343,7 @@ export default function FleetApp() {
     setPendingSite(null);
     if (requireDriverLogin(() => startQuickReport(site))) startQuickReport(site);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingSite, data]);
+  }, [pendingSite, data, currentDriverId]);
 
   function handleQuickReportHandled() {
     setQuickReportTrigger(null);
