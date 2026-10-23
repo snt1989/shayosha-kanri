@@ -46,6 +46,9 @@ export default function FleetApp() {
   const [adminConfigured, setAdminConfigured] = useState(true);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [quickReportTrigger, setQuickReportTrigger] = useState<number | null>(null);
+  const [quickReportSite, setQuickReportSite] = useState('');
+  // 現場管理アプリの案件から開いたときの現場名（URLの ?site=）。読み込みが終わったら出発登録を開く。
+  const [pendingSite, setPendingSite] = useState<string | null>(null);
   const [returnCheckinRequest, setReturnCheckinRequest] = useState<{ id: string; token: number } | null>(null);
   const [currentDriverId, setCurrentDriverId] = useState<string | null>(null);
   const [showDriverLogin, setShowDriverLogin] = useState(false);
@@ -56,6 +59,17 @@ export default function FleetApp() {
   const afterDriverLoginRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
+    try {
+      const u = new URL(window.location.href);
+      const site = (u.searchParams.get('site') || '').trim().slice(0, 100);
+      if (u.searchParams.has('site')) {
+        u.searchParams.delete('site');
+        window.history.replaceState(null, '', u.pathname + (u.search || '') + u.hash);
+      }
+      if (site) setPendingSite(site);
+    } catch {
+      // ignore
+    }
     load();
     checkAdminSession();
     try {
@@ -290,14 +304,24 @@ export default function FleetApp() {
     setShowDriverLogin(false);
   }
 
-  function startQuickReport() {
+  function startQuickReport(site = '') {
     setTab('reports');
+    setQuickReportSite(site);
     setQuickReportTrigger(Date.now());
   }
   function handleQuickReport() {
-    if (!requireDriverLogin(startQuickReport)) return;
+    if (!requireDriverLogin(() => startQuickReport())) return;
     startQuickReport();
   }
+  // 案件から開いたとき：運転者としてログイン済みなら出発登録をすぐ開き、未ログインならログイン後に開く
+  useEffect(() => {
+    if (!pendingSite || !data) return;
+    const site = pendingSite;
+    setPendingSite(null);
+    if (requireDriverLogin(() => startQuickReport(site))) startQuickReport(site);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingSite, data]);
+
   function handleQuickReportHandled() {
     setQuickReportTrigger(null);
   }
@@ -428,6 +452,7 @@ export default function FleetApp() {
             onSave={saveReport}
             onDelete={deleteReport}
             openTrigger={quickReportTrigger}
+            openDestination={quickReportSite}
             onQuickReportHandled={handleQuickReportHandled}
             returnCheckinRequest={returnCheckinRequest}
             onReturnCheckinHandled={handleReturnCheckinHandled}

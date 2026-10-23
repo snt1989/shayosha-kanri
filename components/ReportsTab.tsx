@@ -19,7 +19,7 @@ const lastUsedVehicle = (data: AppData, driverId?: string): Vehicle | undefined 
   return any ? exists(any.vehicleId) : undefined;
 };
 
-const emptyReport = (data: AppData, currentDriver?: Driver | null): Report => {
+const emptyReport = (data: AppData, currentDriver?: Driver | null, destination = ''): Report => {
   const lastVehicle = lastUsedVehicle(data, currentDriver?.id);
   return {
   id: '',
@@ -32,7 +32,7 @@ const emptyReport = (data: AppData, currentDriver?: Driver | null): Report => {
   vehicleId: lastVehicle?.id || '',
   vehicleName: lastVehicle?.name || '',
   plate: lastVehicle?.plate || '',
-  destination: '',
+  destination,
   purpose: '',
   preTime: nowTimeStr(),
   preAlcohol: '0.00',
@@ -88,6 +88,7 @@ export default function ReportsTab({
   onSave,
   onDelete,
   openTrigger,
+  openDestination,
   onQuickReportHandled,
   returnCheckinRequest,
   onReturnCheckinHandled,
@@ -100,6 +101,8 @@ export default function ReportsTab({
   onSave: (r: Report) => Promise<unknown>;
   onDelete: (id: string) => Promise<unknown>;
   openTrigger?: number | null;
+  // 現場管理アプリの案件から開いたときの現場名（出発登録の行先に入れる）
+  openDestination?: string;
   onQuickReportHandled?: () => void;
   returnCheckinRequest?: { id: string; token: number } | null;
   onReturnCheckinHandled?: () => void;
@@ -128,7 +131,7 @@ export default function ReportsTab({
     if (openTrigger != null) {
       if (currentDriver) {
         setReturnMode(false);
-        setEditing(emptyReport(data, currentDriver));
+        setEditing(emptyReport(data, currentDriver, openDestination || ''));
       } else {
         onRequestDriverLogin();
       }
@@ -245,8 +248,8 @@ export default function ReportsTab({
 
   async function handleSubmit() {
     if (!editing) return;
-    if (!editing.driverLast || !editing.driverFirst || !editing.vehicleId || !editing.destination) {
-      alert('運転者（姓・名）・車両・行先は必須です。');
+    if (!editing.driverLast || !editing.driverFirst || !editing.vehicleId) {
+      alert('運転者（姓・名）・車両は必須です。');
       return;
     }
     if (editing.postDone && editing.maintRequest && !(editing.maintRequestNote || '').trim()) {
@@ -466,7 +469,7 @@ export default function ReportsTab({
               </select>
             </div>
             <div className="field">
-              <label>行先 *</label>
+              <label>行先</label>
               <input value={editing.destination} onChange={(e) => setEditing({ ...editing, destination: e.target.value })} />
             </div>
             <div className="field">
