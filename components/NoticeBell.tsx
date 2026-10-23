@@ -4,22 +4,25 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AppData } from '@/lib/types';
 import { AutoNotice, Notice, buildAutoNotices } from '@/lib/notices';
+import { UPDATES, countUnreadUpdates } from '@/lib/changelog';
+import { todayStr } from '@/lib/utils';
 import Modal from './Modal';
 
 type Go = AutoNotice['go'];
 type PushState = 'loading' | 'unsupported' | 'ios-install' | 'unconfigured' | 'denied' | 'off' | 'on';
 
 const SEEN_KEY = 'fleet:notices:seen';
-const readSeen = () => {
+const SEEN_UPDATE_KEY = 'fleet:updates:seen';
+const readKey = (k: string) => {
   try {
-    return localStorage.getItem(SEEN_KEY) || '';
+    return localStorage.getItem(k) || '';
   } catch {
     return '';
   }
 };
-const writeSeen = (v: string) => {
+const writeKey = (k: string, v: string) => {
   try {
-    localStorage.setItem(SEEN_KEY, v);
+    localStorage.setItem(k, v);
   } catch {
     // 保存できなくても動く（未読の表示が戻るだけ）
   }
@@ -39,9 +42,10 @@ const fmt = (iso: string) => {
 
 export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppData | null; isAdmin: boolean; onNavigate: (go: Go) => void }) {
   const [open, setOpen] = useState(false);
-  const [section, setSection] = useState<'notices' | 'auto'>('notices');
+  const [section, setSection] = useState<'notices' | 'auto' | 'updates'>('notices');
   const [notices, setNotices] = useState<Notice[]>([]);
   const [seen, setSeen] = useState('');
+  const [seenUpdate, setSeenUpdate] = useState('');
   const [push, setPush] = useState<PushState>('loading');
   const [publicKey, setPublicKey] = useState('');
   const [msg, setMsg] = useState('');
@@ -63,7 +67,8 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
 
   // 最初の読み込み・1分ごと・画面に戻ったとき
   useEffect(() => {
-    setSeen(readSeen());
+    setSeen(readKey(SEEN_KEY));
+    setSeenUpdate(readKey(SEEN_UPDATE_KEY));
     loadNotices();
     const t = setInterval(loadNotices, 60000);
     const onVis = () => document.visibilityState === 'visible' && loadNotices();
@@ -84,15 +89,25 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
 
   const latest = notices.reduce((m, n) => (n.createdAt > m ? n.createdAt : m), '');
   const unread = notices.filter((n) => n.createdAt > seen).length;
-  const badge = unread + auto.length;
+  const unreadUpdates = countUnreadUpdates(seenUpdate, todayStr());
+  // 更新は、未読が何件あっても、ベルの数字には1つ分だけ数える（初めて使う端末で数字が大きくなりすぎないように）
+  const badge = unread + auto.length + Math.min(unreadUpdates, 1);
 
   // 連絡事項を表示したら既読にする
   useEffect(() => {
     if (open && section === 'notices' && latest && latest > seen) {
-      writeSeen(latest);
+      writeKey(SEEN_KEY, latest);
       setSeen(latest);
     }
   }, [open, section, latest, seen]);
+
+  // アプリの更新を表示したら既読にする
+  useEffect(() => {
+    if (open && section === 'updates' && UPDATES[0] && UPDATES[0].id > seenUpdate) {
+      writeKey(SEEN_UPDATE_KEY, UPDATES[0].id);
+      setSeenUpdate(UPDATES[0].id);
+    }
+  }, [open, section, seenUpdate]);
 
   const refreshPushState = useCallback(async () => {
     try {
@@ -232,9 +247,28 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
             <button type="button" className={`help-chip ${section === 'auto' ? 'active' : ''}`} aria-pressed={section === 'auto'} onClick={() => setSection('auto')}>
               ⚠️ 状況のお知らせ（{auto.length}）
             </button>
+            <button type="button" className={`help-chip ${section === 'updates' ? 'active' : ''}`} aria-pressed={section === 'updates'} onClick={() => setSection('updates')}>
+              🆕 アプリの更新{unreadUpdates > 0 && <span className="bell-badge" style={{ marginLeft: 6 }}>{unreadUpdates}</span>}
+            </button>
           </div>
 
-          {section === 'notices' ? (
+          {section === 'updates' ? (
+            <div className="notice-list">
+              {UPDATES.map((u) => (
+                <div key={u.id} className={`notice-item ${u.id > seenUpdate && unreadUpdates > 0 ? 'update-new' : ''}`}>
+                  <div className="notice-head">
+                    <strong>{u.title}</strong>
+                    <span className="notice-date">{u.date}</span>
+                  </div>
+                  <ul className="update-items">
+                    {u.items.map((it) => (
+                      <li key={it}>{it}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          ) : section === 'notices' ? (
             <div className="notice-list">
               {notices.length === 0 && <div className="empty-state">連絡事項はありません</div>}
               {notices.map((n) => (

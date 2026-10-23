@@ -1872,3 +1872,17 @@ table.bulk-grid {
 .modal-box .help-chips {
   margin-bottom: 12px;
 }
+
+.update-items {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+.update-items li + li {
+  margin-top: 4px;
+}
+.notice-item.update-new {
+  background: var(--sky-50);
+  border-color: var(--sky-100);
+}
