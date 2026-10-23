@@ -19,12 +19,15 @@ const lastUsedVehicle = (data: AppData, driverId?: string): Vehicle | undefined 
   return any ? exists(any.vehicleId) : undefined;
 };
 
-const emptyReport = (data: AppData, currentDriver?: Driver | null, destination = ''): Report => {
+const sameName = (a: string, b: string) => a.normalize('NFKC').replace(/\s+/g, '') === b.normalize('NFKC').replace(/\s+/g, '');
+const emptyReport = (data: AppData, currentDriver?: Driver | null, destination = '', division = ''): Report => {
+  // 現場管理アプリの案件の事業部が、こちらの事業部の選択肢にあれば、それを入れる（無ければ運転者の所属のまま）
+  const matchedDept = division ? data.masters.departments.find((d) => sameName(d, division)) : undefined;
   const lastVehicle = lastUsedVehicle(data, currentDriver?.id);
   return {
   id: '',
   date: todayStr(),
-  dept: currentDriver?.dept || data.masters.departments[0] || '',
+  dept: matchedDept || currentDriver?.dept || data.masters.departments[0] || '',
   driverId: currentDriver?.id || '',
   driverLast: currentDriver?.lastName || '',
   driverFirst: currentDriver?.firstName || '',
@@ -89,6 +92,7 @@ export default function ReportsTab({
   onDelete,
   openTrigger,
   openDestination,
+  openDivision,
   onQuickReportHandled,
   returnCheckinRequest,
   onReturnCheckinHandled,
@@ -103,6 +107,7 @@ export default function ReportsTab({
   openTrigger?: number | null;
   // 現場管理アプリの案件から開いたときの現場名（出発登録の行先に入れる）
   openDestination?: string;
+  openDivision?: string;
   onQuickReportHandled?: () => void;
   returnCheckinRequest?: { id: string; token: number } | null;
   onReturnCheckinHandled?: () => void;
@@ -131,7 +136,7 @@ export default function ReportsTab({
     if (openTrigger != null) {
       if (currentDriver) {
         setReturnMode(false);
-        setEditing(emptyReport(data, currentDriver, openDestination || ''));
+        setEditing(emptyReport(data, currentDriver, openDestination || '', openDivision || ''));
       } else {
         onRequestDriverLogin();
       }

@@ -13,6 +13,6 @@ export async function POST(req: NextRequest) {
   const data = await loadData();
   const key = normName(t.n);
   const hit = data.drivers.filter((d) => normName(`${d.lastName}${d.firstName}`) === key);
-  if (hit.length !== 1) return NextResponse.json({ ok: false, site: t.site });
-  return NextResponse.json({ ok: true, driverId: hit[0].id, site: t.site });
+  if (hit.length !== 1) return NextResponse.json({ ok: false, site: t.site, division: t.division });
+  return NextResponse.json({ ok: true, driverId: hit[0].id, site: t.site, division: t.division });
 }

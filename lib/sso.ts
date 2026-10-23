@@ -2,7 +2,7 @@ import crypto from 'crypto';
 
 // 現場管理アプリのログインを引き継ぐ（現場管理アプリが発行する署名付きチケットを確認する）。
 // チケット = base64url(JSON) + '.' + base64url(HMAC-SHA256)。有効期限は60秒。共通の SSO_SECRET（16文字以上）で署名する。
-export type SsoTicket = { n: string; site: string };
+export type SsoTicket = { n: string; site: string; division: string };
 
 export const normName = (s: string) => s.normalize('NFKC').replace(/[\s　]+/g, '').toLowerCase();
 
@@ -18,7 +18,7 @@ export function readTicket(ticket: unknown, secret: string | undefined, now = Da
     const p = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8'));
     // k は発行先の種類。社用車管理向け（'s'）以外のチケット（備品管理・報告写真向け）は受け付けない。
     if (!p || p.k !== 's' || typeof p.n !== 'string' || !p.n || typeof p.exp !== 'number' || now > p.exp) return null;
-    return { n: p.n, site: typeof p.pn === 'string' ? p.pn.slice(0, 100) : '' };
+    return { n: p.n, site: typeof p.pn === 'string' ? p.pn.slice(0, 100) : '', division: typeof p.dv === 'string' ? p.dv.slice(0, 60) : '' };
   } catch {
     return null;
   }

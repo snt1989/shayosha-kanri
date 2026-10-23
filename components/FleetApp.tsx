@@ -47,8 +47,9 @@ export default function FleetApp() {
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [quickReportTrigger, setQuickReportTrigger] = useState<number | null>(null);
   const [quickReportSite, setQuickReportSite] = useState('');
+  const [quickReportDivision, setQuickReportDivision] = useState('');
   // 現場管理アプリの案件から開いたときの現場名（URLの ?site=）。読み込みが終わったら出発登録を開く。
-  const [pendingSite, setPendingSite] = useState<string | null>(null);
+  const [pendingSite, setPendingSite] = useState<{ site: string; division: string } | null>(null);
   const [returnCheckinRequest, setReturnCheckinRequest] = useState<{ id: string; token: number } | null>(null);
   const [currentDriverId, setCurrentDriverId] = useState<string | null>(null);
   const [showDriverLogin, setShowDriverLogin] = useState(false);
@@ -62,9 +63,11 @@ export default function FleetApp() {
     try {
       const u = new URL(window.location.href);
       let site = (u.searchParams.get('site') || '').trim().slice(0, 100);
+      const division = (u.searchParams.get('division') || '').trim().slice(0, 60);
       const ticket = u.searchParams.get('sso');
-      if (u.searchParams.has('site') || u.searchParams.has('sso')) {
+      if (u.searchParams.has('site') || u.searchParams.has('sso') || u.searchParams.has('division')) {
         u.searchParams.delete('site');
+        u.searchParams.delete('division');
         u.searchParams.delete('sso');
         window.history.replaceState(null, '', u.pathname + (u.search || '') + u.hash);
       }
@@ -82,14 +85,15 @@ export default function FleetApp() {
               }
             }
             const s2 = site || (typeof j?.site === 'string' ? j.site : '');
-            if (s2) setPendingSite(s2);
+            const d2 = division || (typeof j?.division === 'string' ? j.division : '');
+            if (s2 || d2) setPendingSite({ site: s2, division: d2 });
           })
           .catch(() => {
-            if (site) setPendingSite(site);
+            if (site || division) setPendingSite({ site, division });
           });
         site = '';
       }
-      if (site) setPendingSite(site);
+      if (site || division) setPendingSite({ site, division });
     } catch {
       // ignore
     }
@@ -327,9 +331,10 @@ export default function FleetApp() {
     setShowDriverLogin(false);
   }
 
-  function startQuickReport(site = '') {
+  function startQuickReport(site = '', division = '') {
     setTab('reports');
     setQuickReportSite(site);
+    setQuickReportDivision(division);
     setQuickReportTrigger(Date.now());
   }
   function handleQuickReport() {
@@ -339,9 +344,9 @@ export default function FleetApp() {
   // 案件から開いたとき：運転者としてログイン済みなら出発登録をすぐ開き、未ログインならログイン後に開く
   useEffect(() => {
     if (!pendingSite || !data) return;
-    const site = pendingSite;
+    const { site, division } = pendingSite;
     setPendingSite(null);
-    if (requireDriverLogin(() => startQuickReport(site))) startQuickReport(site);
+    if (requireDriverLogin(() => startQuickReport(site, division))) startQuickReport(site, division);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingSite, data, currentDriverId]);
 
@@ -476,6 +481,7 @@ export default function FleetApp() {
             onDelete={deleteReport}
             openTrigger={quickReportTrigger}
             openDestination={quickReportSite}
+            openDivision={quickReportDivision}
             onQuickReportHandled={handleQuickReportHandled}
             returnCheckinRequest={returnCheckinRequest}
             onReturnCheckinHandled={handleReturnCheckinHandled}
