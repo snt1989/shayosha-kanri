@@ -7,9 +7,9 @@ import { AutoNotice, Notice, buildAutoNotices } from '@/lib/notices';
 import { UPDATES, countUnreadUpdates } from '@/lib/changelog';
 import { todayStr } from '@/lib/utils';
 import Modal from './Modal';
+import { PushState, usePush } from './usePush';
 
 type Go = AutoNotice['go'];
-type PushState = 'loading' | 'unsupported' | 'ios-install' | 'unconfigured' | 'denied' | 'off' | 'on';
 
 const SEEN_KEY = 'fleet:notices:seen';
 const SEEN_UPDATE_KEY = 'fleet:updates:seen';
@@ -28,12 +28,6 @@ const writeKey = (k: string, v: string) => {
   }
 };
 
-function keyToBytes(base64url: string): Uint8Array {
-  const pad = '='.repeat((4 - (base64url.length % 4)) % 4);
-  const raw = atob((base64url + pad).replace(/-/g, '+').replace(/_/g, '/'));
-  return Uint8Array.from(raw, (c) => c.charCodeAt(0));
-}
-
 const fmt = (iso: string) => {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '';
@@ -46,8 +40,6 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
   const [notices, setNotices] = useState<Notice[]>([]);
   const [seen, setSeen] = useState('');
   const [seenUpdate, setSeenUpdate] = useState('');
-  const [push, setPush] = useState<PushState>('loading');
-  const [publicKey, setPublicKey] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ title: '', body: '', important: false, pinned: false, push: true });
@@ -109,73 +101,11 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
     }
   }, [open, section, seenUpdate]);
 
-  const refreshPushState = useCallback(async () => {
-    try {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
-        const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
-        const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as unknown as { standalone?: boolean }).standalone;
-        return setPush(ios && !standalone ? 'ios-install' : 'unsupported');
-      }
-      const cfg = (await (await fetch('/api/push', { cache: 'no-store' })).json()) as { enabled: boolean; publicKey: string };
-      if (!cfg.enabled) return setPush('unconfigured');
-      setPublicKey(cfg.publicKey);
-      if (Notification.permission === 'denied') return setPush('denied');
-      const reg = await navigator.serviceWorker.getRegistration();
-      const sub = reg ? await reg.pushManager.getSubscription() : null;
-      setPush(sub && Notification.permission === 'granted' ? 'on' : 'off');
-    } catch {
-      setPush('unsupported');
-    }
-  }, []);
+  const { state: push, busy: pushBusy, refresh: refreshPushState, enable: enablePush, disable: disablePush } = usePush(setMsg);
 
   useEffect(() => {
     if (open) refreshPushState();
   }, [open, refreshPushState]);
-
-  async function enablePush() {
-    setBusy(true);
-    setMsg('');
-    try {
-      const perm = await Notification.requestPermission();
-      if (perm !== 'granted') {
-        setPush(perm === 'denied' ? 'denied' : 'off');
-        return setMsg('通知が許可されませんでした。');
-      }
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyToBytes(publicKey) as BufferSource });
-      const res = await fetch('/api/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub.toJSON() }) });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        await sub.unsubscribe().catch(() => undefined);
-        return setMsg(j.message || '登録できませんでした。');
-      }
-      setPush('on');
-      setMsg('この端末に通知が届くようになりました。');
-    } catch (e) {
-      setMsg('通知の登録に失敗しました。' + (e instanceof Error ? e.message : ''));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function disablePush() {
-    setBusy(true);
-    setMsg('');
-    try {
-      const reg = await navigator.serviceWorker.getRegistration();
-      const sub = reg ? await reg.pushManager.getSubscription() : null;
-      if (sub) {
-        await fetch('/api/push', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }) }).catch(() => undefined);
-        await sub.unsubscribe();
-      }
-      setPush('off');
-      setMsg('この端末への通知を止めました。');
-    } catch {
-      setMsg('解除に失敗しました。');
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function post() {
     setBusy(true);
@@ -352,7 +282,7 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
             <h3 className="card-title">📲 この端末への通知</h3>
             <div style={{ fontSize: 13, color: 'var(--slate-600)', marginBottom: 8 }}>{p.text}</div>
             {p.action && (
-              <button type="button" className={`btn ${push === 'off' ? 'btn-primary' : ''}`} disabled={busy} onClick={p.action}>
+              <button type="button" className={`btn ${push === 'off' ? 'btn-primary' : ''}`} disabled={busy || pushBusy} onClick={p.action}>
                 {p.label}
               </button>
             )}

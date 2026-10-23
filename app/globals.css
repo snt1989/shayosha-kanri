@@ -1920,3 +1920,60 @@ table.bulk-grid {
   background: var(--sky-50);
   border-color: var(--sky-100);
 }
+
+/* ===== 画面上部のご案内（ホーム画面に追加・通知をオン） ===== */
+.nudge-wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 12px 20px 0;
+}
+.nudge {
+  position: relative;
+  background: var(--sky-50);
+  border: 1px solid var(--sky-100);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--slate-700);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+.nudge-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+.nudge-text {
+  flex: 1 1 260px;
+}
+.nudge-steps {
+  flex: 1 1 100%;
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.8;
+}
+.nudge-msg {
+  font-size: 12.5px;
+  color: var(--sky-700);
+}
+.nudge-later {
+  align-self: flex-end;
+  border: none;
+  background: transparent;
+  color: var(--slate-500);
+  font-size: 12.5px;
+  text-decoration: underline;
+  padding: 4px 2px;
+}
+@media (max-width: 640px) {
+  .nudge-wrap {
+    padding: 12px 12px 0;
+  }
+  .nudge-actions .btn {
+    min-height: 44px;
+  }
+}
