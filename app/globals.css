@@ -1794,8 +1794,37 @@ table.bulk-grid {
 }
 
 /* ===== お知らせ（ベルのボタン・一覧・投稿） ===== */
+.brandrow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+/* ベルのボタン：アイコンだけ。未読・対応待ちの数を右上に赤い丸で出す */
 .bell-btn {
   position: relative;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--slate-300);
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.bell-btn:hover {
+  background: var(--slate-50);
+}
+.bell-btn .bell-icon {
+  font-size: 21px;
+  line-height: 1;
+}
+.bell-btn .bell-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  box-shadow: 0 0 0 2px #fff;
 }
 .bell-badge {
   min-width: 18px;
@@ -1865,8 +1894,13 @@ table.bulk-grid {
   font-size: 13px;
 }
 @media (max-width: 640px) {
+  .brandrow {
+    width: 100%;
+    justify-content: space-between;
+  }
   .bell-btn {
-    flex-shrink: 0;
+    width: 46px;
+    height: 46px;
   }
 }
 .modal-box .help-chips {

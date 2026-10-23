@@ -52,15 +52,18 @@ export default function Header({
   return (
     <header className="appbar2">
       <div className="appbar2-row">
-        <div className="brand2">
-          <div className="logo2">🚙</div>
-          <div className="titles2">
-            <h1>
-              社用車管理クラウド
-              <span className="badge2">白ナンバー法令対応</span>
-            </h1>
-            <div className="sub2">運転日報・点呼記録・給油台帳・レンタカー・整備台帳・車両台帳・運転者台帳・各種マスタ一括管理</div>
+        <div className="brandrow">
+          <div className="brand2">
+            <div className="logo2">🚙</div>
+            <div className="titles2">
+              <h1>
+                社用車管理クラウド
+                <span className="badge2">白ナンバー法令対応</span>
+              </h1>
+              <div className="sub2">運転日報・点呼記録・給油台帳・レンタカー・整備台帳・車両台帳・運転者台帳・各種マスタ一括管理</div>
+            </div>
           </div>
+          {bell}
         </div>
 
         <nav className="tabs2">
@@ -78,7 +81,6 @@ export default function Header({
         </nav>
 
         <div className="headerbtns">
-          {bell}
           <span className={`sync-chip ${syncCls}`}>
             <span className="dot" />
             {syncLabel}

@@ -231,8 +231,8 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
 
   return (
     <>
-      <button type="button" className="btn btn-sm bell-btn" onClick={() => setOpen(true)} aria-label={`お知らせ${badge > 0 ? `（${badge}件）` : ''}`}>
-        <span aria-hidden>🔔</span> お知らせ
+      <button type="button" className="bell-btn" onClick={() => setOpen(true)} title="お知らせ" aria-label={`お知らせ${badge > 0 ? `（${badge}件）` : ''}`}>
+        <span aria-hidden className="bell-icon">🔔</span>
         {badge > 0 && <span className="bell-badge">{badge > 99 ? '99+' : badge}</span>}
       </button>
 
