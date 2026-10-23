@@ -5,7 +5,7 @@ import { pushConfig, sendPushToAll } from '@/lib/push';
 
 export const dynamic = 'force-dynamic';
 
-// 毎朝（vercel.json の crons）、車検・免許・オイル・アルコール・未帰着・整備依頼のまとめを通知する。
+// 毎朝（vercel.json の crons）、毎日必ず、車検・免許・オイル・アルコール・未帰着・整備依頼のまとめを通知する。
 // Vercel の定期実行は、環境変数 CRON_SECRET を設定すると「Authorization: Bearer <CRON_SECRET>」を付けて呼ぶ。
 // CRON_SECRET が無い・合わないときは何もしない（外から勝手に通知を送られないようにする）。
 export async function GET(req: NextRequest) {
@@ -17,7 +17,8 @@ export async function GET(req: NextRequest) {
   const data = await loadData();
   const items = buildAutoNotices(data);
   const summary = summarizeAutoNotices(items);
-  if (!summary) return NextResponse.json({ success: true, skipped: '通知する内容がありません。', count: 0 });
-  const r = await sendPushToAll({ ...summary, url: '/?notices=1' });
+  // 毎日必ず通知する。気になる点が無い日も「問題なし」を届ける。
+  const msg = summary ?? { title: '社用車管理：おはようございます', body: '今日、確認が必要なお知らせはありません。' };
+  const r = await sendPushToAll({ ...msg, url: '/?notices=1' });
   return NextResponse.json({ success: true, count: items.length, ...r });
 }
