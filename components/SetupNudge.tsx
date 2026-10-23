@@ -4,10 +4,13 @@ import { useEffect, useState } from 'react';
 import { detectEnv, Env, usePush } from './usePush';
 
 // 「ホーム画面に追加」していない端末、通知をオンにしていない端末に、画面の上でご案内する。
-// 「あとで」を押すと、この端末では7日間表示しない。
+// 「あとで」を押すと、この端末ではその日は表示せず、翌日にまた表示する。
 
 const DISMISS_KEY = 'fleet:nudge:dismissed';
-const DISMISS_DAYS = 7;
+const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+};
 
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 // Android の Chrome は、アプリとして追加できる状態になると、ページの読み込み中に合図を出す。取りこぼさないよう、最初に受け取っておく。
@@ -27,8 +30,7 @@ if (typeof window !== 'undefined') {
 
 const dismissedNow = () => {
   try {
-    const t = Number(localStorage.getItem(DISMISS_KEY) || 0);
-    return t > 0 && Date.now() - t < DISMISS_DAYS * 86400000;
+    return localStorage.getItem(DISMISS_KEY) === today(); // 押した日だけ隠す（翌日にまた出す）
   } catch {
     return false;
   }
@@ -55,7 +57,7 @@ export default function SetupNudge() {
 
   function later() {
     try {
-      localStorage.setItem(DISMISS_KEY, String(Date.now()));
+      localStorage.setItem(DISMISS_KEY, today());
     } catch {
       // 保存できないときは、画面を開き直すまで非表示
     }
