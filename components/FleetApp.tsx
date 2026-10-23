@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AppData, Driver, EmpIdRule, FuelLog, Masters, Rental, RentalTrip, Report, Reservation, Vehicle } from '@/lib/types';
 import Header from './Header';
+import NoticeBell from './NoticeBell';
 import StatBar from './StatBar';
 import DashboardTab from './DashboardTab';
 import ReportsTab from './ReportsTab';
@@ -399,6 +400,7 @@ export default function FleetApp() {
         mechanicName={activeMechanic}
         onOpenMechanicLogin={() => setShowMechanicLogin(true)}
         onMechanicLogout={handleMechanicLogout}
+        bell={<NoticeBell data={data} isAdmin={isAdmin} onNavigate={(t) => { setTab(t); if (typeof window !== 'undefined') window.scrollTo({ top: 0 }); }} />}
       />
 
       <div className="statbar">

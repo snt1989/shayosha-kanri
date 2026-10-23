@@ -1,5 +1,7 @@
 'use client';
 
+import type { ReactNode } from 'react';
+
 type Tab = 'dashboard' | 'reports' | 'maintenance' | 'fuel' | 'rental' | 'help' | 'admin';
 type SyncStatus = 'idle' | 'saving' | 'error';
 
@@ -27,6 +29,7 @@ export default function Header({
   mechanicName,
   onOpenMechanicLogin,
   onMechanicLogout,
+  bell,
 }: {
   tab: Tab;
   onTabChange: (t: Tab) => void;
@@ -41,6 +44,7 @@ export default function Header({
   mechanicName?: string | null;
   onOpenMechanicLogin: () => void;
   onMechanicLogout: () => void;
+  bell?: ReactNode;
 }) {
   const syncLabel = syncStatus === 'saving' ? '同期中…' : syncStatus === 'error' ? '同期エラー' : '同期完了';
   const syncCls = syncStatus === 'saving' ? 'saving' : syncStatus === 'error' ? 'error' : 'ok';
@@ -74,6 +78,7 @@ export default function Header({
         </nav>
 
         <div className="headerbtns">
+          {bell}
           <span className={`sync-chip ${syncCls}`}>
             <span className="dot" />
             {syncLabel}

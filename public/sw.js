@@ -52,3 +52,46 @@ self.addEventListener('fetch', (event) => {
     );
   }
 });
+
+// --- プッシュ通知 ---
+// サーバーからは「合図」だけが届く（本文は付かない）。合図を受けたら /api/push/latest で本文を取得して表示する。
+// 取得できなくても、必ず何かを表示する（表示しないと、ブラウザが通知の許可を取り消すことがある）。
+self.addEventListener('push', (event) => {
+  event.waitUntil(
+    (async () => {
+      let msg = { title: 'お知らせがあります', body: 'アプリを開いて確認してください。', url: '/?notices=1' };
+      try {
+        const res = await fetch('/api/push/latest', { cache: 'no-store' });
+        if (res.ok) msg = { ...msg, ...(await res.json()) };
+      } catch (e) {
+        // 圏外などのときは、既定の文面で表示する
+      }
+      await self.registration.showNotification(msg.title, {
+        body: msg.body,
+        icon: '/icons/icon-192.png',
+        badge: '/icons/icon-192.png',
+        tag: 'fleet-notice',
+        renotify: true,
+        data: { url: msg.url || '/?notices=1' },
+      });
+    })()
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || '/?notices=1';
+  event.waitUntil(
+    (async () => {
+      const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      for (const c of all) {
+        if (new URL(c.url).origin === self.location.origin && 'focus' in c) {
+          await c.focus();
+          if ('navigate' in c) await c.navigate(url).catch(() => undefined);
+          return;
+        }
+      }
+      await self.clients.openWindow(url);
+    })()
+  );
+});

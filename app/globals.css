@@ -1479,7 +1479,9 @@ table.bulk-grid {
   .headerbtns::-webkit-scrollbar {
     display: none;
   }
-  .headerbtns > * {
+  .headerbtns > .btn,
+  .headerbtns > .sync-chip,
+  .headerbtns > button {
     flex-shrink: 0;
     white-space: nowrap;
   }
@@ -1789,4 +1791,84 @@ table.bulk-grid {
     max-width: 100%;
     overflow-x: hidden;
   }
+}
+
+/* ===== お知らせ（ベルのボタン・一覧・投稿） ===== */
+.bell-btn {
+  position: relative;
+}
+.bell-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--red-600);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.notice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.notice-item {
+  border: 1px solid var(--slate-200);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: var(--slate-50);
+}
+.notice-item.important {
+  background: var(--red-50);
+  border-color: var(--red-100);
+}
+.notice-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.notice-date {
+  font-size: 11px;
+  color: var(--slate-500);
+}
+.notice-body {
+  margin-top: 6px;
+  font-size: 13.5px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.auto-notice {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.notice-form,
+.notice-push {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--slate-200);
+}
+.notice-msg {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--sky-50);
+  color: var(--sky-700);
+  font-size: 13px;
+}
+@media (max-width: 640px) {
+  .bell-btn {
+    flex-shrink: 0;
+  }
+}
+.modal-box .help-chips {
+  margin-bottom: 12px;
 }
