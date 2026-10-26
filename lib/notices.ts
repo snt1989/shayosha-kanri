@@ -73,3 +73,15 @@ export function summarizeAutoNotices(items: AutoNotice[]): { title: string; body
     .join('\n') + (items.length > 3 ? `\nほか${items.length - 3}件` : '');
   return { title, body };
 }
+
+// 夕方の通知：帰着登録がまだの出庫中の車両。無ければ null（通知しない）。
+export function summarizeOpenReturns(data: AppData): { title: string; body: string } | null {
+  const open = data.reports.filter((r) => !r.postDone).sort((a, b) => a.date.localeCompare(b.date));
+  if (open.length === 0) return null;
+  const body =
+    open
+      .slice(0, 4)
+      .map((r) => `${r.driver}さん（${r.vehicleName}）${r.date} 出発`)
+      .join('\n') + (open.length > 4 ? `\nほか${open.length - 4}件` : '');
+  return { title: `🚗 帰着登録がまだです（${open.length}件）`, body: `${body}\n戻ったら帰着登録をお願いします。` };
+}
