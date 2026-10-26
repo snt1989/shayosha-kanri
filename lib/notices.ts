@@ -1,5 +1,6 @@
 import { AppData } from './types';
 import { computeAlerts } from './alerts';
+import { todayStr } from './utils';
 
 // --- 管理者が書く「連絡事項」 ---
 export type NoticeLevel = 'info' | 'important';
@@ -74,14 +75,18 @@ export function summarizeAutoNotices(items: AutoNotice[]): { title: string; body
   return { title, body };
 }
 
-// 夕方の通知：帰着登録がまだの出庫中の車両。無ければ null（通知しない）。
-export function summarizeOpenReturns(data: AppData): { title: string; body: string } | null {
+// 夕方の通知：帰着登録がまだの出庫中の車両。無ければ null（通知しない）。厳しめの文面で、至急として送る。
+export function summarizeOpenReturns(data: AppData, today = todayStr()): { title: string; body: string; urgent: true } | null {
   const open = data.reports.filter((r) => !r.postDone).sort((a, b) => a.date.localeCompare(b.date));
   if (open.length === 0) return null;
   const body =
     open
       .slice(0, 4)
-      .map((r) => `${r.driver}さん（${r.vehicleName}）${r.date} 出発`)
+      .map((r) => `${r.date < today ? '【前日以前】' : ''}${r.driver}さん（${r.vehicleName}）${r.date} 出発`)
       .join('\n') + (open.length > 4 ? `\nほか${open.length - 4}件` : '');
-  return { title: `🚗 帰着登録がまだです（${open.length}件）`, body: `${body}\n戻ったら帰着登録をお願いします。` };
+  return {
+    title: `🚨【至急】帰着登録がされていません（${open.length}件）`,
+    body: `${body}\n帰着後のアルコールチェックとメーターが未入力です。今すぐ帰着登録をしてください。`,
+    urgent: true,
+  };
 }

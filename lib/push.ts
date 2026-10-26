@@ -16,7 +16,7 @@ export const LAST_KEY = 'fleet:push:last:v1';
 export const SUBS_MAX = 1000;
 
 export type PushSub = { endpoint: string; createdAt: string; ua?: string };
-export type PushMessage = { title: string; body: string; url: string; at: string };
+export type PushMessage = { title: string; body: string; url: string; at: string; urgent?: boolean };
 
 export function pushConfig(): { enabled: boolean; publicKey: string } {
   const publicKey = process.env.VAPID_PUBLIC_KEY || '';
@@ -80,9 +80,9 @@ export function vapidHeader(endpoint: string, now = Date.now()): string {
 export type SendResult = { enabled: boolean; sent: number; removed: number; failed: number; total: number };
 
 // 登録されたすべての端末に、合図を送る。本文は先に LAST_KEY に保存する。
-export async function sendPushToAll(msg: { title: string; body: string; url?: string }): Promise<SendResult> {
+export async function sendPushToAll(msg: { title: string; body: string; url?: string; urgent?: boolean }): Promise<SendResult> {
   const cfg = pushConfig();
-  const message: PushMessage = { title: msg.title.slice(0, 80), body: msg.body.slice(0, 300), url: msg.url || '/', at: new Date().toISOString() };
+  const message: PushMessage = { title: msg.title.slice(0, 80), body: msg.body.slice(0, 300), url: msg.url || '/', at: new Date().toISOString(), ...(msg.urgent ? { urgent: true } : {}) };
   const subs = await loadSubs();
   if (!cfg.enabled) return { enabled: false, sent: 0, removed: 0, failed: 0, total: subs.length };
   await kvSet(LAST_KEY, message);
@@ -98,7 +98,7 @@ export async function sendPushToAll(msg: { title: string; body: string; url?: st
       try {
         const res = await fetch(s.endpoint, {
           method: 'POST',
-          headers: { Authorization: vapidHeader(s.endpoint), TTL: '86400', Urgency: 'normal', 'Content-Length': '0' },
+          headers: { Authorization: vapidHeader(s.endpoint), TTL: '86400', Urgency: msg.urgent ? 'high' : 'normal', 'Content-Length': '0' },
           signal: ctrl.signal,
         });
         if (res.status === 404 || res.status === 410) gone.push(s.endpoint);

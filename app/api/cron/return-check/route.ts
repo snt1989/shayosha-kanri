@@ -15,6 +15,6 @@ export async function GET(req: NextRequest) {
   if (!pushConfig().enabled) return NextResponse.json({ success: true, skipped: '通知の設定（VAPID鍵）が未設定です。' });
   const summary = summarizeOpenReturns(await loadData());
   if (!summary) return NextResponse.json({ success: true, skipped: '帰着登録がまだの車両はありません。', count: 0 });
-  const r = await sendPushToAll({ ...summary, url: '/?notices=1' });
+  const r = await sendPushToAll({ ...summary, url: '/?notices=1' }); // urgent: 押すまで消えない通知にする
   return NextResponse.json({ success: true, ...r });
 }

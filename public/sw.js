@@ -6,7 +6,7 @@
 // - 変更されない静的ファイル（/_next/static/ とアイコン）だけ端末に残して、起動を速くする。
 // 仕組みを変えたら VERSION を上げる（古い保存分は自動で消える）。
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = `fleet-static-${VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -73,6 +73,8 @@ self.addEventListener('push', (event) => {
         tag: 'fleet-notice',
         renotify: true,
         data: { url: msg.url || '/?notices=1' },
+        // 至急の通知は、押すまで消えず、振動も長くする（対応に対応していない端末では通常の通知になる）
+        ...(msg.urgent ? { requireInteraction: true, vibrate: [300, 150, 300, 150, 600] } : {}),
       });
     })()
   );
