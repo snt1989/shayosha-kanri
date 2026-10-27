@@ -6,8 +6,9 @@ import MastersTab from './MastersTab';
 import LogsTab from './LogsTab';
 import VehiclesTab from './VehiclesTab';
 import DriversTab from './DriversTab';
+import LogoTab from './LogoTab';
 
-type AdminSection = 'vehicles' | 'drivers' | 'masters' | 'logs';
+type AdminSection = 'vehicles' | 'drivers' | 'masters' | 'logs' | 'logo';
 
 export default function AdminTab({
   data,
@@ -86,6 +87,9 @@ export default function AdminTab({
           <button className={`subtab ${section === 'logs' ? 'active' : ''}`} onClick={() => setSection('logs')}>
             <span>🗂️</span>操作ログ・バックアップ
           </button>
+          <button className={`subtab ${section === 'logo' ? 'active' : ''}`} onClick={() => setSection('logo')}>
+            <span>🎨</span>ロゴ・アイコン
+          </button>
         </div>
       </div>
 
@@ -108,6 +112,7 @@ export default function AdminTab({
           onRequestLogin={onRequestLogin}
         />
       )}
+      {section === 'logo' && <LogoTab />}
       {section === 'logs' && (
         <LogsTab
           data={data}
