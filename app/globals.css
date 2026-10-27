@@ -1802,8 +1802,8 @@ table.bulk-grid {
 /* ベルのボタン：アイコンだけ。未読・対応待ちの数を右上に赤い丸で出す */
 .bell-btn {
   position: relative;
-  width: 42px;
-  height: 42px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border-radius: 50%;
   border: 1px solid var(--slate-300);
@@ -1817,23 +1817,23 @@ table.bulk-grid {
   background: var(--slate-50);
 }
 .bell-btn .bell-icon {
-  font-size: 21px;
+  font-size: 16px;
   line-height: 1;
 }
 .bell-btn .bell-badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
+  top: -5px;
+  right: -5px;
   box-shadow: 0 0 0 2px #fff;
 }
 .bell-badge {
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
   border-radius: 999px;
   background: var(--red-600);
   color: #fff;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   display: inline-flex;
   align-items: center;
@@ -1899,8 +1899,8 @@ table.bulk-grid {
     justify-content: space-between;
   }
   .bell-btn {
-    width: 46px;
-    height: 46px;
+    width: 36px;
+    height: 36px;
   }
 }
 .modal-box .help-chips {
