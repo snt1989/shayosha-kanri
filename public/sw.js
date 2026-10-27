@@ -6,7 +6,7 @@
 // - 変更されない静的ファイル（/_next/static/ とアイコン）だけ端末に残して、起動を速くする。
 // 仕組みを変えたら VERSION を上げる（古い保存分は自動で消える）。
 
-const VERSION = 'v2';
+const VERSION = 'v3';
 const CACHE = `fleet-static-${VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -56,9 +56,42 @@ self.addEventListener('fetch', (event) => {
 // --- プッシュ通知 ---
 // サーバーからは「合図」だけが届く（本文は付かない）。合図を受けたら /api/push/latest で本文を取得して表示する。
 // 取得できなくても、必ず何かを表示する（表示しないと、ブラウザが通知の許可を取り消すことがある）。
+// ホーム画面のアプリアイコンの件数（バッジ）。アプリを開いているときは画面側が正しい件数を伝えてくる（badge-sync）。
+// 閉じているときにプッシュが届いたら、ここで+1する。
+const BADGE_CACHE = 'fleet-badge';
+async function badgeGet() {
+  try {
+    const r = await (await caches.open(BADGE_CACHE)).match('badge');
+    return r ? Number(await r.text()) || 0 : 0;
+  } catch (e) {
+    return 0;
+  }
+}
+async function badgeSet(n) {
+  try {
+    await (await caches.open(BADGE_CACHE)).put('badge', new Response(String(n)));
+  } catch (e) {
+    // 保存できなくても通知は出す
+  }
+  try {
+    if (self.navigator && self.navigator.setAppBadge) {
+      // 結果は待たない（端末によっては返事が来ないことがあり、通知の表示を止めてしまうため）
+      if (n > 0) self.navigator.setAppBadge(n).catch(() => undefined);
+      else self.navigator.clearAppBadge().catch(() => undefined);
+    }
+  } catch (e) {
+    // 対応していない端末では何もしない
+  }
+}
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'badge-sync') event.waitUntil(badgeSet(Number(event.data.n) || 0));
+});
+
 self.addEventListener('push', (event) => {
   event.waitUntil(
     (async () => {
+      // 件数の更新は通知の表示をじゃましない（端末によって時間がかかっても、通知は先に出す）
+      const badgeDone = Promise.race([badgeGet().then((n) => badgeSet(n + 1)), new Promise((r) => setTimeout(r, 3000))]).catch(() => undefined);
       let msg = { title: 'お知らせがあります', body: 'アプリを開いて確認してください。', url: '/?notices=1' };
       try {
         const res = await fetch('/api/push/latest', { cache: 'no-store' });
@@ -69,13 +102,14 @@ self.addEventListener('push', (event) => {
       await self.registration.showNotification(msg.title, {
         body: msg.body,
         icon: '/icons/icon-192.png',
-        badge: '/icons/icon-192.png',
+        badge: '/icons/badge-96.png', // 通知の小さいアイコン（白一色・背景透明）
         tag: 'fleet-notice',
         renotify: true,
         data: { url: msg.url || '/?notices=1' },
         // 至急の通知は、押すまで消えず、振動も長くする（対応に対応していない端末では通常の通知になる）
         ...(msg.urgent ? { requireInteraction: true, vibrate: [300, 150, 300, 150, 600] } : {}),
       });
+      await badgeDone;
     })()
   );
 });

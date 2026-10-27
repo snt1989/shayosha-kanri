@@ -85,6 +85,25 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
   // 更新は、未読が何件あっても、ベルの数字には1つ分だけ数える（初めて使う端末で数字が大きくなりすぎないように）
   const badge = unread + auto.length + Math.min(unreadUpdates, 1);
 
+  // ホーム画面のアプリアイコンに、ベルと同じ数字（バッジ）を出す（Badging API。ホーム画面に追加したアプリ・対応ブラウザのみ）。
+  // サービスワーカーにも件数を伝える（プッシュが届いたときに、そこから+1するため）。前面に戻ったときも合わせ直す。
+  useEffect(() => {
+    const sync = () => {
+      try {
+        const nav = navigator as Navigator & { setAppBadge?: (n: number) => Promise<void>; clearAppBadge?: () => Promise<void> };
+        if (badge > 0 && nav.setAppBadge) nav.setAppBadge(badge).catch(() => undefined);
+        else if (badge <= 0 && nav.clearAppBadge) nav.clearAppBadge().catch(() => undefined);
+        navigator.serviceWorker?.controller?.postMessage({ type: 'badge-sync', n: badge });
+      } catch {
+        // 対応していない端末では何もしない
+      }
+    };
+    sync();
+    const onVisible = () => document.visibilityState === 'visible' && sync();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [badge]);
+
   // 連絡事項を表示したら既読にする
   useEffect(() => {
     if (open && section === 'notices' && latest && latest > seen) {

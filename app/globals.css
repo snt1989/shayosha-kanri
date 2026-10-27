@@ -2051,3 +2051,6 @@ table.bulk-grid {
 .logo-all a.btn {
   text-decoration: none;
 }
+.logo-preview.logo-preview-dark {
+  background: #475569;
+}

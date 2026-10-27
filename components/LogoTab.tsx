@@ -15,6 +15,7 @@ const ASSETS: Asset[] = [
   { file: 'shayosha-logo-192.png', name: 'ロゴ（中）', use: 'ホーム画面に追加したときのアイコン（Android）', size: '192×192 PNG' },
   { file: 'shayosha-logo-maskable-512.png', name: 'ロゴ（丸く切り抜き用）', use: 'Android で丸や角丸に切り抜かれるアイコン。ふちに余白あり', size: '512×512 PNG' },
   { file: 'shayosha-apple-touch-icon-180.png', name: 'iPhone 用アイコン', use: 'iPhone・iPad のホーム画面に追加したときのアイコン', size: '180×180 PNG' },
+  { file: 'shayosha-notice-icon-96.png', name: 'お知らせアイコン', use: '通知（プッシュ通知）の小さいアイコン。白一色で背景が透明', size: '96×96 PNG', dark: true },
   { file: 'shayosha-favicon.ico', name: 'ブラウザのタブのアイコン', use: 'パソコンのブラウザのタブに出る小さいアイコン', size: '32・48px ICO' },
 ];
 
@@ -31,7 +32,7 @@ export default function LogoTab() {
       <div className="logo-grid">
         {ASSETS.map((a) => (
           <div className="logo-card" key={a.file}>
-            <div className="logo-preview">
+            <div className={`logo-preview${a.dark ? ' logo-preview-dark' : ''}`}>
               {a.file.endsWith('.ico') ? (
                 <span className="logo-ico-note">ICO</span>
               ) : (
