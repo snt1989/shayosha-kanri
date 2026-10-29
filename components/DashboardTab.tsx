@@ -4,6 +4,7 @@ import { AppData, Driver, MAINT_URGENCIES, Reservation } from '@/lib/types';
 import { openMaintRequests, rentalReservations, reservationRange, todayStr } from '@/lib/utils';
 import AlertsPanel from './AlertsPanel';
 import UsageCalendar from './UsageCalendar';
+import DashboardNotices from './DashboardNotices';
 
 export default function DashboardTab({
   data,
@@ -13,6 +14,7 @@ export default function DashboardTab({
   onRequestDriverLogin,
   onSaveReservation,
   onDeleteReservation,
+  isAdmin,
 }: {
   data: AppData;
   onReturnCheckin: (id: string) => void;
@@ -21,6 +23,7 @@ export default function DashboardTab({
   onRequestDriverLogin: () => void;
   onSaveReservation: (r: Reservation) => Promise<unknown>;
   onDeleteReservation: (id: string) => Promise<unknown>;
+  isAdmin: boolean;
 }) {
   const today = todayStr();
   const openReports = [...data.reports]
@@ -42,6 +45,8 @@ export default function DashboardTab({
           車検・点検・免許更新・アルコールチェックのアラート、帰着未登録の日報、整備依頼、車両の使用・予約カレンダーをまとめて確認できます。
         </div>
       </div>
+
+      <DashboardNotices isAdmin={isAdmin} />
 
       <div className="card" style={{ marginBottom: 14 }}>
         <h3 className="card-title">

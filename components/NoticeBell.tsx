@@ -71,6 +71,16 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
     };
   }, [loadNotices]);
 
+  // ダッシュボードの「全体へのお知らせ」の「すべて見る」「投稿する」から、ここを開く
+  useEffect(() => {
+    const onOpen = () => {
+      setSection('notices');
+      setOpen(true);
+    };
+    window.addEventListener('fleet:open-notices', onOpen);
+    return () => window.removeEventListener('fleet:open-notices', onOpen);
+  }, []);
+
   // 通知を押して開いたとき（/?notices=1）は、お知らせを開く
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('notices') === '1') {

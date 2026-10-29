@@ -472,6 +472,7 @@ export default function FleetApp() {
             onRequestDriverLogin={() => requireDriverLogin()}
             onSaveReservation={saveReservation}
             onDeleteReservation={deleteReservation}
+            isAdmin={isAdmin}
           />
         )}
         {tab === 'reports' && (
