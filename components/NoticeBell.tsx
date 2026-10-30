@@ -13,6 +13,7 @@ type Go = AutoNotice['go'];
 
 const SEEN_KEY = 'fleet:notices:seen';
 const SEEN_UPDATE_KEY = 'fleet:updates:seen';
+const SEEN_AUTO_KEY = 'fleet:auto:seen'; // 「状況のお知らせ」を見たときの項目（id）の一覧。新しい項目が出たときだけ、また数字に数える
 const readKey = (k: string) => {
   try {
     return localStorage.getItem(k) || '';
@@ -40,6 +41,7 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
   const [notices, setNotices] = useState<Notice[]>([]);
   const [seen, setSeen] = useState('');
   const [seenUpdate, setSeenUpdate] = useState('');
+  const [seenAuto, setSeenAuto] = useState<string[]>([]);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ title: '', body: '', important: false, pinned: false, push: true });
@@ -61,6 +63,12 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
   useEffect(() => {
     setSeen(readKey(SEEN_KEY));
     setSeenUpdate(readKey(SEEN_UPDATE_KEY));
+    try {
+      const a = JSON.parse(readKey(SEEN_AUTO_KEY) || '[]');
+      if (Array.isArray(a)) setSeenAuto(a.filter((x) => typeof x === 'string'));
+    } catch {
+      // 読めないときは、全部を未確認として数える
+    }
     loadNotices();
     const t = setInterval(loadNotices, 60000);
     const onVis = () => document.visibilityState === 'visible' && loadNotices();
@@ -93,7 +101,9 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
   const unread = notices.filter((n) => n.createdAt > seen).length;
   const unreadUpdates = countUnreadUpdates(seenUpdate, todayStr());
   // 更新は、未読が何件あっても、ベルの数字には1つ分だけ数える（初めて使う端末で数字が大きくなりすぎないように）
-  const badge = unread + auto.length + Math.min(unreadUpdates, 1);
+  // 状況のお知らせは、見たあとは数字に数えない（その後、新しい項目が出たときだけ数える）
+  const unseenAuto = auto.filter((a) => !seenAuto.includes(a.id)).length;
+  const badge = unread + unseenAuto + Math.min(unreadUpdates, 1);
 
   // ホーム画面のアプリアイコンに、ベルと同じ数字（バッジ）を出す（Badging API。ホーム画面に追加したアプリ・対応ブラウザのみ）。
   // サービスワーカーにも件数を伝える（プッシュが届いたときに、そこから+1するため）。前面に戻ったときも合わせ直す。
@@ -121,6 +131,15 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
       setSeen(latest);
     }
   }, [open, section, latest, seen]);
+
+  // 状況のお知らせを表示したら確認済みにする（データを読み込む前は何もしない）
+  useEffect(() => {
+    if (!open || section !== 'auto' || !data) return;
+    const ids = auto.map((a) => a.id);
+    if (ids.length === seenAuto.length && ids.every((id) => seenAuto.includes(id))) return;
+    writeKey(SEEN_AUTO_KEY, JSON.stringify(ids));
+    setSeenAuto(ids);
+  }, [open, section, auto, data, seenAuto]);
 
   // アプリの更新を表示したら既読にする
   useEffect(() => {
