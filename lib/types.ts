@@ -62,6 +62,14 @@ export type Vehicle = {
   oilKm: number;
   tire: string;
   maintHistory: MaintRecord[];
+  // 車検証から入れる任意の項目（既存の車両には無いので optional）
+  maker?: string; // 車名（トヨタ など）
+  chassisNo?: string; // 車台番号
+  firstRegistered?: string; // 初度登録年月 YYYY-MM
+  capacity?: string; // 乗車定員 例: 5人
+  grossWeight?: string; // 車両総重量 例: 2,610kg
+  displacement?: string; // 総排気量 例: 2.76L
+  fuelType?: string; // 燃料の種類
 };
 
 export type Driver = {

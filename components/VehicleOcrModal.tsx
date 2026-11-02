@@ -9,31 +9,53 @@ import Modal from './Modal';
 
 // 車検証の写真から、ナンバー・型式・車検満了日を読み取って、車両台帳に登録する。
 // 同じナンバーの車両が台帳にあるときは、新しく作らず、その車両の車検満了日・型式を更新する。
+// 使い方は3通り：
+// - 何も指定しない：ナンバーが同じ車両があれば更新、無ければ新規登録（「車検証で登録・更新」）
+// - target：登録済みのこの車両に、車検証の内容を追加する（車両カードの「車検証」）
+// - onApply：保存はせず、読み取った内容を編集中の画面に入れるだけ（編集画面の「車検証から読み取る」）
+type Extra = Pick<Vehicle, 'maker' | 'chassisNo' | 'firstRegistered' | 'capacity' | 'grossWeight' | 'displacement' | 'fuelType'>;
+
 export default function VehicleOcrModal({
   data,
   onClose,
   onSave,
+  target,
+  onApply,
 }: {
   data: AppData;
   onClose: () => void;
-  onSave: (v: Vehicle) => Promise<unknown>;
+  onSave?: (v: Vehicle) => Promise<unknown>;
+  target?: Vehicle;
+  onApply?: (patch: Partial<Vehicle>) => void;
 }) {
   const [photo, setPhoto] = useState('');
   const [ocrText, setOcrText] = useState('');
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [name, setName] = useState('');
-  const [plate, setPlate] = useState('');
-  const [modelType, setModelType] = useState('');
-  const [shakenDate, setShakenDate] = useState('');
+  const [plate, setPlate] = useState(target?.plate || '');
+  const [modelType, setModelType] = useState(target?.modelType || '');
+  const [shakenDate, setShakenDate] = useState(target?.shakenDate || '');
+  const [extra, setExtra] = useState<Extra>({
+    maker: target?.maker || '',
+    chassisNo: target?.chassisNo || '',
+    firstRegistered: target?.firstRegistered || '',
+    capacity: target?.capacity || '',
+    grossWeight: target?.grossWeight || '',
+    displacement: target?.displacement || '',
+    fuelType: target?.fuelType || '',
+  });
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // 台帳に同じナンバーの車両があるか
-  const existing = useMemo(() => {
+  const matched = useMemo(() => {
     const key = normPlate(plate);
-    return key ? data.vehicles.find((v) => normPlate(v.plate) === key) || null : null;
-  }, [plate, data.vehicles]);
+    return key && !onApply ? data.vehicles.find((v) => normPlate(v.plate) === key) || null : null;
+  }, [plate, data.vehicles, onApply]);
+  // 更新先の車両（車両を指定したときはその車両。指定が無いときは、同じナンバーの車両）
+  const existing = target || matched;
+  const plateDiffers = !!target && !!plate.trim() && normPlate(plate) !== normPlate(target.plate);
 
   function handleFile(file: File | null) {
     if (!file) return;
@@ -61,7 +83,16 @@ export default function VehicleOcrModal({
       if (f.modelType) setModelType(f.modelType);
       if (f.shakenDate) setShakenDate(f.shakenDate);
       if (f.carName && !name) setName(f.carName);
-      if (!f.plate && !f.modelType && !f.shakenDate) alert('車検証から項目を読み取れませんでした。写真を撮り直すか、手入力してください。');
+      setExtra((e) => ({
+        maker: f.carName || e.maker,
+        chassisNo: f.chassisNo || e.chassisNo,
+        firstRegistered: f.firstRegistered || e.firstRegistered,
+        capacity: f.capacity || e.capacity,
+        grossWeight: f.grossWeight || e.grossWeight,
+        displacement: f.displacement || e.displacement,
+        fuelType: f.fuelType || e.fuelType,
+      }));
+      if (Object.keys(f).length === 0) alert('車検証から項目を読み取れませんでした。写真を撮り直すか、手入力してください。');
     } catch {
       alert('OCR処理に失敗しました。手入力で登録してください。');
     } finally {
@@ -69,8 +100,24 @@ export default function VehicleOcrModal({
     }
   }
 
+  // 空でない項目だけを、車両に反映する
+  function patchFromForm(): Partial<Vehicle> {
+    const patch: Partial<Vehicle> = {};
+    if (shakenDate) patch.shakenDate = shakenDate;
+    if (modelType) patch.modelType = modelType;
+    (Object.keys(extra) as (keyof Extra)[]).forEach((k) => {
+      if (extra[k]) patch[k] = extra[k];
+    });
+    return patch;
+  }
+
   async function handleSave() {
-    if (!plate.trim()) {
+    if (onApply) {
+      onApply(patchFromForm());
+      onClose();
+      return;
+    }
+    if (!existing && !plate.trim()) {
       alert('ナンバープレートは必須です。読み取れなかった場合は手入力してください。');
       return;
     }
@@ -78,15 +125,12 @@ export default function VehicleOcrModal({
       alert('車両呼称は必須です（例：社用車4号（ハイエース 白））。');
       return;
     }
+    if (!onSave) return;
     setSaving(true);
     try {
       if (existing) {
-        // 同じナンバーの車両：車検満了日と型式だけを更新する（走行距離・整備記録などはそのまま）
-        await onSave({
-          ...existing,
-          shakenDate: shakenDate || existing.shakenDate,
-          modelType: modelType || existing.modelType,
-        });
+        // 登録済みの車両：車検証の項目だけを更新する（走行距離・整備記録・点検日などはそのまま）
+        await onSave({ ...existing, ...patchFromForm() });
       } else {
         await onSave({
           id: genId('v'),
@@ -99,6 +143,7 @@ export default function VehicleOcrModal({
           oilKm: 3000,
           tire: data.masters.tireTypes[0] || '',
           maintHistory: [],
+          ...Object.fromEntries(Object.entries(extra).filter(([, v]) => v)),
         });
       }
       onClose();
@@ -109,7 +154,7 @@ export default function VehicleOcrModal({
 
   return (
     <Modal
-      title="車検証で登録・更新"
+      title={target ? `車検証を追加：${target.name}` : onApply ? '車検証から読み取る' : '車検証で登録・更新'}
       onClose={onClose}
       footer={
         <>
@@ -117,13 +162,13 @@ export default function VehicleOcrModal({
             キャンセル
           </button>
           <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? '保存中…' : existing ? 'この内容で更新する' : 'この内容で登録する'}
+            {onApply ? 'この内容を反映する' : saving ? '保存中…' : existing ? 'この内容で更新する' : 'この内容で登録する'}
           </button>
         </>
       }
     >
       <div className="notice-box">
-        車検証の写真から、ナンバー・型式・車検満了日の自動読み取りを試みます（ブラウザ内でOCR処理、外部送信なし）。読み取り精度は写真の状態により変わるため、登録前に必ず内容を車検証と見比べて、修正してください。
+        車検証の写真から、ナンバー・型式・車検満了日・車台番号などの自動読み取りを試みます（ブラウザ内でOCR処理、外部送信なし）。読み取り精度は写真の状態により変わるため、登録前に必ず内容を車検証と見比べて、修正してください。
       </div>
 
       {!photo ? (
@@ -153,24 +198,29 @@ export default function VehicleOcrModal({
       )}
 
       <div className="section-heading">登録内容の確認・修正</div>
-      {existing && (
+      {!onApply && existing && !target && (
         <div className="notice-box" style={{ borderColor: 'var(--amber-600)' }}>
-          同じナンバーの車両「{existing.name}」が台帳にあります。保存すると、新しく作らずに、この車両の車検満了日と型式を更新します（走行距離・整備記録などはそのままです）。
+          同じナンバーの車両「{existing.name}」が台帳にあります。保存すると、新しく作らずに、この車両の車検証の項目を更新します（走行距離・整備記録などはそのままです）。
+        </div>
+      )}
+      {plateDiffers && (
+        <div className="notice-box" style={{ borderColor: 'var(--amber-600)' }}>
+          読み取ったナンバー（{plate}）が、この車両の登録（{target?.plate}）と違います。別の車両の車検証ではないか、確認してください。ナンバーは変更されません。
         </div>
       )}
       <div className="field-row">
         <div className="field">
-          <label>車両呼称{existing ? '（既存のまま）' : ''}</label>
+          <label>車両呼称{existing || onApply ? '（変更しません）' : ''}</label>
           <input
-            value={existing ? existing.name : name}
-            disabled={!!existing}
+            value={existing ? existing.name : onApply ? '' : name}
+            disabled={!!existing || !!onApply}
             placeholder="例：社用車4号（ハイエース 白）"
             onChange={(e) => setName(e.target.value)}
           />
         </div>
         <div className="field">
           <label>ナンバープレート</label>
-          <input value={plate} placeholder="例：品川 300 あ 12-34" onChange={(e) => setPlate(e.target.value)} />
+          <input value={plate} disabled={!!target || !!onApply} placeholder="例：品川 300 あ 12-34" onChange={(e) => setPlate(e.target.value)} />
         </div>
       </div>
       <div className="field-row">
@@ -181,6 +231,40 @@ export default function VehicleOcrModal({
         <div className="field">
           <label>車検満了日（有効期間の満了する日）</label>
           <input type="date" value={shakenDate} onChange={(e) => setShakenDate(e.target.value)} />
+        </div>
+      </div>
+      <div className="field-row">
+        <div className="field">
+          <label>車台番号</label>
+          <input value={extra.chassisNo || ''} placeholder="例：GDH206-1234567" onChange={(e) => setExtra({ ...extra, chassisNo: e.target.value })} />
+        </div>
+        <div className="field">
+          <label>初度登録年月</label>
+          <input type="month" value={extra.firstRegistered || ''} onChange={(e) => setExtra({ ...extra, firstRegistered: e.target.value })} />
+        </div>
+      </div>
+      <div className="field-row">
+        <div className="field">
+          <label>車名（メーカー）</label>
+          <input value={extra.maker || ''} onChange={(e) => setExtra({ ...extra, maker: e.target.value })} />
+        </div>
+        <div className="field">
+          <label>燃料の種類</label>
+          <input value={extra.fuelType || ''} placeholder="例：軽油" onChange={(e) => setExtra({ ...extra, fuelType: e.target.value })} />
+        </div>
+      </div>
+      <div className="field-row">
+        <div className="field">
+          <label>乗車定員</label>
+          <input value={extra.capacity || ''} placeholder="例：5人" onChange={(e) => setExtra({ ...extra, capacity: e.target.value })} />
+        </div>
+        <div className="field">
+          <label>車両総重量</label>
+          <input value={extra.grossWeight || ''} placeholder="例：2,610kg" onChange={(e) => setExtra({ ...extra, grossWeight: e.target.value })} />
+        </div>
+        <div className="field">
+          <label>総排気量</label>
+          <input value={extra.displacement || ''} placeholder="例：2.76L" onChange={(e) => setExtra({ ...extra, displacement: e.target.value })} />
         </div>
       </div>
     </Modal>

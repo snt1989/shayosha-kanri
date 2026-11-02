@@ -6,6 +6,12 @@ export type ShakenFields = {
   modelType?: string; // 型式
   shakenDate?: string; // 有効期間の満了する日 YYYY-MM-DD
   carName?: string; // 車名（トヨタ など）
+  chassisNo?: string; // 車台番号
+  firstRegistered?: string; // 初度登録年月 YYYY-MM
+  capacity?: string; // 乗車定員
+  grossWeight?: string; // 車両総重量
+  displacement?: string; // 総排気量
+  fuelType?: string; // 燃料の種類
 };
 
 const ERA_BASE: Record<string, number> = { 令和: 2018, 平成: 1988, 昭和: 1925 };
@@ -54,6 +60,34 @@ export function extractShakenFields(text: string): ShakenFields {
   // 車名（トヨタ、日産 など）
   const name = flat.match(/車名[ :：]*([一-龠ぁ-んァ-ヶー]{2,10})/);
   if (name) out.carName = name[1];
+
+  // 車台番号（例: GDH206-1234567）
+  const chassis = flat.match(/車台番号[ :：]*([A-Z0-9]{2,8}) ?-? ?(\d{4,8})/);
+  if (chassis) out.chassisNo = `${chassis[1]}-${chassis[2]}`;
+
+  // 初度登録年月（令和5年11月 → 2023-11）
+  const first = flat.match(/初度登録年月[ :：]*(令和|平成|昭和) ?(元|\d{1,2}) ?年 ?(\d{1,2}) ?月/);
+  if (first) {
+    const y = (first[2] === '元' ? 1 : Number(first[2])) + ERA_BASE[first[1]];
+    const m = Number(first[3]);
+    if (m >= 1 && m <= 12) out.firstRegistered = `${y}-${pad(m)}`;
+  }
+
+  const cap = flat.match(/乗車定員[ :：]*(\d{1,2}) ?人/);
+  if (cap) out.capacity = `${cap[1]}人`;
+
+  const gw = flat.match(/車両総重量[ :：]*(\d{1,2}),?(\d{3}) ?kg/i);
+  if (gw) out.grossWeight = `${gw[1]},${gw[2]}kg`;
+  else {
+    const gw2 = flat.match(/車両総重量[ :：]*(\d{3,5}) ?kg/i);
+    if (gw2) out.grossWeight = `${Number(gw2[1]).toLocaleString('en-US')}kg`;
+  }
+
+  const disp = flat.match(/総排気量[^\d\n]{0,14}(\d+(?:\.\d+)?) ?(L|ℓ|cc|CC)?/);
+  if (disp) out.displacement = `${disp[1]}${(disp[2] || 'L').replace('ℓ', 'L')}`;
+
+  const fuel = flat.match(/燃料の種類[ :：]*(ガソリン|軽油|ディーゼル|電気|ハイブリッド|LPG|CNG|水素)/);
+  if (fuel) out.fuelType = fuel[1];
 
   // 有効期間の満了する日：「有効期間」「満了」の近くの日付を優先し、無ければ全体でいちばん遅い日付
   const dateRe = /(令和|平成|昭和)\s*(?:元|\d{1,2})\s*年\s*\d{1,2}\s*月\s*\d{1,2}\s*日/g;

@@ -37,6 +37,9 @@ export default function VehiclesTab({
   const [bulkRows, setBulkRows] = useState<Vehicle[] | null>(null);
   const [bulkSaving, setBulkSaving] = useState(false);
   const [showShakenOcr, setShowShakenOcr] = useState(false);
+  // 登録済みの車両に車検証を追加する（車両カードの「車検証」）／編集中の車両に読み取り結果を入れる（編集画面）
+  const [ocrTarget, setOcrTarget] = useState<Vehicle | null>(null);
+  const [showEditOcr, setShowEditOcr] = useState(false);
   // 各車両の「整備記録」「運転記録」を一覧で見る画面
   const [viewing, setViewing] = useState<{ vehicleId: string; kind: 'maint' | 'drive' } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -235,6 +238,7 @@ export default function VehiclesTab({
                       <div className="ename">{v.name}</div>
                       <div className="esub">
                         {v.plate} / 型式: {v.modelType || '-'}
+                        {v.chassisNo ? ` / 車台番号: ${v.chassisNo}` : ''}
                       </div>
                     </div>
                     <span className="pill pill-slate">{v.tire}</span>
@@ -263,6 +267,9 @@ export default function VehiclesTab({
                     <div className="eactions">
                       <button className="btn btn-sm btn-primary" onClick={() => openEdit(v)}>
                         ✏️ 編集
+                      </button>
+                      <button className="btn btn-sm" onClick={() => setOcrTarget(v)}>
+                        📷 車検証
                       </button>
                       <button className="btn btn-sm" onClick={() => setViewing({ vehicleId: v.id, kind: 'maint' })}>
                         🔧 整備記録（{v.maintHistory.length}）
@@ -426,6 +433,14 @@ export default function VehiclesTab({
       )}
 
       {showShakenOcr && <VehicleOcrModal data={data} onClose={() => setShowShakenOcr(false)} onSave={onSave} />}
+      {ocrTarget && <VehicleOcrModal data={data} target={ocrTarget} onClose={() => setOcrTarget(null)} onSave={onSave} />}
+      {showEditOcr && editing && (
+        <VehicleOcrModal
+          data={data}
+          onClose={() => setShowEditOcr(false)}
+          onApply={(patch) => setEditing((cur) => (cur ? { ...cur, ...patch } : cur))}
+        />
+      )}
 
       {editing && (
         <Modal
@@ -488,6 +503,47 @@ export default function VehiclesTab({
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="section-heading" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            車検証の情報
+            <button type="button" className="btn btn-sm" onClick={() => setShowEditOcr(true)}>
+              📷 車検証から読み取る
+            </button>
+          </div>
+          <div className="field-row">
+            <div className="field">
+              <label>車台番号</label>
+              <input value={editing.chassisNo || ''} placeholder="例：GDH206-1234567" onChange={(e) => setEditing({ ...editing, chassisNo: e.target.value })} />
+            </div>
+            <div className="field">
+              <label>初度登録年月</label>
+              <input type="month" value={editing.firstRegistered || ''} onChange={(e) => setEditing({ ...editing, firstRegistered: e.target.value })} />
+            </div>
+          </div>
+          <div className="field-row">
+            <div className="field">
+              <label>車名（メーカー）</label>
+              <input value={editing.maker || ''} onChange={(e) => setEditing({ ...editing, maker: e.target.value })} />
+            </div>
+            <div className="field">
+              <label>燃料の種類</label>
+              <input value={editing.fuelType || ''} placeholder="例：軽油" onChange={(e) => setEditing({ ...editing, fuelType: e.target.value })} />
+            </div>
+          </div>
+          <div className="field-row">
+            <div className="field">
+              <label>乗車定員</label>
+              <input value={editing.capacity || ''} placeholder="例：5人" onChange={(e) => setEditing({ ...editing, capacity: e.target.value })} />
+            </div>
+            <div className="field">
+              <label>車両総重量</label>
+              <input value={editing.grossWeight || ''} placeholder="例：2,610kg" onChange={(e) => setEditing({ ...editing, grossWeight: e.target.value })} />
+            </div>
+            <div className="field">
+              <label>総排気量</label>
+              <input value={editing.displacement || ''} placeholder="例：2.76L" onChange={(e) => setEditing({ ...editing, displacement: e.target.value })} />
+            </div>
           </div>
         </Modal>
       )}
