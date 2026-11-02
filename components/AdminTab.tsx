@@ -43,27 +43,25 @@ export default function AdminTab({
 }) {
   const [section, setSection] = useState<AdminSection>('vehicles');
 
-  if (!isAdmin) {
-    return (
-      <div className="card">
-        <div className="locked-panel">
-          <div className="lock-ic">🔒</div>
-          <h3>管理者ログインが必要です</h3>
-          <p>
-            社用車台帳・運転者台帳・各種マスタ設定・操作ログ／バックアップは、誤操作・改ざん防止のため管理者のみ利用できます。
+  // 社用車台帳は、誰でも見られる（管理者以外は見るだけ）。それ以外は管理者ログインが必要。
+  const locked = !isAdmin && section !== 'vehicles';
+  const lockedPanel = (
+    <div className="card">
+      <div className="locked-panel">
+        <div className="lock-ic">🔒</div>
+        <h3>管理者ログインが必要です</h3>
+        <p>運転者台帳・各種マスタ設定・操作ログ／バックアップ・ロゴ・アイコンは、誤操作・改ざん防止のため管理者のみ利用できます。</p>
+        <button className="btn btn-primary" onClick={onRequestLogin}>
+          🔒 管理者ログイン
+        </button>
+        {!adminConfigured && (
+          <p style={{ marginTop: 14, color: 'var(--amber-600)' }}>
+            ※ サーバーに ADMIN_PASSWORD が未設定です。Vercelの環境変数を設定してください。
           </p>
-          <button className="btn btn-primary" onClick={onRequestLogin}>
-            🔒 管理者ログイン
-          </button>
-          {!adminConfigured && (
-            <p style={{ marginTop: 14, color: 'var(--amber-600)' }}>
-              ※ サーバーに ADMIN_PASSWORD が未設定です。Vercelの環境変数を設定してください。
-            </p>
-          )}
-        </div>
+        )}
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
     <div>
@@ -72,7 +70,7 @@ export default function AdminTab({
           🛠️ 管理画面
         </h3>
         <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 12 }}>
-          社用車台帳・運転者台帳・各種マスタ設定と、操作ログ・バックアップをまとめて管理します。
+          社用車台帳・運転者台帳・各種マスタ設定と、操作ログ・バックアップをまとめて管理します。社用車台帳は、管理者でなくても見られます（編集は管理者のみ）。
         </div>
         <div className="subtabbar">
           <button className={`subtab ${section === 'vehicles' ? 'active' : ''}`} onClick={() => setSection('vehicles')}>
@@ -93,13 +91,24 @@ export default function AdminTab({
         </div>
       </div>
 
+      {locked && lockedPanel}
       {section === 'vehicles' && (
-        <VehiclesTab data={data} onSave={onSaveVehicle} onDelete={onDeleteVehicle} onBulkSave={onBulkSaveVehicles} />
+        <>
+          {!isAdmin && (
+            <div className="notice-box" style={{ marginBottom: 12 }}>
+              見るだけの画面です。車両の登録・編集・削除は、管理者ログインが必要です。{' '}
+              <button type="button" className="btn btn-sm" onClick={onRequestLogin}>
+                🔒 管理者ログイン
+              </button>
+            </div>
+          )}
+          <VehiclesTab data={data} onSave={onSaveVehicle} onDelete={onDeleteVehicle} onBulkSave={onBulkSaveVehicles} readOnly={!isAdmin} />
+        </>
       )}
-      {section === 'drivers' && (
+      {section === 'drivers' && isAdmin && (
         <DriversTab data={data} onSave={onSaveDriver} onDelete={onDeleteDriver} onBulkSave={onBulkSaveDrivers} />
       )}
-      {section === 'masters' && (
+      {section === 'masters' && isAdmin && (
         <MastersTab
           masters={data.masters}
           empIdRule={data.empIdRule}
@@ -112,8 +121,8 @@ export default function AdminTab({
           onRequestLogin={onRequestLogin}
         />
       )}
-      {section === 'logo' && <LogoTab />}
-      {section === 'logs' && (
+      {section === 'logo' && isAdmin && <LogoTab />}
+      {section === 'logs' && isAdmin && (
         <LogsTab
           data={data}
           isAdmin={isAdmin}

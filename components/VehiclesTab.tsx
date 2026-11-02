@@ -25,11 +25,14 @@ export default function VehiclesTab({
   onSave,
   onDelete,
   onBulkSave,
+  readOnly = false,
 }: {
   data: AppData;
   onSave: (v: Vehicle) => Promise<unknown>;
   onDelete: (id: string) => Promise<unknown>;
   onBulkSave: (list: Vehicle[]) => Promise<unknown>;
+  // 管理者以外は見るだけ（登録・編集・削除・取込のボタンを出さない）
+  readOnly?: boolean;
 }) {
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<Vehicle | null>(null);
@@ -206,21 +209,29 @@ export default function VehiclesTab({
               onChange={(e) => setQuery(e.target.value)}
               style={{ padding: '9px 12px', border: '1px solid var(--slate-300)', borderRadius: 8, minWidth: 180 }}
             />
-            <button className="btn btn-sm" onClick={openBulkEdit}>
-              📝 まとめて一括編集
-            </button>
-            <button className="btn btn-sm" onClick={triggerCsvImport}>
-              ⬆ 車両CSV取込
-            </button>
+            {!readOnly && (
+              <>
+                <button className="btn btn-sm" onClick={openBulkEdit}>
+                  📝 まとめて一括編集
+                </button>
+                <button className="btn btn-sm" onClick={triggerCsvImport}>
+                  ⬆ 車両CSV取込
+                </button>
+              </>
+            )}
             <button className="btn btn-sm" onClick={exportCsv}>
               ⬇ 車両CSV出力
             </button>
-            <button className="btn btn-sm" onClick={() => setShowShakenOcr(true)}>
-              📷 車検証で登録・更新
-            </button>
-            <button className="btn btn-primary btn-sm" onClick={openNew}>
-              ＋ 1台ずつ新規登録
-            </button>
+            {!readOnly && (
+              <>
+                <button className="btn btn-sm" onClick={() => setShowShakenOcr(true)}>
+                  📷 車検証で登録・更新
+                </button>
+                <button className="btn btn-primary btn-sm" onClick={openNew}>
+                  ＋ 1台ずつ新規登録
+                </button>
+              </>
+            )}
             <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={(e) => handleCsvFile(e.target.files?.[0] || null)} />
           </div>
         </div>
@@ -265,12 +276,16 @@ export default function VehiclesTab({
                   </div>
                   <div className="efoot">
                     <div className="eactions">
-                      <button className="btn btn-sm btn-primary" onClick={() => openEdit(v)}>
-                        ✏️ 編集
-                      </button>
-                      <button className="btn btn-sm" onClick={() => setOcrTarget(v)}>
-                        📷 車検証
-                      </button>
+                      {!readOnly && (
+                        <>
+                          <button className="btn btn-sm btn-primary" onClick={() => openEdit(v)}>
+                            ✏️ 編集
+                          </button>
+                          <button className="btn btn-sm" onClick={() => setOcrTarget(v)}>
+                            📷 車検証
+                          </button>
+                        </>
+                      )}
                       <button className="btn btn-sm" onClick={() => setViewing({ vehicleId: v.id, kind: 'maint' })}>
                         🔧 整備記録（{v.maintHistory.length}）
                       </button>
@@ -278,10 +293,12 @@ export default function VehiclesTab({
                         📋 運転記録（{driveCounts.get(v.id) || 0}）
                       </button>
                     </div>
-                    <span className="eid">{v.id}</span>
-                    <button className="btn btn-sm btn-danger" onClick={() => handleDelete(v.id)}>
-                      削除
-                    </button>
+                    {!readOnly && <span className="eid">{v.id}</span>}
+                    {!readOnly && (
+                      <button className="btn btn-sm btn-danger" onClick={() => handleDelete(v.id)}>
+                        削除
+                      </button>
+                    )}
                   </div>
                 </div>
               );
