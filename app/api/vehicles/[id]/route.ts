@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { loadData, saveData } from '@/lib/store';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
+import { kvDel } from '@/lib/kv';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,7 @@ export async function DELETE(
   if (data.vehicles.length === before) {
     return NextResponse.json({ success: false }, { status: 404 });
   }
+  if (target?.shakenFileAt) await kvDel(`fleet:shaken:v1:${id}`);
   pushLog(data, {
     actor: isAdminReq ? 'admin' : 'user',
     action: '車両削除',

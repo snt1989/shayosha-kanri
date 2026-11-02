@@ -543,6 +543,7 @@ export default function FleetApp() {
             onDelete={deleteVehicle}
             onBulkSave={bulkSaveVehicles}
             onRequestLogin={() => setShowAdminLogin(true)}
+            onRefresh={refreshData}
           />
         )}
         {tab === 'admin' && (

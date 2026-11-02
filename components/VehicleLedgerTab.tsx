@@ -11,6 +11,7 @@ export default function VehicleLedgerTab({
   onDelete,
   onBulkSave,
   onRequestLogin,
+  onRefresh,
 }: {
   data: AppData;
   isAdmin: boolean;
@@ -18,6 +19,7 @@ export default function VehicleLedgerTab({
   onDelete: (id: string) => Promise<unknown>;
   onBulkSave: (list: Vehicle[]) => Promise<unknown>;
   onRequestLogin: () => void;
+  onRefresh?: () => unknown;
 }) {
   return (
     <div>
@@ -29,7 +31,7 @@ export default function VehicleLedgerTab({
           </button>
         </div>
       )}
-      <VehiclesTab data={data} onSave={onSave} onDelete={onDelete} onBulkSave={onBulkSave} readOnly={!isAdmin} />
+      <VehiclesTab data={data} onSave={onSave} onDelete={onDelete} onBulkSave={onBulkSave} readOnly={!isAdmin} onRefresh={onRefresh} />
     </div>
   );
 }

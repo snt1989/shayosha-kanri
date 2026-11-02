@@ -55,3 +55,16 @@ export async function kvSet<T>(key: string, value: T): Promise<void> {
   await fs.mkdir(LOCAL_DIR, { recursive: true });
   await fs.writeFile(LOCAL_FILE, JSON.stringify(all), 'utf-8');
 }
+
+export async function kvDel(key: string): Promise<void> {
+  if (hasUpstash()) {
+    const redis = await getRedis();
+    await redis.del(key);
+    return;
+  }
+  const all = await readLocalAll();
+  if (!(key in all)) return;
+  delete all[key];
+  await fs.mkdir(LOCAL_DIR, { recursive: true });
+  await fs.writeFile(LOCAL_FILE, JSON.stringify(all), 'utf-8');
+}

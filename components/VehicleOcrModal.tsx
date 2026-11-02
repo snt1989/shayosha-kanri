@@ -5,6 +5,7 @@ import { AppData, Vehicle } from '@/lib/types';
 import { genId } from '@/lib/utils';
 import { loadTesseract } from '@/lib/ocr';
 import { isPdfFile, readPdf } from '@/lib/pdf';
+import { uploadShakenImage } from '@/lib/image';
 import { extractShakenFields, normPlate } from '@/lib/shaken';
 import Modal from './Modal';
 
@@ -22,14 +23,19 @@ export default function VehicleOcrModal({
   onSave,
   target,
   onApply,
+  onFileSaved,
 }: {
   data: AppData;
   onClose: () => void;
   onSave?: (v: Vehicle) => Promise<unknown>;
   target?: Vehicle;
   onApply?: (patch: Partial<Vehicle>) => void;
+  // 車検証の画像を保存し終えたあとに呼ぶ（一覧の最新化用）
+  onFileSaved?: () => void;
 }) {
   const [photo, setPhoto] = useState('');
+  // 読み取った車検証の画像も、あとで見られるよう保存する
+  const [saveImage, setSaveImage] = useState(true);
   // PDFに文字が入っていたとき（電子車検証のPDFなど）は、OCRをせず、その文字を使う
   const [pdfText, setPdfText] = useState('');
   const [reading, setReading] = useState(false);
@@ -158,12 +164,15 @@ export default function VehicleOcrModal({
     if (!onSave) return;
     setSaving(true);
     try {
+      let savedId = '';
       if (existing) {
+        savedId = existing.id;
         // 登録済みの車両：車検証の項目だけを更新する（走行距離・整備記録・点検日などはそのまま）
         await onSave({ ...existing, ...patchFromForm() });
       } else {
+        savedId = genId('v');
         await onSave({
-          id: genId('v'),
+          id: savedId,
           name: name.trim(),
           plate: plate.trim(),
           modelType,
@@ -175,6 +184,11 @@ export default function VehicleOcrModal({
           maintHistory: [],
           ...Object.fromEntries(Object.entries(extra).filter(([, v]) => v)),
         });
+      }
+      if (saveImage && photo && savedId) {
+        const ok = await uploadShakenImage(savedId, photo);
+        if (ok) onFileSaved?.();
+        else alert('車両は保存しましたが、車検証の画像は保存できませんでした（管理者ログインが切れた、または画像が大きすぎる可能性があります）。車両カードの「車検証」からもう一度保存できます。');
       }
       onClose();
     } finally {
@@ -232,6 +246,13 @@ export default function VehicleOcrModal({
           <div className="section-heading">OCR読み取り結果（テキスト）</div>
           <div className="ocr-text-preview">{ocrText.trim() || '(テキストを検出できませんでした)'}</div>
         </>
+      )}
+
+      {photo && !onApply && (
+        <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, margin: '4px 0 8px' }}>
+          <input type="checkbox" checked={saveImage} onChange={(e) => setSaveImage(e.target.checked)} />
+          この車検証の画像も保存して、あとで見られるようにする（管理者だけが見られます）
+        </label>
       )}
 
       <div className="section-heading">登録内容の確認・修正</div>

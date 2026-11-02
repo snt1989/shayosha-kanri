@@ -26,6 +26,7 @@ export default function VehiclesTab({
   onDelete,
   onBulkSave,
   readOnly = false,
+  onRefresh,
 }: {
   data: AppData;
   onSave: (v: Vehicle) => Promise<unknown>;
@@ -33,6 +34,8 @@ export default function VehiclesTab({
   onBulkSave: (list: Vehicle[]) => Promise<unknown>;
   // 管理者以外は見るだけ（登録・編集・削除・取込のボタンを出さない）
   readOnly?: boolean;
+  // 車検証の画像を保存・削除したあとに、一覧を最新にする
+  onRefresh?: () => unknown;
 }) {
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<Vehicle | null>(null);
@@ -43,6 +46,9 @@ export default function VehiclesTab({
   // 登録済みの車両に車検証を追加する（車両カードの「車検証」）／編集中の車両に読み取り結果を入れる（編集画面）
   const [ocrTarget, setOcrTarget] = useState<Vehicle | null>(null);
   const [showEditOcr, setShowEditOcr] = useState(false);
+  // 保存した車検証の画像を見る（管理者のみ）
+  const [viewShaken, setViewShaken] = useState<Vehicle | null>(null);
+  const [shakenMissing, setShakenMissing] = useState(false);
   // 各車両の「整備記録」「運転記録」を一覧で見る画面
   const [viewing, setViewing] = useState<{ vehicleId: string; kind: 'maint' | 'drive' } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -84,6 +90,16 @@ export default function VehiclesTab({
   async function handleDelete(id: string) {
     if (!confirm('この車両を削除しますか？関連する過去の日報は残ります。')) return;
     await onDelete(id);
+  }
+
+  async function deleteShakenFile(v: Vehicle) {
+    if (!confirm(`「${v.name}」の車検証の画像を削除しますか？（車両の登録内容は消えません）`)) return;
+    try {
+      await fetch(`/api/vehicles/${encodeURIComponent(v.id)}/shaken`, { method: 'DELETE' });
+    } finally {
+      setViewShaken(null);
+      await onRefresh?.();
+    }
   }
 
   function shakenBadge(v: Vehicle) {
@@ -284,6 +300,17 @@ export default function VehiclesTab({
                           <button className="btn btn-sm" onClick={() => setOcrTarget(v)}>
                             📷 車検証
                           </button>
+                          {v.shakenFileAt && (
+                            <button
+                              className="btn btn-sm"
+                              onClick={() => {
+                                setShakenMissing(false);
+                                setViewShaken(v);
+                              }}
+                            >
+                              📎 車検証を見る
+                            </button>
+                          )}
                         </>
                       )}
                       <button className="btn btn-sm" onClick={() => setViewing({ vehicleId: v.id, kind: 'maint' })}>
@@ -449,8 +476,50 @@ export default function VehiclesTab({
         </Modal>
       )}
 
-      {showShakenOcr && <VehicleOcrModal data={data} onClose={() => setShowShakenOcr(false)} onSave={onSave} />}
-      {ocrTarget && <VehicleOcrModal data={data} target={ocrTarget} onClose={() => setOcrTarget(null)} onSave={onSave} />}
+      {viewShaken && (
+        <Modal
+          title={`車検証：${viewShaken.name}`}
+          onClose={() => setViewShaken(null)}
+          wide
+          footer={
+            <>
+              <button className="btn btn-danger" onClick={() => deleteShakenFile(viewShaken)}>
+                画像を削除
+              </button>
+              <a
+                className="btn"
+                href={`/api/vehicles/${encodeURIComponent(viewShaken.id)}/shaken`}
+                download={`車検証_${viewShaken.plate || viewShaken.id}.jpg`}
+              >
+                ⬇️ ダウンロード
+              </a>
+              <button className="btn btn-primary" onClick={() => setViewShaken(null)}>
+                閉じる
+              </button>
+            </>
+          }
+        >
+          {shakenMissing ? (
+            <div className="notice-box">画像を読み込めませんでした。管理者ログインが切れていないか確認してください。</div>
+          ) : (
+            <>
+              <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 8 }}>
+                保存日時：{new Date(viewShaken.shakenFileAt || '').toLocaleString('ja-JP')}　※ 管理者だけが見られます。写真をタップすると拡大します。
+              </div>
+              <a href={`/api/vehicles/${encodeURIComponent(viewShaken.id)}/shaken?t=${encodeURIComponent(viewShaken.shakenFileAt || '')}`} target="_blank" rel="noreferrer">
+                <img
+                  src={`/api/vehicles/${encodeURIComponent(viewShaken.id)}/shaken?t=${encodeURIComponent(viewShaken.shakenFileAt || '')}`}
+                  alt="保存した車検証"
+                  className="photo-preview"
+                  onError={() => setShakenMissing(true)}
+                />
+              </a>
+            </>
+          )}
+        </Modal>
+      )}
+      {showShakenOcr && <VehicleOcrModal data={data} onClose={() => setShowShakenOcr(false)} onSave={onSave} onFileSaved={onRefresh} />}
+      {ocrTarget && <VehicleOcrModal data={data} target={ocrTarget} onClose={() => setOcrTarget(null)} onSave={onSave} onFileSaved={onRefresh} />}
       {showEditOcr && editing && (
         <VehicleOcrModal
           data={data}

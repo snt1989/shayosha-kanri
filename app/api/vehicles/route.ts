@@ -18,8 +18,13 @@ export async function POST(req: NextRequest) {
   const data = await loadData();
   const idx = data.vehicles.findIndex((x) => x.id === v.id);
   if (idx >= 0) {
+    // 画面が古いまま保存されても、保存済みの車検証画像の印は消さない（画像の保存・削除は専用のAPIだけで行う）
+    const keep = data.vehicles[idx].shakenFileAt;
+    if (keep) v.shakenFileAt = keep;
+    else delete v.shakenFileAt;
     data.vehicles[idx] = v;
   } else {
+    delete v.shakenFileAt;
     data.vehicles.push(v);
   }
 
