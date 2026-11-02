@@ -5,6 +5,7 @@ import { AppData, Vehicle } from '@/lib/types';
 import { daysUntil, genId, openMaintRequests, todayStr } from '@/lib/utils';
 import { csvToVehicles, downloadCsv, vehiclesToCsv } from '@/lib/csv';
 import Modal from './Modal';
+import VehicleOcrModal from './VehicleOcrModal';
 
 const emptyVehicle = (data: AppData): Vehicle => ({
   id: '',
@@ -35,6 +36,7 @@ export default function VehiclesTab({
   const [saving, setSaving] = useState(false);
   const [bulkRows, setBulkRows] = useState<Vehicle[] | null>(null);
   const [bulkSaving, setBulkSaving] = useState(false);
+  const [showShakenOcr, setShowShakenOcr] = useState(false);
   // 各車両の「整備記録」「運転記録」を一覧で見る画面
   const [viewing, setViewing] = useState<{ vehicleId: string; kind: 'maint' | 'drive' } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -209,6 +211,9 @@ export default function VehiclesTab({
             </button>
             <button className="btn btn-sm" onClick={exportCsv}>
               ⬇ 車両CSV出力
+            </button>
+            <button className="btn btn-sm" onClick={() => setShowShakenOcr(true)}>
+              📷 車検証で登録・更新
             </button>
             <button className="btn btn-primary btn-sm" onClick={openNew}>
               ＋ 1台ずつ新規登録
@@ -419,6 +424,8 @@ export default function VehiclesTab({
           )}
         </Modal>
       )}
+
+      {showShakenOcr && <VehicleOcrModal data={data} onClose={() => setShowShakenOcr(false)} onSave={onSave} />}
 
       {editing && (
         <Modal
