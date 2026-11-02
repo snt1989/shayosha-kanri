@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from 'react';
 import { AppData, Vehicle } from '@/lib/types';
 import { genId } from '@/lib/utils';
 import { loadTesseract } from '@/lib/ocr';
+import { isPdfFile, readPdf } from '@/lib/pdf';
 import { extractShakenFields, normPlate } from '@/lib/shaken';
 import Modal from './Modal';
 
@@ -29,6 +30,9 @@ export default function VehicleOcrModal({
   onApply?: (patch: Partial<Vehicle>) => void;
 }) {
   const [photo, setPhoto] = useState('');
+  // PDFに文字が入っていたとき（電子車検証のPDFなど）は、OCRをせず、その文字を使う
+  const [pdfText, setPdfText] = useState('');
+  const [reading, setReading] = useState(false);
   const [ocrText, setOcrText] = useState('');
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -57,11 +61,51 @@ export default function VehicleOcrModal({
   const existing = target || matched;
   const plateDiffers = !!target && !!plate.trim() && normPlate(plate) !== normPlate(target.plate);
 
-  function handleFile(file: File | null) {
+  async function handleFile(file: File | null) {
     if (!file) return;
+    setPdfText('');
+    setOcrText('');
+    if (isPdfFile(file)) {
+      setReading(true);
+      try {
+        const r = await readPdf(file);
+        setPhoto(r.image);
+        // 文字が十分に入っているPDFは、その文字を使う
+        if (r.text.replace(/\s/g, '').length >= 40) {
+          setPdfText(r.text);
+          applyText(r.text, true);
+        }
+      } catch {
+        alert('PDFを開けませんでした。ファイルをご確認いただくか、写真（画像）でお試しください。');
+      } finally {
+        setReading(false);
+      }
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => setPhoto(String(reader.result));
     reader.readAsDataURL(file);
+  }
+
+  // 文字から項目を取り出してフォームに入れる。入れられた項目があれば true
+  function applyText(text: string, fromPdf: boolean): boolean {
+    const f = extractShakenFields(text);
+    if (f.plate) setPlate(f.plate);
+    if (f.modelType) setModelType(f.modelType);
+    if (f.shakenDate) setShakenDate(f.shakenDate);
+    if (f.carName && !name) setName(f.carName);
+    setExtra((e) => ({
+      maker: f.carName || e.maker,
+      chassisNo: f.chassisNo || e.chassisNo,
+      firstRegistered: f.firstRegistered || e.firstRegistered,
+      capacity: f.capacity || e.capacity,
+      grossWeight: f.grossWeight || e.grossWeight,
+      displacement: f.displacement || e.displacement,
+      fuelType: f.fuelType || e.fuelType,
+    }));
+    const found = Object.keys(f).length > 0;
+    if (!found && !fromPdf) alert('車検証から項目を読み取れませんでした。写真を撮り直すか、手入力してください。');
+    return found;
   }
 
   async function runOcr() {
@@ -78,21 +122,7 @@ export default function VehicleOcrModal({
       });
       const text: string = res?.data?.text || '';
       setOcrText(text);
-      const f = extractShakenFields(text);
-      if (f.plate) setPlate(f.plate);
-      if (f.modelType) setModelType(f.modelType);
-      if (f.shakenDate) setShakenDate(f.shakenDate);
-      if (f.carName && !name) setName(f.carName);
-      setExtra((e) => ({
-        maker: f.carName || e.maker,
-        chassisNo: f.chassisNo || e.chassisNo,
-        firstRegistered: f.firstRegistered || e.firstRegistered,
-        capacity: f.capacity || e.capacity,
-        grossWeight: f.grossWeight || e.grossWeight,
-        displacement: f.displacement || e.displacement,
-        fuelType: f.fuelType || e.fuelType,
-      }));
-      if (Object.keys(f).length === 0) alert('車検証から項目を読み取れませんでした。写真を撮り直すか、手入力してください。');
+      applyText(text, false);
     } catch {
       alert('OCR処理に失敗しました。手入力で登録してください。');
     } finally {
@@ -168,12 +198,12 @@ export default function VehicleOcrModal({
       }
     >
       <div className="notice-box">
-        車検証の写真から、ナンバー・型式・車検満了日・車台番号などの自動読み取りを試みます（ブラウザ内でOCR処理、外部送信なし）。読み取り精度は写真の状態により変わるため、登録前に必ず内容を車検証と見比べて、修正してください。
+        車検証の写真またはPDFから、ナンバー・型式・車検満了日・車台番号などの自動読み取りを試みます（ブラウザ内で処理し、外部送信なし）。読み取り精度は写真の状態により変わるため、登録前に必ず内容を車検証と見比べて、修正してください。
       </div>
 
       {!photo ? (
         <div className="photo-drop" onClick={() => fileRef.current?.click()}>
-          📷 タップして車検証の写真をアップロード
+          📷 タップして車検証の写真（またはPDF）を選ぶ
         </div>
       ) : (
         <div>
@@ -188,7 +218,14 @@ export default function VehicleOcrModal({
           </div>
         </div>
       )}
-      <input ref={fileRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => handleFile(e.target.files?.[0] || null)} />
+      <input ref={fileRef} type="file" accept="image/*,application/pdf,.pdf" hidden onChange={(e) => handleFile(e.target.files?.[0] || null)} />
+
+      {reading && <div className="notice-box">PDFを読み込み中…</div>}
+      {pdfText && (
+        <div className="notice-box">
+          PDFに入っている文字から、項目を読み取りました（OCRは使っていません）。内容を車検証と見比べて、修正してください。読み取れなかった項目は、下の「🔍 OCRで読み取る」でも試せます。
+        </div>
+      )}
 
       {ocrText && (
         <>
