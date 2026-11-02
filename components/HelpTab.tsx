@@ -9,6 +9,7 @@ const SCREEN_NAMES: Record<HelpTarget, string> = {
   fuel: '給油台帳',
   rental: 'レンタカー',
   maintenance: '整備台帳',
+  vehicles: '車両台帳',
   admin: '管理画面',
 };
 

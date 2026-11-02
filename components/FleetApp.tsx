@@ -14,10 +14,11 @@ import RentalTab from './RentalTab';
 import FuelTab from './FuelTab';
 import HelpTab from './HelpTab';
 import AdminTab from './AdminTab';
+import VehicleLedgerTab from './VehicleLedgerTab';
 import AdminLoginModal from './AdminLoginModal';
 import DriverLoginModal from './DriverLoginModal';
 
-type Tab = 'dashboard' | 'reports' | 'maintenance' | 'fuel' | 'rental' | 'help' | 'admin';
+type Tab = 'dashboard' | 'reports' | 'maintenance' | 'vehicles' | 'fuel' | 'rental' | 'help' | 'admin';
 type SyncStatus = 'idle' | 'saving' | 'error';
 const DRIVER_SESSION_KEY = 'fleet_current_driver_id';
 const MECHANIC_SESSION_KEY = 'fleet_current_mechanic';
@@ -534,14 +535,21 @@ export default function FleetApp() {
             }}
           />
         )}
+        {tab === 'vehicles' && (
+          <VehicleLedgerTab
+            data={data}
+            isAdmin={isAdmin}
+            onSave={saveVehicle}
+            onDelete={deleteVehicle}
+            onBulkSave={bulkSaveVehicles}
+            onRequestLogin={() => setShowAdminLogin(true)}
+          />
+        )}
         {tab === 'admin' && (
           <AdminTab
             data={data}
             isAdmin={isAdmin}
             adminConfigured={adminConfigured}
-            onSaveVehicle={saveVehicle}
-            onDeleteVehicle={deleteVehicle}
-            onBulkSaveVehicles={bulkSaveVehicles}
             onSaveDriver={saveDriver}
             onDeleteDriver={deleteDriver}
             onBulkSaveDrivers={bulkSaveDrivers}
