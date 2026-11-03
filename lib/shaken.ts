@@ -42,7 +42,12 @@ export const normPlate = (s: string) => s.normalize('NFKC').replace(/[\s　\-ー
 export function extractShakenFields(text: string): ShakenFields {
   const out: ShakenFields = {};
   const t = text.normalize('NFKC');
-  const flat = t.replace(/[ \t　]+/g, ' ');
+  // 日本語OCRは文字の間に空白を入れがち（「車 台 番 号」）なので、1文字ずつ区切られているところだけ詰める
+  // （「番号 品川」のような、2文字以上のまとまりどうしの空白は残す）
+  const cjk = '぀-ヿ一-鿿々';
+  const sp = '[ \\t　]';
+  const joined = t.replace(new RegExp(`(?<=(?:^|${sp})[${cjk}])${sp}+(?=[${cjk}](?:${sp}|$))`, 'gm'), '');
+  const flat = joined.replace(/[ \t　]+/g, ' ');
 
   // 登録番号／車両番号：地名 + 分類番号(3桁) + ひらがな + 一連番号
   const plate = flat.match(/([一-龠]{2,4}) ?(\d{3}) ?([ぁ-んヲ-ン]) ?[・.\-]? ?(\d{1,4})(?: ?[-ー・] ?(\d{1,2}))?/);
@@ -54,39 +59,39 @@ export function extractShakenFields(text: string): ShakenFields {
   }
 
   // 型式（例: 3BF-GDH206K、DBA-ZVW30）
-  const model = flat.match(/型式[ :：]*([A-Z0-9][A-Z0-9-]{2,14})/);
+  const model = flat.match(/型式[\s:：]{0,8}([A-Z0-9][A-Z0-9-]{2,14})/);
   if (model) out.modelType = model[1];
 
   // 車名（トヨタ、日産 など）
-  const name = flat.match(/車名[ :：]*([一-龠ぁ-んァ-ヶー]{2,10})/);
+  const name = flat.match(/車名[\s:：]{0,8}((?:(?!型式)[一-龠ぁ-んァ-ヶー]){2,10})/);
   if (name) out.carName = name[1];
 
   // 車台番号（例: GDH206-1234567）
-  const chassis = flat.match(/車台番号[ :：]*([A-Z0-9]{2,8}) ?-? ?(\d{4,8})/);
+  const chassis = flat.match(/車台番号[\s:：]{0,8}([A-Z0-9]{2,8}) ?-? ?(\d{4,8})/);
   if (chassis) out.chassisNo = `${chassis[1]}-${chassis[2]}`;
 
   // 初度登録年月（令和5年11月 → 2023-11）
-  const first = flat.match(/初度登録年月[ :：]*(令和|平成|昭和) ?(元|\d{1,2}) ?年 ?(\d{1,2}) ?月/);
+  const first = flat.match(/初度登録年月[\s:：]{0,8}(令和|平成|昭和) ?(元|\d{1,2}) ?年 ?(\d{1,2}) ?月/);
   if (first) {
     const y = (first[2] === '元' ? 1 : Number(first[2])) + ERA_BASE[first[1]];
     const m = Number(first[3]);
     if (m >= 1 && m <= 12) out.firstRegistered = `${y}-${pad(m)}`;
   }
 
-  const cap = flat.match(/乗車定員[ :：]*(\d{1,2}) ?人/);
+  const cap = flat.match(/乗車定員[\s:：]{0,8}(\d{1,2}) ?人/);
   if (cap) out.capacity = `${cap[1]}人`;
 
-  const gw = flat.match(/車両総重量[ :：]*(\d{1,2}),?(\d{3}) ?kg/i);
+  const gw = flat.match(/車両総重量[\s:：]{0,8}(\d{1,2}),?(\d{3}) ?kg/i);
   if (gw) out.grossWeight = `${gw[1]},${gw[2]}kg`;
   else {
-    const gw2 = flat.match(/車両総重量[ :：]*(\d{3,5}) ?kg/i);
+    const gw2 = flat.match(/車両総重量[\s:：]{0,8}(\d{3,5}) ?kg/i);
     if (gw2) out.grossWeight = `${Number(gw2[1]).toLocaleString('en-US')}kg`;
   }
 
   const disp = flat.match(/総排気量[^\d\n]{0,14}(\d+(?:\.\d+)?) ?(L|ℓ|cc|CC)?/);
   if (disp) out.displacement = `${disp[1]}${(disp[2] || 'L').replace('ℓ', 'L')}`;
 
-  const fuel = flat.match(/燃料の種類[ :：]*(ガソリン|軽油|ディーゼル|電気|ハイブリッド|LPG|CNG|水素)/);
+  const fuel = flat.match(/燃料の種類[\s:：]{0,8}(ガソリン|軽油|ディーゼル|電気|ハイブリッド|LPG|CNG|水素)/);
   if (fuel) out.fuelType = fuel[1];
 
   // 有効期間の満了する日：「有効期間」「満了」の近くの日付を優先し、無ければ全体でいちばん遅い日付

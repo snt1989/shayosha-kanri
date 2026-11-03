@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { AppData, Vehicle } from '@/lib/types';
 import { genId } from '@/lib/utils';
-import { loadTesseract } from '@/lib/ocr';
+import { loadTesseract, preprocessForOcr } from '@/lib/ocr';
 import { isPdfFile, readPdf } from '@/lib/pdf';
 import { uploadShakenImage } from '@/lib/image';
 import { extractShakenFields, normPlate } from '@/lib/shaken';
@@ -121,12 +121,19 @@ export default function VehicleOcrModal({
     setOcrText('');
     try {
       const Tesseract = await loadTesseract();
-      const res = await Tesseract.recognize(photo, 'jpn+eng', {
-        logger: (m: { status?: string; progress?: number }) => {
-          if (m.status === 'recognizing text' && typeof m.progress === 'number') setProgress(Math.round(m.progress * 100));
-        },
-      });
-      const text: string = res?.data?.text || '';
+      const img = await preprocessForOcr(photo);
+      const logger = (m: { status?: string; progress?: number }) => {
+        if (m.status === 'recognizing text' && typeof m.progress === 'number') setProgress(Math.round(m.progress * 100));
+      };
+      // 1回目：ページ全体を自動で区切って読む。項目が少ししか取れなければ、2回目に「ひとかたまりの文章」として読み直し、多いほうを使う
+      const first = await Tesseract.recognize(img, 'jpn+eng', { logger });
+      let text: string = first?.data?.text || '';
+      if (Object.keys(extractShakenFields(text)).length < 4) {
+        setProgress(0);
+        const second = await Tesseract.recognize(img, 'jpn+eng', { logger, tessedit_pageseg_mode: '6' });
+        const t2: string = second?.data?.text || '';
+        if (Object.keys(extractShakenFields(t2)).length > Object.keys(extractShakenFields(text)).length) text = t2;
+      }
       setOcrText(text);
       applyText(text, false);
     } catch {
