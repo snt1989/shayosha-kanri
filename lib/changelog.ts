@@ -12,6 +12,16 @@ export type Update = {
 
 export const UPDATES: Update[] = [
   {
+    id: '2026-11-04-1',
+    date: '2026-11-04',
+    title: 'お知らせを「既読にする」と、✓ が付いて数字が消えるようにしました',
+    items: [
+      '連絡事項・状況のお知らせ・アプリの更新の一つひとつに、「● 未読」「✓ 既読」の印が付きます。押すと既読になり、ベルの数字が1つ減ります。',
+      '各画面の「すべて既読にする」で、まとめて既読にできます。全部既読にすると、ベルの数字もホーム画面アイコンの数字も消えます。',
+      '以前は、お知らせの画面を開くだけで既読になっていました。これからは、押すか「すべて既読にする」を押したときだけ既読になります（これまでに見たものは既読のままです）。',
+    ],
+  },
+  {
     id: '2026-11-03-1',
     date: '2026-11-03',
     title: '車検証の写真の読み取りを改善しました',
@@ -234,4 +244,11 @@ export function countUnreadUpdates(seenId: string, today: string): number {
   limit.setDate(limit.getDate() - UPDATE_NEW_DAYS);
   const cutoff = limit.toISOString().slice(0, 10);
   return UPDATES.filter((u) => u.id > seenId && u.date >= cutoff).length;
+}
+
+// 公開から UPDATE_NEW_DAYS 日以内の「新しい更新」か（古い更新は、未読でも数字に数えない）
+export function isRecentUpdate(u: Update, today: string): boolean {
+  const limit = new Date(today + 'T00:00:00');
+  limit.setDate(limit.getDate() - UPDATE_NEW_DAYS);
+  return u.date >= limit.toISOString().slice(0, 10);
 }

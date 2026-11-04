@@ -2054,3 +2054,10 @@ table.bulk-grid {
 .logo-preview.logo-preview-dark {
   background: #475569;
 }
+
+/* お知らせの既読／未読の印（押すか「すべて既読にする」で ✓ 既読） */
+.read-mark { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; margin-right: 6px; vertical-align: middle; }
+.read-mark.unread { background: #dbeafe; color: #1d4ed8; }
+.read-mark.read { background: #dcfce7; color: #15803d; }
+.notice-item, .alert-item.auto-notice { cursor: pointer; }
+.notice-item.is-read, .alert-item.is-read { opacity: 0.72; }

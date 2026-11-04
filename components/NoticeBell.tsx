@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AppData } from '@/lib/types';
 import { AutoNotice, Notice, buildAutoNotices } from '@/lib/notices';
-import { UPDATES, countUnreadUpdates } from '@/lib/changelog';
+import { UPDATES, isRecentUpdate, type Update } from '@/lib/changelog';
 import { todayStr } from '@/lib/utils';
 import Modal from './Modal';
 import { PushState, usePush } from './usePush';
@@ -13,6 +13,7 @@ type Go = AutoNotice['go'];
 
 const SEEN_KEY = 'fleet:notices:seen';
 const SEEN_UPDATE_KEY = 'fleet:updates:seen';
+const READ_IDS_KEY = 'fleet:read:ids'; // 「既読にした」項目の印（n:連絡事項 / u:更新 / a:状況）。押すか「すべて既読にする」でチェックが付く
 const SEEN_AUTO_KEY = 'fleet:auto:seen'; // 「状況のお知らせ」を見たときの項目（id）の一覧。新しい項目が出たときだけ、また数字に数える
 const readKey = (k: string) => {
   try {
@@ -42,6 +43,7 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
   const [seen, setSeen] = useState('');
   const [seenUpdate, setSeenUpdate] = useState('');
   const [seenAuto, setSeenAuto] = useState<string[]>([]);
+  const [readIds, setReadIds] = useState<string[]>([]);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ title: '', body: '', important: false, pinned: false, push: true });
@@ -68,6 +70,12 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
       if (Array.isArray(a)) setSeenAuto(a.filter((x) => typeof x === 'string'));
     } catch {
       // 読めないときは、全部を未確認として数える
+    }
+    try {
+      const r = JSON.parse(readKey(READ_IDS_KEY) || '[]');
+      if (Array.isArray(r)) setReadIds(r.filter((x) => typeof x === 'string'));
+    } catch {
+      // 読めないときは、全部を未読として数える
     }
     loadNotices();
     const t = setInterval(loadNotices, 60000);
@@ -98,12 +106,31 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
   }, []);
 
   const latest = notices.reduce((m, n) => (n.createdAt > m ? n.createdAt : m), '');
-  const unread = notices.filter((n) => n.createdAt > seen).length;
-  const unreadUpdates = countUnreadUpdates(seenUpdate, todayStr());
+  // 既読の判定：押して既読にした印があるもの。以前の「開いたら既読」の記録（seen / seenUpdate / seenAuto）も、既読として引き継ぐ
+  const isNoticeRead = (n: Notice) => readIds.includes('n:' + n.id) || n.createdAt <= seen;
+  // 公開から30日たった古い更新は、最初から既読として扱う
+  const isUpdateRead = (u: Update) => readIds.includes('u:' + u.id) || u.id <= seenUpdate || !isRecentUpdate(u, todayStr());
+  const isAutoRead = (id: string) => readIds.includes('a:' + id) || seenAuto.includes(id);
+  const unread = notices.filter((n) => !isNoticeRead(n)).length;
+  const unreadUpdates = UPDATES.filter((u) => !isUpdateRead(u)).length;
   // 更新は、未読が何件あっても、ベルの数字には1つ分だけ数える（初めて使う端末で数字が大きくなりすぎないように）
-  // 状況のお知らせは、見たあとは数字に数えない（その後、新しい項目が出たときだけ数える）
-  const unseenAuto = auto.filter((a) => !seenAuto.includes(a.id)).length;
+  const unseenAuto = auto.filter((a) => !isAutoRead(a.id)).length;
   const badge = unread + unseenAuto + Math.min(unreadUpdates, 1);
+
+  const readMark = (read: boolean) =>
+    read ? (
+      <span className="read-mark read">✓ 既読</span>
+    ) : (
+      <span className="read-mark unread">● 未読</span>
+    );
+
+  function markRead(keys: string[]) {
+    setReadIds((cur) => {
+      const next = Array.from(new Set([...cur, ...keys])).slice(-300);
+      writeKey(READ_IDS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }
 
   // ホーム画面のアプリアイコンに、ベルと同じ数字（バッジ）を出す（Badging API。ホーム画面に追加したアプリ・対応ブラウザのみ）。
   // サービスワーカーにも件数を伝える（プッシュが届いたときに、そこから+1するため）。前面に戻ったときも合わせ直す。
@@ -123,31 +150,6 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [badge]);
-
-  // 連絡事項を表示したら既読にする
-  useEffect(() => {
-    if (open && section === 'notices' && latest && latest > seen) {
-      writeKey(SEEN_KEY, latest);
-      setSeen(latest);
-    }
-  }, [open, section, latest, seen]);
-
-  // 状況のお知らせを表示したら確認済みにする（データを読み込む前は何もしない）
-  useEffect(() => {
-    if (!open || section !== 'auto' || !data) return;
-    const ids = auto.map((a) => a.id);
-    if (ids.length === seenAuto.length && ids.every((id) => seenAuto.includes(id))) return;
-    writeKey(SEEN_AUTO_KEY, JSON.stringify(ids));
-    setSeenAuto(ids);
-  }, [open, section, auto, data, seenAuto]);
-
-  // アプリの更新を表示したら既読にする
-  useEffect(() => {
-    if (open && section === 'updates' && UPDATES[0] && UPDATES[0].id > seenUpdate) {
-      writeKey(SEEN_UPDATE_KEY, UPDATES[0].id);
-      setSeenUpdate(UPDATES[0].id);
-    }
-  }, [open, section, seenUpdate]);
 
   const { state: push, busy: pushBusy, refresh: refreshPushState, enable: enablePush, disable: disablePush } = usePush(setMsg);
 
@@ -220,22 +222,45 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
         <Modal title="🔔 お知らせ" onClose={() => setOpen(false)} wide>
           <div className="help-chips" role="group" aria-label="お知らせの種類">
             <button type="button" className={`help-chip ${section === 'notices' ? 'active' : ''}`} aria-pressed={section === 'notices'} onClick={() => setSection('notices')}>
-              📢 連絡事項（{notices.length}）
+              📢 連絡事項{unread > 0 && <span className="bell-badge" style={{ marginLeft: 6 }}>{unread}</span>}
             </button>
             <button type="button" className={`help-chip ${section === 'auto' ? 'active' : ''}`} aria-pressed={section === 'auto'} onClick={() => setSection('auto')}>
-              ⚠️ 状況のお知らせ（{auto.length}）
+              ⚠️ 状況のお知らせ{unseenAuto > 0 && <span className="bell-badge" style={{ marginLeft: 6 }}>{unseenAuto}</span>}
             </button>
             <button type="button" className={`help-chip ${section === 'updates' ? 'active' : ''}`} aria-pressed={section === 'updates'} onClick={() => setSection('updates')}>
               🆕 アプリの更新{unreadUpdates > 0 && <span className="bell-badge" style={{ marginLeft: 6 }}>{unreadUpdates}</span>}
             </button>
           </div>
 
+          {(() => {
+            const keys =
+              section === 'notices'
+                ? notices.filter((n) => !isNoticeRead(n)).map((n) => 'n:' + n.id)
+                : section === 'auto'
+                  ? auto.filter((a) => !isAutoRead(a.id)).map((a) => 'a:' + a.id)
+                  : UPDATES.filter((u) => !isUpdateRead(u)).map((u) => 'u:' + u.id);
+            return keys.length > 0 ? (
+              <div style={{ textAlign: 'right', margin: '4px 0 8px' }}>
+                <button type="button" className="btn btn-sm" onClick={() => markRead(keys)}>
+                  ✓ すべて既読にする（{keys.length}件）
+                </button>
+              </div>
+            ) : null;
+          })()}
+
           {section === 'updates' ? (
             <div className="notice-list">
               {UPDATES.map((u) => (
-                <div key={u.id} className={`notice-item ${u.id > seenUpdate && unreadUpdates > 0 ? 'update-new' : ''}`}>
+                <div
+                  key={u.id}
+                  className={`notice-item ${!isUpdateRead(u) ? 'update-new' : 'is-read'}`}
+                  onClick={() => markRead(['u:' + u.id])}
+                >
                   <div className="notice-head">
-                    <strong>{u.title}</strong>
+                    <strong>
+                      {readMark(isUpdateRead(u))}
+                      {u.title}
+                    </strong>
                     <span className="notice-date">{u.date}</span>
                   </div>
                   <ul className="update-items">
@@ -250,9 +275,14 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
             <div className="notice-list">
               {notices.length === 0 && <div className="empty-state">連絡事項はありません</div>}
               {notices.map((n) => (
-                <div key={n.id} className={`notice-item ${n.level === 'important' ? 'important' : ''}`}>
+                <div
+                  key={n.id}
+                  className={`notice-item ${n.level === 'important' ? 'important' : ''} ${isNoticeRead(n) ? 'is-read' : ''}`}
+                  onClick={() => markRead(['n:' + n.id])}
+                >
                   <div className="notice-head">
                     <strong>
+                      {readMark(isNoticeRead(n))}
                       {n.pinned && '📌 '}
                       {n.level === 'important' && <span className="pill pill-red" style={{ marginRight: 6 }}>重要</span>}
                       {n.title}
@@ -277,17 +307,21 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
                 <button
                   key={a.id}
                   type="button"
-                  className={`alert-item ${a.level === 'danger' ? 'danger' : a.level === 'warn' ? 'warn' : ''} auto-notice`}
+                  className={`alert-item ${a.level === 'danger' ? 'danger' : a.level === 'warn' ? 'warn' : ''} auto-notice ${isAutoRead(a.id) ? 'is-read' : ''}`}
                   onClick={() => {
+                    markRead(['a:' + a.id]);
                     setOpen(false);
                     onNavigate(a.go);
                   }}
                 >
                   <span>{a.icon}</span>
-                  <div>{a.text}</div>
+                  <div>
+                    {readMark(isAutoRead(a.id))}
+                    {a.text}
+                  </div>
                 </button>
               ))}
-              <div style={{ fontSize: 11, color: 'var(--slate-500)' }}>車検・免許・オイル交換・アルコール検知・帰着未登録・整備依頼から、いまのデータで自動で表示しています。押すと該当の画面を開きます。</div>
+              <div style={{ fontSize: 11, color: 'var(--slate-500)' }}>車検・免許・オイル交換・アルコール検知・帰着未登録・整備依頼から、いまのデータで自動で表示しています。押すと既読になり、該当の画面を開きます。</div>
             </div>
           )}
 
