@@ -12,19 +12,23 @@ export default function MaintRequestModal({
   data,
   driver,
   initialVehicleId,
+  initialType,
+  initialNote,
   onClose,
   onSubmit,
 }: {
   data: AppData;
   driver: Driver;
   initialVehicleId?: string;
+  initialType?: string; // アラートから開いたときの整備の種類（マスタにあるものだけ使う）
+  initialNote?: string; // アラートから開いたときの、あらかじめ入れておく内容
   onClose: () => void;
   onSubmit: (r: MaintRequestInput) => Promise<unknown>;
 }) {
   const [vehicleId, setVehicleId] = useState(initialVehicleId || data.vehicles[0]?.id || '');
-  const [type, setType] = useState(data.masters.maintTypes[0] || '');
+  const [type, setType] = useState(initialType && data.masters.maintTypes.includes(initialType) ? initialType : data.masters.maintTypes[0] || '');
   const [urgency, setUrgency] = useState<string>(MAINT_URGENCIES[0]);
-  const [note, setNote] = useState('');
+  const [note, setNote] = useState(initialNote || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 

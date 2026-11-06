@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { AppData, Driver, MAINT_URGENCIES, Reservation } from '@/lib/types';
 import { openMaintRequests, rentalReservations, reservationRange, todayStr } from '@/lib/utils';
-import AlertsPanel from './AlertsPanel';
+import AlertsPanel, { MaintPrefill } from './AlertsPanel';
 import UsageCalendar from './UsageCalendar';
 import DashboardNotices from './DashboardNotices';
 import MaintRequestModal, { MaintRequestInput } from './MaintRequestModal';
@@ -29,7 +29,12 @@ export default function DashboardTab({
   isAdmin: boolean;
   onSubmitMaintRequest: (r: MaintRequestInput) => Promise<unknown>;
 }) {
-  const [showMaintForm, setShowMaintForm] = useState(false);
+  // 整備依頼の入力画面。アラートから開くときは、車両・種類・内容をあらかじめ入れておく
+  const [maintForm, setMaintForm] = useState<MaintPrefill | null>(null);
+  const openMaintForm = (p: MaintPrefill) => {
+    if (!currentDriver) return onRequestDriverLogin();
+    setMaintForm(p);
+  };
   const today = todayStr();
   const openReports = [...data.reports]
     .filter((r) => !r.postDone)
@@ -93,10 +98,7 @@ export default function DashboardTab({
         <div style={{ marginBottom: 10 }}>
           <button
             className="btn btn-primary"
-            onClick={() => {
-              if (!currentDriver) return onRequestDriverLogin();
-              setShowMaintForm(true);
-            }}
+            onClick={() => openMaintForm({ vehicleId: '', type: '', note: '' })}
           >
             ＋ 整備を依頼する
           </button>
@@ -164,8 +166,16 @@ export default function DashboardTab({
         </div>
       )}
 
-      {showMaintForm && currentDriver && (
-        <MaintRequestModal data={data} driver={currentDriver} onClose={() => setShowMaintForm(false)} onSubmit={onSubmitMaintRequest} />
+      {maintForm && currentDriver && (
+        <MaintRequestModal
+          data={data}
+          driver={currentDriver}
+          initialVehicleId={maintForm.vehicleId || undefined}
+          initialType={maintForm.type}
+          initialNote={maintForm.note}
+          onClose={() => setMaintForm(null)}
+          onSubmit={onSubmitMaintRequest}
+        />
       )}
 
       <UsageCalendar
@@ -176,7 +186,7 @@ export default function DashboardTab({
         onDeleteReservation={onDeleteReservation}
       />
 
-      <AlertsPanel data={data} standalone />
+      <AlertsPanel data={data} standalone onRequestMaint={openMaintForm} />
     </div>
   );
 }
