@@ -1,9 +1,20 @@
 'use client';
 
 import { BAR_COUNT, DEFAULT_ORDER, TAB_META, TabKey } from '@/lib/menu';
+import CardsAdmin from './CardsAdmin';
 
 // 「設定」ページ：メニューの並び替え。この端末だけに保存される（他の人・他の端末の並びは変わらない）。
-export default function SettingsTab({ order, onChange }: { order: TabKey[]; onChange: (o: TabKey[]) => void }) {
+export default function SettingsTab({
+  order,
+  onChange,
+  isAdmin,
+  onRequestAdminLogin,
+}: {
+  order: TabKey[];
+  onChange: (o: TabKey[]) => void;
+  isAdmin: boolean;
+  onRequestAdminLogin: () => void;
+}) {
   const move = (i: number, d: number) => {
     const j = i + d;
     if (j < 0 || j >= order.length) return;
@@ -19,7 +30,7 @@ export default function SettingsTab({ order, onChange }: { order: TabKey[]; onCh
         <h3 className="card-title" style={{ marginBottom: 4 }}>
           ⚙️ 設定
         </h3>
-        <div style={{ fontSize: 12, color: 'var(--slate-500)' }}>この端末の表示を、自分の使いやすいように変えられます。他の人や、他の端末の表示は変わりません。</div>
+        <div style={{ fontSize: 12, color: 'var(--slate-500)' }}>メニューの並びは、この端末の表示だけが変わります（他の人や、他の端末は変わりません）。カードの登録は管理者だけができ、全員に反映されます。</div>
       </div>
 
       <div className="card">
@@ -63,6 +74,8 @@ export default function SettingsTab({ order, onChange }: { order: TabKey[]; onCh
         </div>
         <div style={{ fontSize: 12, color: 'var(--slate-500)', marginTop: 10 }}>「⚙️ 設定」は、いちばん最後に固定です。</div>
       </div>
+
+      <CardsAdmin isAdmin={isAdmin} onRequestAdminLogin={onRequestAdminLogin} />
     </div>
   );
 }

@@ -564,7 +564,7 @@ export default function FleetApp() {
             }}
           />
         )}
-        {tab === 'settings' && <SettingsTab order={menuOrder} onChange={changeMenuOrder} />}
+        {tab === 'settings' && <SettingsTab order={menuOrder} onChange={changeMenuOrder} isAdmin={isAdmin} onRequestAdminLogin={() => setShowAdminLogin(true)} />}
         {tab === 'calendar' && (
           <CalendarTab
             data={data}
@@ -580,7 +580,6 @@ export default function FleetApp() {
             currentDriver={currentDriver}
             isAdmin={isAdmin}
             onRequestDriverLogin={() => requireDriverLogin()}
-            onRequestAdminLogin={() => setShowAdminLogin(true)}
           />
         )}
         {tab === 'vehicles' && (

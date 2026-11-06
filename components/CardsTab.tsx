@@ -22,20 +22,17 @@ export default function CardsTab({
   currentDriver,
   isAdmin,
   onRequestDriverLogin,
-  onRequestAdminLogin,
 }: {
   data: AppData;
   currentDriver: Driver | null;
   isAdmin: boolean;
   onRequestDriverLogin: () => void;
-  onRequestAdminLogin: () => void;
 }) {
   const { cards, loans, loaded, reload } = useCards();
   const today = todayStr();
   const [kindFilter, setKindFilter] = useState<'' | CardKind>('');
   const [borrowing, setBorrowing] = useState<FleetCard | null>(null);
   const [form, setForm] = useState({ dueDate: '', purpose: '', vehicleId: '', note: '' });
-  const [editingCard, setEditingCard] = useState<FleetCard | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
@@ -77,31 +74,6 @@ export default function CardsTab({
     try {
       await api(`/api/cards/loans/${l.id}`, { method: 'POST', body: JSON.stringify({ driverId: currentDriver?.id || '' }) });
       setMsg(`${cardName(l.cardId)} の返却を記録しました。`);
-    } catch (e) {
-      alert((e as Error).message);
-    }
-    await reload();
-  }
-
-  async function saveCard() {
-    if (!editingCard) return;
-    setBusy(true);
-    setError('');
-    try {
-      await api('/api/cards', { method: 'POST', body: JSON.stringify(editingCard) });
-      setEditingCard(null);
-      await reload();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function removeCard(c: FleetCard) {
-    if (!confirm(`「${c.name}」を削除しますか？（貸出の履歴は残ります）`)) return;
-    try {
-      await api(`/api/cards?id=${encodeURIComponent(c.id)}`, { method: 'DELETE' });
     } catch (e) {
       alert((e as Error).message);
     }
@@ -159,15 +131,6 @@ export default function CardsTab({
             <button className="btn" onClick={exportCsv} disabled={loans.length === 0}>
               ⬇ 履歴CSV
             </button>
-            {isAdmin ? (
-              <button className="btn btn-primary" onClick={() => { setError(''); setEditingCard({ id: '', kind: 'gas', name: '', number: '', note: '' }); }}>
-                ＋ カードを登録
-              </button>
-            ) : (
-              <button className="btn btn-sm" onClick={onRequestAdminLogin}>
-                🔒 カード登録は管理者
-              </button>
-            )}
           </div>
         </div>
         {msg && (
@@ -183,7 +146,7 @@ export default function CardsTab({
         </div>
       ) : shown.length === 0 ? (
         <div className="card">
-          <div className="empty-state">{cards.length === 0 ? 'カードがまだ登録されていません。管理者が「＋ カードを登録」から登録します。' : '該当するカードはありません'}</div>
+          <div className="empty-state">{cards.length === 0 ? 'カードがまだ登録されていません。管理者が「⚙️ 設定」のページから登録します。' : '該当するカードはありません'}</div>
         </div>
       ) : (
         <div className="cardgrid">
@@ -232,16 +195,6 @@ export default function CardsTab({
                       <button className="btn btn-sm btn-primary" onClick={() => startBorrow(c)}>
                         借りる
                       </button>
-                    )}
-                    {isAdmin && (
-                      <>
-                        <button className="btn btn-sm" onClick={() => { setError(''); setEditingCard({ ...c }); }}>
-                          ✏️ 編集
-                        </button>
-                        <button className="btn btn-sm btn-danger" onClick={() => removeCard(c)}>
-                          削除
-                        </button>
-                      </>
                     )}
                   </div>
                 </div>
@@ -351,52 +304,6 @@ export default function CardsTab({
         </Modal>
       )}
 
-      {editingCard && (
-        <Modal
-          title={editingCard.id ? 'カードを編集' : 'カードを登録'}
-          onClose={() => setEditingCard(null)}
-          footer={
-            <>
-              <button className="btn" onClick={() => setEditingCard(null)}>
-                キャンセル
-              </button>
-              <button className="btn btn-primary" onClick={saveCard} disabled={busy}>
-                {busy ? '保存中…' : '保存する'}
-              </button>
-            </>
-          }
-        >
-          <div className="field-row">
-            <div className="field">
-              <label>種類</label>
-              <select value={editingCard.kind} onChange={(e) => setEditingCard({ ...editingCard, kind: e.target.value as CardKind })}>
-                {CARD_KINDS.map((k) => (
-                  <option key={k.key} value={k.key}>
-                    {k.icon} {k.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
-              <label>カード名（必須）</label>
-              <input value={editingCard.name} maxLength={40} onChange={(e) => setEditingCard({ ...editingCard, name: e.target.value })} placeholder="例：ガソリンカード1" />
-            </div>
-          </div>
-          <div className="field">
-            <label>識別番号（任意。下4桁など。カード番号の全桁は入れないでください）</label>
-            <input value={editingCard.number || ''} maxLength={30} onChange={(e) => setEditingCard({ ...editingCard, number: e.target.value })} placeholder="例：下4桁 1234" />
-          </div>
-          <div className="field">
-            <label>備考（任意）</label>
-            <input value={editingCard.note || ''} maxLength={200} onChange={(e) => setEditingCard({ ...editingCard, note: e.target.value })} placeholder="例：保管場所：事務所の鍵付き引き出し" />
-          </div>
-          {error && (
-            <div role="alert" className="notice-box" style={{ borderColor: 'var(--red-600, #dc2626)' }}>
-              {error}
-            </div>
-          )}
-        </Modal>
-      )}
     </div>
   );
 }
