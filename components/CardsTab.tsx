@@ -31,6 +31,7 @@ export default function CardsTab({
   const { cards, loans, loaded, reload } = useCards();
   const today = todayStr();
   const [kindFilter, setKindFilter] = useState<'' | CardKind>('');
+  const [deptFilter, setDeptFilter] = useState('');
   const [borrowing, setBorrowing] = useState<FleetCard | null>(null);
   const [form, setForm] = useState({ dueDate: '', purpose: '', vehicleId: '', note: '' });
   const [busy, setBusy] = useState(false);
@@ -38,7 +39,8 @@ export default function CardsTab({
   const [msg, setMsg] = useState('');
 
   const outOf = (cardId: string) => loans.find((l) => l.cardId === cardId && !l.returnedAt);
-  const shown = cards.filter((c) => !kindFilter || c.kind === kindFilter);
+  const deptList = Array.from(new Set(cards.map((c) => c.dept || '').filter(Boolean)));
+  const shown = cards.filter((c) => (!kindFilter || c.kind === kindFilter) && (!deptFilter || (c.dept || '') === deptFilter));
   const outCount = cards.filter((c) => outOf(c.id)).length;
   const overdueCount = loans.filter((l) => isOverdue(l, today)).length;
   const cardName = (id: string) => cards.find((c) => c.id === id)?.name || '（削除済みのカード）';
@@ -95,12 +97,12 @@ export default function CardsTab({
       const s = String(v ?? '');
       return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
     };
-    const rows = [['借りた日時', 'カード', '種類', '借りた人', '事業部', '用途・行先', '使用車両', '返却予定日', '返却日時', '返却を記録した人', '備考']];
+    const rows = [['借りた日時', 'カード', '種類', 'カードの事業部', '借りた人', '借りた人の事業部', '用途・行先', '使用車両', '返却予定日', '返却日時', '返却を記録した人', '備考']];
     [...loans]
       .sort((a, b) => b.borrowedAt.localeCompare(a.borrowedAt))
       .forEach((l) => {
         const c = cards.find((x) => x.id === l.cardId);
-        rows.push([l.borrowedAt, cardName(l.cardId), c ? kindOf(c.kind).label : '', l.borrower, l.dept || '', l.purpose || '', l.vehicleName || '', l.dueDate || '', l.returnedAt || '', l.returnedBy || '', l.note || '']);
+        rows.push([l.borrowedAt, cardName(l.cardId), c ? kindOf(c.kind).label : '', c?.dept || '', l.borrower, l.dept || '', l.purpose || '', l.vehicleName || '', l.dueDate || '', l.returnedAt || '', l.returnedBy || '', l.note || '']);
       });
     downloadCsv(`カード貸出履歴_${today}.csv`, rows.map((r) => r.map(esc).join(',')).join('\r\n'));
   }
@@ -128,6 +130,16 @@ export default function CardsTab({
                 </option>
               ))}
             </select>
+            {deptList.length > 0 && (
+              <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} aria-label="事業部で絞り込む">
+                <option value="">すべての事業部</option>
+                {deptList.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            )}
             <button className="btn" onClick={exportCsv} disabled={loans.length === 0}>
               ⬇ 履歴CSV
             </button>
@@ -163,6 +175,7 @@ export default function CardsTab({
                     </div>
                     <div className="esub">
                       {k.label}
+                      {c.dept ? ` ／ ${c.dept}` : ''}
                       {c.number ? ` ／ ${c.number}` : ''}
                     </div>
                   </div>

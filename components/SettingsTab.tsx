@@ -94,7 +94,7 @@ export default function SettingsTab({
       ) : (
         <>
           {section === 'menu' && <MenuOrderSettings order={menuOrder} onChange={onChangeMenuOrder} />}
-          {section === 'cards' && <CardsAdmin isAdmin={isAdmin} onRequestAdminLogin={onRequestLogin} />}
+          {section === 'cards' && <CardsAdmin departments={data.masters.departments} isAdmin={isAdmin} onRequestAdminLogin={onRequestLogin} />}
           {section === 'drivers' && <DriversTab data={data} onSave={onSaveDriver} onDelete={onDeleteDriver} onBulkSave={onBulkSaveDrivers} />}
           {section === 'masters' && (
             <MastersTab

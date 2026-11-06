@@ -313,6 +313,7 @@ export type FleetCard = {
   id: string;
   kind: CardKind;
   name: string; // 管理名（例：ガソリンカード1・ETC 3号車用）
+  dept?: string; // 事業部（このカードを管理・使う事業部。空なら指定なし）
   number?: string; // 識別用の番号（下4桁など。カード番号の全桁は入れない）
   note?: string;
 };

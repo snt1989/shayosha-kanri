@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
     id: b.id && d.cards.some((c) => c.id === b.id) ? b.id : 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
     kind,
     name,
+    dept: String(b.dept || '').trim().slice(0, 40),
     number: String(b.number || '').trim().slice(0, 30),
     note: String(b.note || '').trim().slice(0, 200),
   };
