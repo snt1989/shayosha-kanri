@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { AppData, Driver, MAINT_URGENCIES, Report, Reservation } from '@/lib/types';
 import { canEditMaintRequest, openMaintRequests, rentalReservations, reservationRange, todayStr } from '@/lib/utils';
 import AlertsPanel, { MaintPrefill } from './AlertsPanel';
-import UsageCalendar from './UsageCalendar';
 import DashboardNotices from './DashboardNotices';
 import { fmtDateTime, isOverdue, useCards } from './useCards';
 import MaintRequestModal, { MaintRequestInput } from './MaintRequestModal';
@@ -13,6 +12,7 @@ export default function DashboardTab({
   data,
   onReturnCheckin,
   onOpenMaintenance,
+  onOpenCalendar,
   currentDriver,
   onRequestDriverLogin,
   onSaveReservation,
@@ -25,6 +25,7 @@ export default function DashboardTab({
   data: AppData;
   onReturnCheckin: (id: string) => void;
   onOpenMaintenance: () => void;
+  onOpenCalendar: () => void;
   currentDriver?: Driver | null;
   onRequestDriverLogin: () => void;
   onSaveReservation: (r: Reservation) => Promise<unknown>;
@@ -59,7 +60,7 @@ export default function DashboardTab({
           📊 ダッシュボード
         </h3>
         <div style={{ fontSize: 12, color: 'var(--slate-500)' }}>
-          車検・点検・免許更新・アルコールチェックのアラート、帰着未登録の日報、整備依頼、車両の使用・予約カレンダーをまとめて確認できます。
+          車検・点検・免許更新・アルコールチェックのアラート、帰着未登録の日報、整備依頼、貸出中のカードなどをまとめて確認できます。車両の使用・予約は「カレンダー」のページです。
         </div>
       </div>
 
@@ -229,13 +230,15 @@ export default function DashboardTab({
         />
       )}
 
-      <UsageCalendar
-        data={data}
-        currentDriver={currentDriver}
-        onRequestDriverLogin={onRequestDriverLogin}
-        onSaveReservation={onSaveReservation}
-        onDeleteReservation={onDeleteReservation}
-      />
+      <div className="card" style={{ marginBottom: 14 }}>
+        <h3 className="card-title">📅 車両の使用・予約カレンダー</h3>
+        <div style={{ fontSize: 13, color: 'var(--slate-600)', marginBottom: 10 }}>
+          車両の使用実績と予約を、月のカレンダーで確認できます。予約もここから入れられます。
+        </div>
+        <button className="btn btn-primary" onClick={onOpenCalendar}>
+          📅 カレンダーを開く
+        </button>
+      </div>
 
       <AlertsPanel data={data} standalone onRequestMaint={openMaintForm} />
     </div>

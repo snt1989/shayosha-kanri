@@ -2,12 +2,13 @@
 
 import { useState, type ReactNode } from 'react';
 
-type Tab = 'dashboard' | 'reports' | 'maintenance' | 'vehicles' | 'fuel' | 'rental' | 'cards' | 'help' | 'admin';
+type Tab = 'dashboard' | 'reports' | 'maintenance' | 'vehicles' | 'fuel' | 'rental' | 'calendar' | 'cards' | 'help' | 'admin';
 type SyncStatus = 'idle' | 'saving' | 'error';
 
 const TABS: { key: Tab; label: string; icon: string; admin?: boolean }[] = [
   { key: 'dashboard', label: 'ダッシュボード', icon: '📊' },
   { key: 'reports', label: '運転日報', icon: '📝' },
+  { key: 'calendar', label: 'カレンダー', icon: '📅' },
   { key: 'fuel', label: '給油台帳', icon: '⛽' },
   { key: 'rental', label: 'レンタカー', icon: '🚗' },
   { key: 'cards', label: 'カード貸出', icon: '💳' },

@@ -16,10 +16,11 @@ import HelpTab from './HelpTab';
 import AdminTab from './AdminTab';
 import VehicleLedgerTab from './VehicleLedgerTab';
 import CardsTab from './CardsTab';
+import CalendarTab from './CalendarTab';
 import AdminLoginModal from './AdminLoginModal';
 import DriverLoginModal from './DriverLoginModal';
 
-type Tab = 'dashboard' | 'reports' | 'maintenance' | 'vehicles' | 'fuel' | 'rental' | 'cards' | 'help' | 'admin';
+type Tab = 'dashboard' | 'reports' | 'maintenance' | 'vehicles' | 'fuel' | 'rental' | 'calendar' | 'cards' | 'help' | 'admin';
 type SyncStatus = 'idle' | 'saving' | 'error';
 const DRIVER_SESSION_KEY = 'fleet_current_driver_id';
 const MECHANIC_SESSION_KEY = 'fleet_current_mechanic';
@@ -481,6 +482,7 @@ export default function FleetApp() {
             data={data}
             onReturnCheckin={handleReturnCheckin}
             onOpenMaintenance={() => setTab('maintenance')}
+            onOpenCalendar={() => { setTab('calendar'); if (typeof window !== 'undefined') window.scrollTo({ top: 0 }); }}
             currentDriver={currentDriver}
             onRequestDriverLogin={() => requireDriverLogin()}
             onSaveReservation={saveReservation}
@@ -550,6 +552,15 @@ export default function FleetApp() {
               setTab(t);
               window.scrollTo({ top: 0 });
             }}
+          />
+        )}
+        {tab === 'calendar' && (
+          <CalendarTab
+            data={data}
+            currentDriver={currentDriver}
+            onRequestDriverLogin={() => requireDriverLogin()}
+            onSaveReservation={saveReservation}
+            onDeleteReservation={deleteReservation}
           />
         )}
         {tab === 'cards' && (

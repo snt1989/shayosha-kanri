@@ -1,6 +1,6 @@
 // 「使い方」タブのQ&A。画面の動作を変えたときは、ここも合わせて直す。
 
-export type HelpTarget = 'dashboard' | 'reports' | 'fuel' | 'rental' | 'maintenance' | 'vehicles' | 'cards' | 'admin';
+export type HelpTarget = 'dashboard' | 'reports' | 'fuel' | 'rental' | 'maintenance' | 'vehicles' | 'cards' | 'calendar' | 'admin';
 
 // 答えの1ブロック。文字列は段落、steps は番号つきの手順、list は箇条書き。
 export type HelpBlock = string | { steps: string[] } | { list: string[] };
@@ -228,7 +228,7 @@ export const HELP_SECTIONS: HelpSection[] = [
     id: 'calendar',
     icon: '📅',
     title: '予約・カレンダー・アラート',
-    go: 'dashboard',
+    go: 'calendar',
     items: [
       {
         q: '車両を予約するには？',
@@ -236,7 +236,7 @@ export const HELP_SECTIONS: HelpSection[] = [
           {
             steps: [
               '運転者としてログインします。',
-              'ダッシュボードの「車両の使用・予約カレンダー」で日付を選び、「＋ 予約を追加」を押します。',
+              '「📅 カレンダー」のページ（スマホは「☰ メニュー」の中。ダッシュボードの「カレンダーを開く」からも開けます）で日付を選び、「＋ 予約を追加」を押します。',
               '車両、利用日（複数日も可）、時間、行先などを入力して「予約する」を押します。',
             ],
           },
