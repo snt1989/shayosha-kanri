@@ -2203,3 +2203,35 @@ table.bulk-grid {
 .menu-order-divider { font-size: 11px; font-weight: 700; color: var(--slate-500); margin: 10px 2px 6px; text-align: center; }
 .menu-order-row .btn { min-width: 40px; }
 .pill-sky { background: var(--sky-100); color: var(--sky-700); }
+
+/* 種類のドロップダウン（チェックを入れる） */
+.check-dropdown { position: relative; }
+.check-dropdown-summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 9px 32px 9px 12px;
+  border: 1px solid var(--slate-300, #cbd5e1);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 14px;
+  min-height: 40px;
+  position: relative;
+}
+.check-dropdown-summary::-webkit-details-marker { display: none; }
+.check-dropdown-summary::after { content: '▾'; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--slate-500); }
+.check-dropdown[open] .check-dropdown-summary { border-color: var(--sky-600); }
+.check-dropdown-list {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: #fff;
+  border: 1px solid var(--slate-200);
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.15);
+  padding: 4px;
+}
+.check-dropdown-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+.check-dropdown-item:hover { background: var(--slate-50); }
+.check-dropdown-item input { width: 18px; height: 18px; }

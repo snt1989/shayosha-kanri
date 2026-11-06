@@ -1,11 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { CARD_KINDS, CardKind, FleetCard } from '@/lib/types';
+import { CardKind, FleetCard, cardKindIcon, cardKindLabel, cardKinds } from '@/lib/types';
+import KindCheckDropdown from './KindCheckDropdown';
 import Modal from './Modal';
 import { cardsApi, useCards } from './useCards';
-
-const kindOf = (k: CardKind) => CARD_KINDS.find((x) => x.key === k) || CARD_KINDS[0];
 
 // 設定ページの「カードの登録」。ガソリンカード・ETCカードの登録・編集・削除は管理者だけ（サーバー側でも管理者ログインを確認する）。
 export default function CardsAdmin({ departments, isAdmin, onRequestAdminLogin }: { departments: string[]; isAdmin: boolean; onRequestAdminLogin: () => void }) {
@@ -65,7 +64,7 @@ export default function CardsAdmin({ departments, isAdmin, onRequestAdminLogin }
           </div>
         </div>
         <div className="actions">
-          <button className="btn btn-primary" onClick={() => { setError(''); setEditingCard({ id: '', kind: 'gas', name: '', dept: '', number: '', note: '' }); }}>
+          <button className="btn btn-primary" onClick={() => { setError(''); setEditingCard({ id: '', kind: 'gas', kinds: ['gas'], name: '', dept: '', number: '', note: '' }); }}>
             ＋ カードを登録
           </button>
         </div>
@@ -79,17 +78,17 @@ export default function CardsAdmin({ departments, isAdmin, onRequestAdminLogin }
         <div className="menu-order-list">
           {cards.map((c) => (
             <div key={c.id} className="menu-order-row">
-              <span className="menu-order-ic">{kindOf(c.kind).icon}</span>
+              <span className="menu-order-ic">{cardKindIcon(c)}</span>
               <span className="menu-order-label">
                 {c.name}
                 <span style={{ fontWeight: 400, fontSize: 12, color: 'var(--slate-500)', marginLeft: 6 }}>
-                  {kindOf(c.kind).label}
+                  {cardKindLabel(c)}
                   {c.dept ? ` ／ ${c.dept}` : ''}
                   {c.number ? ` ／ ${c.number}` : ''}
                 </span>
               </span>
               {isOut(c.id) && <span className="pill pill-amber">貸出中</span>}
-              <button className="btn btn-sm" onClick={() => { setError(''); setEditingCard({ ...c }); }}>
+              <button className="btn btn-sm" onClick={() => { setError(''); setEditingCard({ ...c, kinds: cardKinds(c) }); }}>
                 ✏️ 編集
               </button>
               <button className="btn btn-sm btn-danger" onClick={() => remove(c)} disabled={isOut(c.id)} title={isOut(c.id) ? '貸出中のカードは削除できません' : ''}>
@@ -117,14 +116,11 @@ export default function CardsAdmin({ departments, isAdmin, onRequestAdminLogin }
         >
           <div className="field-row">
             <div className="field">
-              <label>種類</label>
-              <select value={editingCard.kind} onChange={(e) => setEditingCard({ ...editingCard, kind: e.target.value as CardKind })}>
-                {CARD_KINDS.map((k) => (
-                  <option key={k.key} value={k.key}>
-                    {k.icon} {k.label}
-                  </option>
-                ))}
-              </select>
+              <label>種類（チェックを入れる。複数可）</label>
+              <KindCheckDropdown
+                value={editingCard.kinds && editingCard.kinds.length > 0 ? editingCard.kinds : [editingCard.kind]}
+                onChange={(v: CardKind[]) => setEditingCard({ ...editingCard, kinds: v, kind: v[0] })}
+              />
             </div>
             <div className="field">
               <label>カード名（必須）</label>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AppData, Driver, MAINT_URGENCIES, Report, Reservation } from '@/lib/types';
+import { AppData, Driver, MAINT_URGENCIES, Report, Reservation, cardKindIcon } from '@/lib/types';
 import { canEditMaintRequest, openMaintRequests, rentalReservations, reservationRange, todayStr } from '@/lib/utils';
 import AlertsPanel, { MaintPrefill } from './AlertsPanel';
 import DashboardNotices from './DashboardNotices';
@@ -163,7 +163,7 @@ export default function DashboardTab({
                 const c = cards.find((x) => x.id === l.cardId);
                 return (
                   <div key={l.id} className={`alert-item ${late ? 'danger' : 'warn'}`}>
-                    <span>{c?.kind === 'etc' ? '🛣️' : '⛽'}</span>
+                    <span>{c ? cardKindIcon(c) : '💳'}</span>
                     <div style={{ flex: 1 }}>
                       <strong>{c?.name || '（削除済みのカード）'}</strong> — {l.borrower}
                       {l.dept ? `（${l.dept}）` : ''}　{fmtDateTime(l.borrowedAt)}〜

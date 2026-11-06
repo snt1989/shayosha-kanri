@@ -1,13 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { AppData, CARD_KINDS, CardKind, CardLoan, Driver, FleetCard } from '@/lib/types';
+import { AppData, CARD_KINDS, CardKind, CardLoan, Driver, FleetCard, cardKindIcon, cardKindLabel, cardKinds } from '@/lib/types';
 import { downloadCsv } from '@/lib/csv';
 import { todayStr } from '@/lib/utils';
 import Modal from './Modal';
 import { fmtDateTime, isOverdue, useCards } from './useCards';
-
-const kindOf = (k: CardKind) => CARD_KINDS.find((x) => x.key === k) || CARD_KINDS[0];
 
 async function api(url: string, init?: RequestInit) {
   const res = await fetch(url, { ...init, headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) } });
@@ -40,7 +38,7 @@ export default function CardsTab({
 
   const outOf = (cardId: string) => loans.find((l) => l.cardId === cardId && !l.returnedAt);
   const deptList = Array.from(new Set(cards.map((c) => c.dept || '').filter(Boolean)));
-  const shown = cards.filter((c) => (!kindFilter || c.kind === kindFilter) && (!deptFilter || (c.dept || '') === deptFilter));
+  const shown = cards.filter((c) => (!kindFilter || cardKinds(c).includes(kindFilter)) && (!deptFilter || (c.dept || '') === deptFilter));
   const outCount = cards.filter((c) => outOf(c.id)).length;
   const overdueCount = loans.filter((l) => isOverdue(l, today)).length;
   const cardName = (id: string) => cards.find((c) => c.id === id)?.name || '（削除済みのカード）';
@@ -102,7 +100,7 @@ export default function CardsTab({
       .sort((a, b) => b.borrowedAt.localeCompare(a.borrowedAt))
       .forEach((l) => {
         const c = cards.find((x) => x.id === l.cardId);
-        rows.push([l.borrowedAt, cardName(l.cardId), c ? kindOf(c.kind).label : '', c?.dept || '', l.borrower, l.dept || '', l.purpose || '', l.vehicleName || '', l.dueDate || '', l.returnedAt || '', l.returnedBy || '', l.note || '']);
+        rows.push([l.borrowedAt, cardName(l.cardId), c ? cardKindLabel(c) : '', c?.dept || '', l.borrower, l.dept || '', l.purpose || '', l.vehicleName || '', l.dueDate || '', l.returnedAt || '', l.returnedBy || '', l.note || '']);
       });
     downloadCsv(`カード貸出履歴_${today}.csv`, rows.map((r) => r.map(esc).join(',')).join('\r\n'));
   }
@@ -165,16 +163,15 @@ export default function CardsTab({
           {shown.map((c) => {
             const out = outOf(c.id);
             const late = out ? isOverdue(out, today) : false;
-            const k = kindOf(c.kind);
             return (
               <div key={c.id} className="entity-card">
                 <div className="ehead">
                   <div>
                     <div className="ename">
-                      {k.icon} {c.name}
+                      {cardKindIcon(c)} {c.name}
                     </div>
                     <div className="esub">
-                      {k.label}
+                      {cardKindLabel(c)}
                       {c.dept ? ` ／ ${c.dept}` : ''}
                       {c.number ? ` ／ ${c.number}` : ''}
                     </div>
@@ -270,7 +267,7 @@ export default function CardsTab({
 
       {borrowing && currentDriver && (
         <Modal
-          title={`${kindOf(borrowing.kind).icon} ${borrowing.name} を借りる`}
+          title={`${cardKindIcon(borrowing)} ${borrowing.name} を借りる`}
           onClose={() => setBorrowing(null)}
           footer={
             <>

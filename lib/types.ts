@@ -311,7 +311,8 @@ export const CARD_KINDS: { key: CardKind; label: string; icon: string }[] = [
 
 export type FleetCard = {
   id: string;
-  kind: CardKind;
+  kind: CardKind; // 主な種類（kinds の先頭。以前のデータとの互換用）
+  kinds?: CardKind[]; // 種類（複数にチェックできる。例：ガソリンとETCの兼用カード）。無い古いデータは [kind] として扱う
   name: string; // 管理名（例：ガソリンカード1・ETC 3号車用）
   dept?: string; // 事業部（このカードを管理・使う事業部。空なら指定なし）
   number?: string; // 識別用の番号（下4桁など。カード番号の全桁は入れない）
@@ -333,3 +334,13 @@ export type CardLoan = {
   returnedBy?: string;
   note?: string;
 };
+
+export const cardKinds = (c: Pick<FleetCard, 'kind' | 'kinds'>): CardKind[] => (c.kinds && c.kinds.length > 0 ? c.kinds : [c.kind]);
+export const cardKindLabel = (c: Pick<FleetCard, 'kind' | 'kinds'>): string =>
+  cardKinds(c)
+    .map((k) => CARD_KINDS.find((x) => x.key === k)?.label || k)
+    .join('・');
+export const cardKindIcon = (c: Pick<FleetCard, 'kind' | 'kinds'>): string =>
+  cardKinds(c)
+    .map((k) => CARD_KINDS.find((x) => x.key === k)?.icon || '')
+    .join('');

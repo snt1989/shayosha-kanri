@@ -16,12 +16,16 @@ export async function POST(req: NextRequest) {
   }
   const b = (await req.json().catch(() => ({}))) as Partial<FleetCard>;
   const name = String(b.name || '').trim().slice(0, 40);
-  const kind = CARD_KINDS.find((k) => k.key === b.kind)?.key;
+  // 種類は複数にチェックできる（kinds）。以前の形式（kind だけ）で来ても受け付ける
+  const given = Array.isArray(b.kinds) ? b.kinds : b.kind ? [b.kind] : [];
+  const kinds = CARD_KINDS.map((k) => k.key).filter((k) => given.includes(k));
+  const kind = kinds[0];
   if (!name || !kind) return NextResponse.json({ success: false, message: '種類とカード名は必須です。' }, { status: 400 });
   const d = await loadCards();
   const card: FleetCard = {
     id: b.id && d.cards.some((c) => c.id === b.id) ? b.id : 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
     kind,
+    kinds,
     name,
     dept: String(b.dept || '').trim().slice(0, 40),
     number: String(b.number || '').trim().slice(0, 30),
