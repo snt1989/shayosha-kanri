@@ -301,3 +301,34 @@ export const DEFAULT_DRIVERS: Driver[] = [
     notes: 'リーダー',
   },
 ];
+
+// ガソリンカード・ETCカードの借用（貸出）。日報などの本体データとは別のキー（lib/cards-store.ts）に保存する。
+export type CardKind = 'gas' | 'etc';
+export const CARD_KINDS: { key: CardKind; label: string; icon: string }[] = [
+  { key: 'gas', label: 'ガソリンカード', icon: '⛽' },
+  { key: 'etc', label: 'ETCカード', icon: '🛣️' },
+];
+
+export type FleetCard = {
+  id: string;
+  kind: CardKind;
+  name: string; // 管理名（例：ガソリンカード1・ETC 3号車用）
+  number?: string; // 識別用の番号（下4桁など。カード番号の全桁は入れない）
+  note?: string;
+};
+
+export type CardLoan = {
+  id: string;
+  cardId: string;
+  borrowerId: string;
+  borrower: string;
+  dept?: string;
+  borrowedAt: string; // ISO日時
+  dueDate?: string; // 返却予定日 YYYY-MM-DD
+  purpose?: string; // 用途・行先
+  vehicleId?: string;
+  vehicleName?: string;
+  returnedAt?: string; // ISO日時（あれば返却済）
+  returnedBy?: string;
+  note?: string;
+};

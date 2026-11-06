@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from 'react';
 
-type Tab = 'dashboard' | 'reports' | 'maintenance' | 'vehicles' | 'fuel' | 'rental' | 'help' | 'admin';
+type Tab = 'dashboard' | 'reports' | 'maintenance' | 'vehicles' | 'fuel' | 'rental' | 'cards' | 'help' | 'admin';
 type SyncStatus = 'idle' | 'saving' | 'error';
 
 const TABS: { key: Tab; label: string; icon: string; admin?: boolean }[] = [
@@ -10,6 +10,7 @@ const TABS: { key: Tab; label: string; icon: string; admin?: boolean }[] = [
   { key: 'reports', label: '運転日報', icon: '📝' },
   { key: 'fuel', label: '給油台帳', icon: '⛽' },
   { key: 'rental', label: 'レンタカー', icon: '🚗' },
+  { key: 'cards', label: 'カード貸出', icon: '💳' },
   { key: 'maintenance', label: '整備台帳', icon: '🔧' },
   { key: 'vehicles', label: '車両台帳', icon: '🚘' },
   { key: 'help', label: '使い方', icon: '❓' },

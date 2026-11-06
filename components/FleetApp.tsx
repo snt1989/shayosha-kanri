@@ -15,10 +15,11 @@ import FuelTab from './FuelTab';
 import HelpTab from './HelpTab';
 import AdminTab from './AdminTab';
 import VehicleLedgerTab from './VehicleLedgerTab';
+import CardsTab from './CardsTab';
 import AdminLoginModal from './AdminLoginModal';
 import DriverLoginModal from './DriverLoginModal';
 
-type Tab = 'dashboard' | 'reports' | 'maintenance' | 'vehicles' | 'fuel' | 'rental' | 'help' | 'admin';
+type Tab = 'dashboard' | 'reports' | 'maintenance' | 'vehicles' | 'fuel' | 'rental' | 'cards' | 'help' | 'admin';
 type SyncStatus = 'idle' | 'saving' | 'error';
 const DRIVER_SESSION_KEY = 'fleet_current_driver_id';
 const MECHANIC_SESSION_KEY = 'fleet_current_mechanic';
@@ -549,6 +550,15 @@ export default function FleetApp() {
               setTab(t);
               window.scrollTo({ top: 0 });
             }}
+          />
+        )}
+        {tab === 'cards' && (
+          <CardsTab
+            data={data}
+            currentDriver={currentDriver}
+            isAdmin={isAdmin}
+            onRequestDriverLogin={() => requireDriverLogin()}
+            onRequestAdminLogin={() => setShowAdminLogin(true)}
           />
         )}
         {tab === 'vehicles' && (

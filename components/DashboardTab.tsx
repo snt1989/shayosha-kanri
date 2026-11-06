@@ -6,6 +6,7 @@ import { canEditMaintRequest, openMaintRequests, rentalReservations, reservation
 import AlertsPanel, { MaintPrefill } from './AlertsPanel';
 import UsageCalendar from './UsageCalendar';
 import DashboardNotices from './DashboardNotices';
+import { fmtDateTime, isOverdue, useCards } from './useCards';
 import MaintRequestModal, { MaintRequestInput } from './MaintRequestModal';
 
 export default function DashboardTab({
@@ -34,6 +35,7 @@ export default function DashboardTab({
   mechanic: string | null;
 }) {
   const [editingReq, setEditingReq] = useState<Report | null>(null);
+  const { cards, loans } = useCards();
   // 整備依頼の入力画面。アラートから開くときは、車両・種類・内容をあらかじめ入れておく
   const [maintForm, setMaintForm] = useState<MaintPrefill | null>(null);
   const openMaintForm = (p: MaintPrefill) => {
@@ -145,6 +147,34 @@ export default function DashboardTab({
           </div>
         )}
       </div>
+
+      {loans.some((l) => !l.returnedAt) && (
+        <div className="card" style={{ marginBottom: 14 }}>
+          <h3 className="card-title">
+            💳 貸出中のガソリンカード・ETCカード
+            <span className="pill pill-amber" style={{ marginLeft: 8 }}>{loans.filter((l) => !l.returnedAt).length}枚</span>
+          </h3>
+          <div className="alert-list">
+            {loans
+              .filter((l) => !l.returnedAt)
+              .map((l) => {
+                const late = isOverdue(l, today);
+                const c = cards.find((x) => x.id === l.cardId);
+                return (
+                  <div key={l.id} className={`alert-item ${late ? 'danger' : 'warn'}`}>
+                    <span>{c?.kind === 'etc' ? '🛣️' : '⛽'}</span>
+                    <div style={{ flex: 1 }}>
+                      <strong>{c?.name || '（削除済みのカード）'}</strong> — {l.borrower}
+                      {l.dept ? `（${l.dept}）` : ''}　{fmtDateTime(l.borrowedAt)}〜
+                      {l.dueDate ? `（返却予定 ${l.dueDate}${late ? '・期限超過' : ''}）` : ''}
+                      {l.purpose ? `　${l.purpose}` : ''}
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
 
       {activeRentals.length > 0 && (
         <div className="card" style={{ marginBottom: 14 }}>
