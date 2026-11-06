@@ -27,7 +27,7 @@ export default function MechanicLoginModal({
       </p>
       {mechanics.length === 0 ? (
         <div className="empty-state">
-          整備士が登録されていません。管理者ログイン後、「管理画面」→「各種マスタ設定」→「整備士」に名前を登録してください。
+          整備士が登録されていません。管理者ログイン後、「設定」→「各種マスタ設定」→「整備士」に名前を登録してください。
         </div>
       ) : (
         <div className="alert-list">

@@ -1,28 +1,60 @@
 'use client';
 
-import { BAR_COUNT, DEFAULT_ORDER, TAB_META, TabKey } from '@/lib/menu';
+import { useState } from 'react';
+import { AppData, Driver, EmpIdRule, Masters, MasterKey } from '@/lib/types';
+import { TabKey } from '@/lib/menu';
+import MastersTab from './MastersTab';
+import LogsTab from './LogsTab';
+import DriversTab from './DriversTab';
+import LogoTab from './LogoTab';
 import CardsAdmin from './CardsAdmin';
+import MenuOrderSettings from './MenuOrderSettings';
 
-// 「設定」ページ：メニューの並び替え。この端末だけに保存される（他の人・他の端末の並びは変わらない）。
+type Section = 'menu' | 'cards' | 'drivers' | 'masters' | 'logs' | 'logo';
+
+// 管理者だけが使えるもの（メニューの並び替えだけは誰でも使える）
+const SECTIONS: { key: Section; icon: string; label: string; admin: boolean }[] = [
+  { key: 'menu', icon: '↕️', label: 'メニューの並び替え', admin: false },
+  { key: 'cards', icon: '💳', label: 'カードの登録', admin: true },
+  { key: 'drivers', icon: '🪪', label: '運転者台帳', admin: true },
+  { key: 'masters', icon: '⚙️', label: '各種マスタ設定', admin: true },
+  { key: 'logs', icon: '🗂️', label: '操作ログ・バックアップ', admin: true },
+  { key: 'logo', icon: '🎨', label: 'ロゴ・アイコン', admin: true },
+];
+
+// 「設定」ページ：メニューの並び替え（誰でも・この端末だけ）と、管理者向けの設定（カード・運転者台帳・マスタ・操作ログ・ロゴ）をまとめたもの。
 export default function SettingsTab({
-  order,
-  onChange,
+  data,
   isAdmin,
-  onRequestAdminLogin,
+  adminConfigured,
+  menuOrder,
+  onChangeMenuOrder,
+  onSaveDriver,
+  onDeleteDriver,
+  onBulkSaveDrivers,
+  onSaveCategory,
+  onSaveAll,
+  onSaveEmpIdRule,
+  onRequestLogin,
+  onClearLogs,
 }: {
-  order: TabKey[];
-  onChange: (o: TabKey[]) => void;
+  data: AppData;
   isAdmin: boolean;
-  onRequestAdminLogin: () => void;
+  adminConfigured: boolean;
+  menuOrder: TabKey[];
+  onChangeMenuOrder: (o: TabKey[]) => void;
+  onSaveDriver: (d: Driver) => Promise<unknown>;
+  onDeleteDriver: (id: string) => Promise<unknown>;
+  onBulkSaveDrivers: (list: Driver[]) => Promise<unknown>;
+  onSaveCategory: (category: MasterKey, items: string[]) => Promise<unknown>;
+  onSaveAll: (masters: Masters) => Promise<unknown>;
+  onSaveEmpIdRule: (r: EmpIdRule & { assignMissing?: boolean }) => Promise<unknown>;
+  onRequestLogin: () => void;
+  onClearLogs: () => Promise<unknown>;
 }) {
-  const move = (i: number, d: number) => {
-    const j = i + d;
-    if (j < 0 || j >= order.length) return;
-    const next = [...order];
-    [next[i], next[j]] = [next[j], next[i]];
-    onChange(next);
-  };
-  const isDefault = order.join() === DEFAULT_ORDER.join();
+  const [section, setSection] = useState<Section>('menu');
+  const current = SECTIONS.find((s) => s.key === section)!;
+  const locked = current.admin && !isAdmin;
 
   return (
     <div>
@@ -30,52 +62,59 @@ export default function SettingsTab({
         <h3 className="card-title" style={{ marginBottom: 4 }}>
           ⚙️ 設定
         </h3>
-        <div style={{ fontSize: 12, color: 'var(--slate-500)' }}>メニューの並びは、この端末の表示だけが変わります（他の人や、他の端末は変わりません）。カードの登録は管理者だけができ、全員に反映されます。</div>
-      </div>
-
-      <div className="card">
-        <div className="toolbar2">
-          <div>
-            <h3 className="card-title" style={{ marginBottom: 4 }}>
-              ↕️ メニューの並び替え
-            </h3>
-            <div style={{ fontSize: 12, color: 'var(--slate-500)' }}>
-              「↑」「↓」で順番を変えます。上から順に、パソコンでは上のタブに、スマホでは下のバーの左から並びます。スマホの下のバーに出るのは、上から{BAR_COUNT}つです。残りは「☰ メニュー」に入ります。
-            </div>
-          </div>
-          <div className="actions">
-            <button className="btn" onClick={() => onChange([...DEFAULT_ORDER])} disabled={isDefault}>
-              標準の並びに戻す
-            </button>
-          </div>
+        <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 12 }}>
+          メニューの並び替え（この端末だけ）と、カードの登録・運転者台帳・各種マスタ設定・操作ログ／バックアップ・ロゴ／アイコン（管理者のみ）をまとめて管理します。車両の管理は「車両台帳」のページです。
         </div>
-
-        <div className="menu-order-list">
-          {order.map((k, i) => (
-            <div key={k}>
-              {i === BAR_COUNT && <div className="menu-order-divider">▼ ここから下は、スマホでは「☰ メニュー」の中です</div>}
-              <div className={`menu-order-row ${i < BAR_COUNT ? 'in-bar' : ''}`}>
-                <span className="menu-order-no">{i + 1}</span>
-                <span className="menu-order-ic">{TAB_META[k].icon}</span>
-                <span className="menu-order-label">
-                  {TAB_META[k].label}
-                  {TAB_META[k].admin && <span className="adminbadge" style={{ marginLeft: 6 }}>ADMIN</span>}
-                </span>
-                {i < BAR_COUNT && <span className="pill pill-sky">下のバー</span>}
-                <button className="btn btn-sm" onClick={() => move(i, -1)} disabled={i === 0} aria-label={`${TAB_META[k].label}を上へ`}>
-                  ↑
-                </button>
-                <button className="btn btn-sm" onClick={() => move(i, 1)} disabled={i === order.length - 1} aria-label={`${TAB_META[k].label}を下へ`}>
-                  ↓
-                </button>
-              </div>
-            </div>
+        <div className="subtabbar">
+          {SECTIONS.map((s) => (
+            <button key={s.key} className={`subtab ${section === s.key ? 'active' : ''}`} onClick={() => setSection(s.key)}>
+              <span>{s.admin && !isAdmin ? '🔒' : s.icon}</span>
+              {s.label}
+            </button>
           ))}
         </div>
-        <div style={{ fontSize: 12, color: 'var(--slate-500)', marginTop: 10 }}>「⚙️ 設定」は、いちばん最後に固定です。</div>
       </div>
 
-      <CardsAdmin isAdmin={isAdmin} onRequestAdminLogin={onRequestAdminLogin} />
+      {locked ? (
+        <div className="card">
+          <div className="locked-panel">
+            <div className="lock-ic">🔒</div>
+            <h3>管理者ログインが必要です</h3>
+            <p>カードの登録・運転者台帳・各種マスタ設定・操作ログ／バックアップ・ロゴ／アイコンは、誤操作・改ざん防止のため管理者のみ利用できます。</p>
+            <button className="btn btn-primary" onClick={onRequestLogin}>
+              🔒 管理者ログイン
+            </button>
+            {!adminConfigured && (
+              <p style={{ marginTop: 14, color: 'var(--amber-600)' }}>
+                ※ サーバーに ADMIN_PASSWORD が未設定です。Vercelの環境変数を設定してください。
+              </p>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
+          {section === 'menu' && <MenuOrderSettings order={menuOrder} onChange={onChangeMenuOrder} />}
+          {section === 'cards' && <CardsAdmin isAdmin={isAdmin} onRequestAdminLogin={onRequestLogin} />}
+          {section === 'drivers' && <DriversTab data={data} onSave={onSaveDriver} onDelete={onDeleteDriver} onBulkSave={onBulkSaveDrivers} />}
+          {section === 'masters' && (
+            <MastersTab
+              masters={data.masters}
+              empIdRule={data.empIdRule}
+              drivers={data.drivers}
+              onSaveEmpIdRule={onSaveEmpIdRule}
+              isAdmin={isAdmin}
+              adminConfigured={adminConfigured}
+              onSaveCategory={onSaveCategory}
+              onSaveAll={onSaveAll}
+              onRequestLogin={onRequestLogin}
+            />
+          )}
+          {section === 'logo' && <LogoTab />}
+          {section === 'logs' && (
+            <LogsTab data={data} isAdmin={isAdmin} adminConfigured={adminConfigured} onRequestLogin={onRequestLogin} onClearLogs={onClearLogs} />
+          )}
+        </>
+      )}
     </div>
   );
 }

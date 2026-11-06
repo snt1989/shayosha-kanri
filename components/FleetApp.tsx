@@ -13,7 +13,6 @@ import MechanicLoginModal from './MechanicLoginModal';
 import RentalTab from './RentalTab';
 import FuelTab from './FuelTab';
 import HelpTab from './HelpTab';
-import AdminTab from './AdminTab';
 import VehicleLedgerTab from './VehicleLedgerTab';
 import CardsTab from './CardsTab';
 import CalendarTab from './CalendarTab';
@@ -22,7 +21,7 @@ import { DEFAULT_ORDER, TabKey, loadOrder, saveOrder } from '@/lib/menu';
 import AdminLoginModal from './AdminLoginModal';
 import DriverLoginModal from './DriverLoginModal';
 
-type Tab = 'dashboard' | 'reports' | 'maintenance' | 'vehicles' | 'fuel' | 'rental' | 'calendar' | 'cards' | 'help' | 'settings' | 'admin';
+type Tab = 'dashboard' | 'reports' | 'maintenance' | 'vehicles' | 'fuel' | 'rental' | 'calendar' | 'cards' | 'help' | 'settings';
 type SyncStatus = 'idle' | 'saving' | 'error';
 const DRIVER_SESSION_KEY = 'fleet_current_driver_id';
 const MECHANIC_SESSION_KEY = 'fleet_current_mechanic';
@@ -564,7 +563,6 @@ export default function FleetApp() {
             }}
           />
         )}
-        {tab === 'settings' && <SettingsTab order={menuOrder} onChange={changeMenuOrder} isAdmin={isAdmin} onRequestAdminLogin={() => setShowAdminLogin(true)} />}
         {tab === 'calendar' && (
           <CalendarTab
             data={data}
@@ -593,11 +591,13 @@ export default function FleetApp() {
             onRefresh={refreshData}
           />
         )}
-        {tab === 'admin' && (
-          <AdminTab
+        {tab === 'settings' && (
+          <SettingsTab
             data={data}
             isAdmin={isAdmin}
             adminConfigured={adminConfigured}
+            menuOrder={menuOrder}
+            onChangeMenuOrder={changeMenuOrder}
             onSaveDriver={saveDriver}
             onDeleteDriver={deleteDriver}
             onBulkSaveDrivers={bulkSaveDrivers}

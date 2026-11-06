@@ -13,7 +13,6 @@ const SCREEN_NAMES: Record<HelpTarget, string> = {
   cards: 'カード貸出',
   calendar: 'カレンダー',
   settings: '設定',
-  admin: '管理画面',
 };
 
 const blockText = (b: HelpBlock): string => (typeof b === 'string' ? b : 'steps' in b ? b.steps.join(' ') : b.list.join(' '));
