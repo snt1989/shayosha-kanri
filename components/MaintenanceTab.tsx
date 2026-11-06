@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { AppData, MAINT_URGENCIES, MaintRecord, Report, Vehicle } from '@/lib/types';
-import { openMaintRequests, todayStr } from '@/lib/utils';
+import { canEditMaintRequest, openMaintRequests, todayStr } from '@/lib/utils';
+import MaintRequestModal, { MaintRequestInput } from './MaintRequestModal';
 import { downloadCsv, maintenanceToCsv } from '@/lib/csv';
 import Modal from './Modal';
 
@@ -30,6 +31,8 @@ export default function MaintenanceTab({
   onResolveRequest,
   mechanic,
   canEdit,
+  currentDriverId,
+  onEditRequest,
   onRequestMechanicLogin,
 }: {
   data: AppData;
@@ -39,8 +42,12 @@ export default function MaintenanceTab({
   mechanic: string | null;
   // 記録の追加・修正・削除、依頼への対応ができるか（整備士または管理者のログイン）
   canEdit: boolean;
+  // 依頼を出した本人が、自分の依頼を直せるように
+  currentDriverId: string | null;
+  onEditRequest: (id: string, r: MaintRequestInput) => Promise<unknown>;
   onRequestMechanicLogin: () => void;
 }) {
+  const [editingReq, setEditingReq] = useState<Report | null>(null);
   const [query, setQuery] = useState('');
   const [vehicleFilter, setVehicleFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
@@ -218,6 +225,11 @@ export default function MaintenanceTab({
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {canEditMaintRequest(r, { driverId: currentDriverId, mechanic: canEdit ? mechanic || '管理者' : null, isAdmin: canEdit && !mechanic }) && (
+                      <button className="btn btn-sm" onClick={() => setEditingReq(r)}>
+                        ✏️ 編集
+                      </button>
+                    )}
                     <button className="btn btn-sm btn-primary" onClick={() => openFromRequest(r)} disabled={!vehicleExists}>
                       整備記録として登録
                     </button>
@@ -434,6 +446,14 @@ export default function MaintenanceTab({
             <input value={editing.rec.note} onChange={(e) => setEditing({ ...editing, rec: { ...editing.rec, note: e.target.value } })} />
           </div>
         </Modal>
+      )}
+      {editingReq && (
+        <MaintRequestModal
+          data={data}
+          editing={editingReq}
+          onClose={() => setEditingReq(null)}
+          onSubmit={(input) => onEditRequest(editingReq.id, input)}
+        />
       )}
     </div>
   );

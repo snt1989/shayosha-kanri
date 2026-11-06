@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AppData, Driver, MAINT_URGENCIES } from '@/lib/types';
+import { AppData, Driver, MAINT_URGENCIES, Report } from '@/lib/types';
 import Modal from './Modal';
 
 export type MaintRequestInput = { vehicleId: string; type: string; urgency: string; note: string; driverId: string };
@@ -11,6 +11,7 @@ export type MaintRequestInput = { vehicleId: string; type: string; urgency: stri
 export default function MaintRequestModal({
   data,
   driver,
+  editing,
   initialVehicleId,
   initialType,
   initialNote,
@@ -18,17 +19,21 @@ export default function MaintRequestModal({
   onSubmit,
 }: {
   data: AppData;
-  driver: Driver;
+  driver?: Driver | null; // 新しく出すときの依頼者（編集のときは不要）
+  editing?: Report; // 渡すと、その依頼を編集する画面になる
   initialVehicleId?: string;
   initialType?: string; // アラートから開いたときの整備の種類（マスタにあるものだけ使う）
   initialNote?: string; // アラートから開いたときの、あらかじめ入れておく内容
   onClose: () => void;
   onSubmit: (r: MaintRequestInput) => Promise<unknown>;
 }) {
-  const [vehicleId, setVehicleId] = useState(initialVehicleId || data.vehicles[0]?.id || '');
-  const [type, setType] = useState(initialType && data.masters.maintTypes.includes(initialType) ? initialType : data.masters.maintTypes[0] || '');
-  const [urgency, setUrgency] = useState<string>(MAINT_URGENCIES[0]);
-  const [note, setNote] = useState(initialNote || '');
+  const [vehicleId, setVehicleId] = useState(editing?.vehicleId || initialVehicleId || data.vehicles[0]?.id || '');
+  const [type, setType] = useState(
+    editing ? editing.maintRequestType || '' : initialType && data.masters.maintTypes.includes(initialType) ? initialType : data.masters.maintTypes[0] || ''
+  );
+  const typeOptions = type && !data.masters.maintTypes.includes(type) ? [type, ...data.masters.maintTypes] : data.masters.maintTypes;
+  const [urgency, setUrgency] = useState<string>(editing?.maintRequestUrgency || MAINT_URGENCIES[0]);
+  const [note, setNote] = useState(editing?.maintRequestNote ?? initialNote ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -38,7 +43,7 @@ export default function MaintRequestModal({
     setSaving(true);
     setError('');
     try {
-      await onSubmit({ vehicleId, type, urgency, note: note.trim(), driverId: driver.id });
+      await onSubmit({ vehicleId, type, urgency, note: note.trim(), driverId: driver?.id || '' });
       onClose();
     } catch {
       setError('送信できませんでした。通信を確認して、もう一度お試しください。');
@@ -49,7 +54,7 @@ export default function MaintRequestModal({
 
   return (
     <Modal
-      title="🔧 整備を依頼する"
+      title={editing ? '✏️ 整備依頼を編集する' : '🔧 整備を依頼する'}
       onClose={onClose}
       footer={
         <>
@@ -57,17 +62,19 @@ export default function MaintRequestModal({
             キャンセル
           </button>
           <button className="btn btn-primary" onClick={submit} disabled={saving}>
-            {saving ? '送信中…' : '依頼を出す'}
+            {saving ? '送信中…' : editing ? '保存する' : '依頼を出す'}
           </button>
         </>
       }
     >
       <div className="notice-box">
-        車の不具合や整備してほしいことを、日報を書かなくても依頼できます。出した依頼は、整備台帳に「対応待ち」で表示されます。依頼者：{driver.lastName} {driver.firstName}
+        {editing
+          ? `依頼者：${editing.driver}（${editing.date}）。種類・緊急度・内容を直せます。${editing.maintOnly ? '' : '車両は、依頼を出した日報の車両なので変更できません。'}`
+          : `車の不具合や整備してほしいことを、日報を書かなくても依頼できます。出した依頼は、整備台帳に「対応待ち」で表示されます。依頼者：${driver?.lastName ?? ''} ${driver?.firstName ?? ''}`}
       </div>
       <div className="field">
         <label>車両</label>
-        <select value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}>
+        <select value={vehicleId} disabled={!!editing && !editing.maintOnly} onChange={(e) => setVehicleId(e.target.value)}>
           {data.vehicles.map((v) => (
             <option key={v.id} value={v.id}>
               {v.name}（{v.plate}）
@@ -79,7 +86,7 @@ export default function MaintRequestModal({
         <div className="field">
           <label>整備の種類</label>
           <select value={type} onChange={(e) => setType(e.target.value)}>
-            {data.masters.maintTypes.map((t) => (
+            {typeOptions.map((t) => (
               <option key={t} value={t}>
                 {t}
               </option>

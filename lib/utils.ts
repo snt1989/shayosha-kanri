@@ -72,3 +72,10 @@ export function reservationRange(v: { startDate: string; endDate: string; startT
     ? `${md(v.startDate)} ${v.startTime}〜${v.endTime}`
     : `${md(v.startDate)} ${v.startTime}〜${md(v.endDate)} ${v.endTime}`;
 }
+
+
+// 整備依頼を編集できる人：依頼を出した本人（運転者ログイン）、整備士、管理者。対応済になった依頼は編集できない。
+export function canEditMaintRequest(r: Report, who: { driverId?: string | null; mechanic?: string | null; isAdmin?: boolean }): boolean {
+  if (!r.maintRequest || r.maintRequestDone) return false;
+  return Boolean(who.isAdmin || who.mechanic || (who.driverId && r.driverId && who.driverId === r.driverId));
+}

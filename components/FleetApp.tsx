@@ -202,6 +202,14 @@ export default function FleetApp() {
   async function submitMaintRequest(r: { vehicleId: string; type: string; urgency: string; note: string; driverId: string }) {
     return withSync(() => jsonFetch('/api/maint-requests', { method: 'POST', body: JSON.stringify(r) }));
   }
+  async function editMaintRequest(id: string, r: { vehicleId: string; type: string; urgency: string; note: string }) {
+    return withSync(() =>
+      jsonFetch(`/api/reports/${id}/maint-request/edit`, {
+        method: 'POST',
+        body: JSON.stringify({ ...r, driverId: currentDriver?.id || '', mechanic: activeMechanic || '' }),
+      })
+    );
+  }
   async function saveVehicle(v: Vehicle) {
     return withSync(() => jsonFetch('/api/vehicles', { method: 'POST', body: JSON.stringify(v) }));
   }
@@ -478,6 +486,8 @@ export default function FleetApp() {
             onDeleteReservation={deleteReservation}
             isAdmin={isAdmin}
             onSubmitMaintRequest={submitMaintRequest}
+            onEditMaintRequest={editMaintRequest}
+            mechanic={activeMechanic}
           />
         )}
         {tab === 'reports' && (
@@ -503,6 +513,8 @@ export default function FleetApp() {
             onResolveRequest={resolveMaintRequest}
             mechanic={activeMechanic}
             canEdit={Boolean(activeMechanic) || isAdmin}
+            currentDriverId={currentDriver?.id || null}
+            onEditRequest={editMaintRequest}
             onRequestMechanicLogin={() => setShowMechanicLogin(true)}
           />}
         {tab === 'fuel' && (

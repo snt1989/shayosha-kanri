@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { AppData, Driver, MAINT_URGENCIES, Reservation } from '@/lib/types';
-import { openMaintRequests, rentalReservations, reservationRange, todayStr } from '@/lib/utils';
+import { AppData, Driver, MAINT_URGENCIES, Report, Reservation } from '@/lib/types';
+import { canEditMaintRequest, openMaintRequests, rentalReservations, reservationRange, todayStr } from '@/lib/utils';
 import AlertsPanel, { MaintPrefill } from './AlertsPanel';
 import UsageCalendar from './UsageCalendar';
 import DashboardNotices from './DashboardNotices';
@@ -18,6 +18,8 @@ export default function DashboardTab({
   onDeleteReservation,
   isAdmin,
   onSubmitMaintRequest,
+  onEditMaintRequest,
+  mechanic,
 }: {
   data: AppData;
   onReturnCheckin: (id: string) => void;
@@ -28,7 +30,10 @@ export default function DashboardTab({
   onDeleteReservation: (id: string) => Promise<unknown>;
   isAdmin: boolean;
   onSubmitMaintRequest: (r: MaintRequestInput) => Promise<unknown>;
+  onEditMaintRequest: (id: string, r: MaintRequestInput) => Promise<unknown>;
+  mechanic: string | null;
 }) {
+  const [editingReq, setEditingReq] = useState<Report | null>(null);
   // 整備依頼の入力画面。アラートから開くときは、車両・種類・内容をあらかじめ入れておく
   const [maintForm, setMaintForm] = useState<MaintPrefill | null>(null);
   const openMaintForm = (p: MaintPrefill) => {
@@ -124,9 +129,16 @@ export default function DashboardTab({
                       {r.maintRequestNote}　依頼: {r.date} {r.driver}
                     </div>
                   </div>
-                  <button className="btn btn-sm btn-primary" onClick={onOpenMaintenance}>
-                    整備台帳で対応
-                  </button>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {canEditMaintRequest(r, { driverId: currentDriver?.id, mechanic, isAdmin }) && (
+                      <button className="btn btn-sm" onClick={() => setEditingReq(r)}>
+                        ✏️ 編集
+                      </button>
+                    )}
+                    <button className="btn btn-sm btn-primary" onClick={onOpenMaintenance}>
+                      整備台帳で対応
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -175,6 +187,15 @@ export default function DashboardTab({
           initialNote={maintForm.note}
           onClose={() => setMaintForm(null)}
           onSubmit={onSubmitMaintRequest}
+        />
+      )}
+
+      {editingReq && (
+        <MaintRequestModal
+          data={data}
+          editing={editingReq}
+          onClose={() => setEditingReq(null)}
+          onSubmit={(input) => onEditMaintRequest(editingReq.id, input)}
         />
       )}
 
