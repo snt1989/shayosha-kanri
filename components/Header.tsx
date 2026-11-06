@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 type Tab = 'dashboard' | 'reports' | 'maintenance' | 'vehicles' | 'fuel' | 'rental' | 'help' | 'admin';
 type SyncStatus = 'idle' | 'saving' | 'error';
@@ -15,6 +15,9 @@ const TABS: { key: Tab; label: string; icon: string; admin?: boolean }[] = [
   { key: 'help', label: '使い方', icon: '❓' },
   { key: 'admin', label: '管理画面', icon: '🛠️', admin: true },
 ];
+
+// スマホでは、画面下のバーに毎日使う4つだけを出し、残りと各種ログインは「メニュー」にまとめる
+const MAIN_TABS: Tab[] = ['dashboard', 'reports', 'fuel', 'rental'];
 
 export default function Header({
   tab,
@@ -49,6 +52,16 @@ export default function Header({
 }) {
   const syncLabel = syncStatus === 'saving' ? '同期中…' : syncStatus === 'error' ? '同期エラー' : '同期完了';
   const syncCls = syncStatus === 'saving' ? 'saving' : syncStatus === 'error' ? 'error' : 'ok';
+  const [menuOpen, setMenuOpen] = useState(false);
+  const inMenu = !MAIN_TABS.includes(tab);
+  const goTab = (t: Tab) => {
+    setMenuOpen(false);
+    onTabChange(t);
+  };
+  const closeThen = (fn: () => void) => () => {
+    setMenuOpen(false);
+    fn();
+  };
 
   return (
     <header className="appbar2">
@@ -71,7 +84,7 @@ export default function Header({
           {TABS.map((t) => (
             <button
               key={t.key}
-              className={`tab2 ${tab === t.key ? 'active' : ''}`}
+              className={`tab2 ${MAIN_TABS.includes(t.key) ? '' : 'tab2-more'} ${tab === t.key ? 'active' : ''}`}
               onClick={() => onTabChange(t.key)}
             >
               <span>{t.icon}</span>
@@ -79,7 +92,24 @@ export default function Header({
               {t.admin && <span className="adminbadge">ADMIN</span>}
             </button>
           ))}
+          <button className={`tab2 tab2-menu ${inMenu ? 'active' : ''}`} onClick={() => setMenuOpen(true)} aria-haspopup="dialog">
+            <span>☰</span>
+            メニュー
+          </button>
         </nav>
+
+        {/* スマホ：ログイン状態を1行で見せる（押すとメニューが開く） */}
+        <div className="mobile-status">
+          <span className={`sync-chip ${syncCls}`}>
+            <span className="dot" />
+            {syncLabel}
+          </span>
+          <button className="btn btn-sm mobile-status-btn" onClick={() => setMenuOpen(true)}>
+            🪪 {currentDriverName ? `${currentDriverName} さん` : '未ログイン'}
+            {mechanicName ? ` ／ 🔧 ${mechanicName}` : ''}
+            {isAdmin ? ' ／ 🔓 管理者' : ''} ▾
+          </button>
+        </div>
 
         <div className="headerbtns">
           <span className={`sync-chip ${syncCls}`}>
@@ -127,6 +157,56 @@ export default function Header({
           )}
         </div>
       </div>
+
+      {menuOpen && (
+        <div className="menu-sheet-wrap" onMouseDown={(e) => e.target === e.currentTarget && setMenuOpen(false)}>
+          <div className="menu-sheet" role="dialog" aria-label="メニュー">
+            <div className="menu-sheet-head">
+              <strong>メニュー</strong>
+              <button className="modal-close" onClick={() => setMenuOpen(false)} aria-label="閉じる">
+                ×
+              </button>
+            </div>
+            <div className="menu-sheet-section">画面</div>
+            {TABS.filter((t) => !MAIN_TABS.includes(t.key)).map((t) => (
+              <button key={t.key} className={`menu-row ${tab === t.key ? 'active' : ''}`} onClick={() => goTab(t.key)}>
+                <span className="menu-row-ic">{t.icon}</span>
+                <span className="menu-row-label">{t.label}</span>
+                {t.admin && <span className="adminbadge">ADMIN</span>}
+                <span className="menu-row-go">›</span>
+              </button>
+            ))}
+            <div className="menu-sheet-section">ログイン</div>
+            <button
+              className="menu-row"
+              onClick={closeThen(() => {
+                if (!currentDriverName) return onOpenDriverLogin();
+                if (confirm(`${currentDriverName} さんのログインを解除しますか？`)) onDriverLogout();
+              })}
+            >
+              <span className="menu-row-ic">🪪</span>
+              <span className="menu-row-label">{currentDriverName ? `${currentDriverName} さん（運転者）` : '運転者としてログイン'}</span>
+              <span className="menu-row-go">{currentDriverName ? '解除' : '›'}</span>
+            </button>
+            <button
+              className="menu-row"
+              onClick={closeThen(() => {
+                if (!mechanicName) return onOpenMechanicLogin();
+                if (confirm(`${mechanicName} さんの整備士ログインを解除しますか？`)) onMechanicLogout();
+              })}
+            >
+              <span className="menu-row-ic">🔧</span>
+              <span className="menu-row-label">{mechanicName ? `${mechanicName}（整備士）` : '整備士としてログイン'}</span>
+              <span className="menu-row-go">{mechanicName ? '解除' : '›'}</span>
+            </button>
+            <button className="menu-row" onClick={closeThen(isAdmin ? onLogoutAdmin : onOpenAdminLogin)}>
+              <span className="menu-row-ic">{isAdmin ? '🔓' : '🔒'}</span>
+              <span className="menu-row-label">{isAdmin ? '管理者ログアウト' : '管理者ログイン'}</span>
+              <span className="menu-row-go">{isAdmin ? '解除' : '›'}</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="quickbar" style={{ marginTop: 10 }}>
         <button className="btn btn-primary btn-sm" onClick={onQuickReport}>
