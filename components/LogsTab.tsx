@@ -120,7 +120,7 @@ export default function LogsTab({
         >
           <div className="stat-tile">
             <div className="label">日報</div>
-            <div className="value">{data.reports.length}件</div>
+            <div className="value">{data.reports.filter((r) => !r.maintOnly).length}件</div>
           </div>
           <div className="stat-tile">
             <div className="label">車両</div>

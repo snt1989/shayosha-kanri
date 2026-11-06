@@ -93,6 +93,7 @@ export default function UsageCalendar({
       map.set(date, list);
     };
     data.reports.forEach((r) => {
+      if (r.maintOnly) return;
       if (vehicleId && r.vehicleId !== vehicleId) return;
       push(r.date, { kind: 'report', time: r.preTime || '', r });
     });

@@ -1,10 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { AppData, Driver, MAINT_URGENCIES, Reservation } from '@/lib/types';
 import { openMaintRequests, rentalReservations, reservationRange, todayStr } from '@/lib/utils';
 import AlertsPanel from './AlertsPanel';
 import UsageCalendar from './UsageCalendar';
 import DashboardNotices from './DashboardNotices';
+import MaintRequestModal, { MaintRequestInput } from './MaintRequestModal';
 
 export default function DashboardTab({
   data,
@@ -15,6 +17,7 @@ export default function DashboardTab({
   onSaveReservation,
   onDeleteReservation,
   isAdmin,
+  onSubmitMaintRequest,
 }: {
   data: AppData;
   onReturnCheckin: (id: string) => void;
@@ -24,7 +27,9 @@ export default function DashboardTab({
   onSaveReservation: (r: Reservation) => Promise<unknown>;
   onDeleteReservation: (id: string) => Promise<unknown>;
   isAdmin: boolean;
+  onSubmitMaintRequest: (r: MaintRequestInput) => Promise<unknown>;
 }) {
+  const [showMaintForm, setShowMaintForm] = useState(false);
   const today = todayStr();
   const openReports = [...data.reports]
     .filter((r) => !r.postDone)
@@ -85,6 +90,17 @@ export default function DashboardTab({
           🔧 整備依頼（対応待ち）
           {maintRequests.length > 0 && <span className="pill pill-red" style={{ marginLeft: 8 }}>{maintRequests.length}件</span>}
         </h3>
+        <div style={{ marginBottom: 10 }}>
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              if (!currentDriver) return onRequestDriverLogin();
+              setShowMaintForm(true);
+            }}
+          >
+            ＋ 整備を依頼する
+          </button>
+        </div>
         {maintRequests.length === 0 ? (
           <div className="empty-state">対応待ちの整備依頼はありません</div>
         ) : (
@@ -146,6 +162,10 @@ export default function DashboardTab({
             })}
           </div>
         </div>
+      )}
+
+      {showMaintForm && currentDriver && (
+        <MaintRequestModal data={data} driver={currentDriver} onClose={() => setShowMaintForm(false)} onSubmit={onSubmitMaintRequest} />
       )}
 
       <UsageCalendar

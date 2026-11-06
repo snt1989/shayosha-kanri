@@ -47,6 +47,8 @@ export type Report = {
   // 整備台帳で対応を記録すると true（対応待ち → 対応済）
   maintRequestDone?: boolean;
   maintRequestDoneAt?: string;
+  // ダッシュボードから直接出した整備依頼（運転の記録ではない）。日報の一覧・集計・CSVには出さない
+  maintOnly?: boolean;
 };
 
 export const MAINT_URGENCIES = ['通常', '早めに', '至急（使用不可）'] as const;

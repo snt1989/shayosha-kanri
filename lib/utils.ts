@@ -39,6 +39,11 @@ export function maintUrgencyRank(urgency?: string): number {
   return i < 0 ? 0 : i;
 }
 
+// 運転の記録（日報）だけにする。ダッシュボードから直接出した整備依頼（maintOnly）は除く
+export function tripReports(reports: Report[]): Report[] {
+  return reports.filter((r) => !r.maintOnly);
+}
+
 // 対応待ちの整備依頼（緊急度の高い順、同じなら古い順）
 export function openMaintRequests(reports: Report[]): Report[] {
   return reports

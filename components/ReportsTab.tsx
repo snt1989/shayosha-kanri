@@ -156,14 +156,15 @@ export default function ReportsTab({
 
   const filtered = useMemo(() => {
     const q = query.trim();
-    if (!q) return data.reports;
-    return data.reports.filter(
+    const base = data.reports.filter((r) => !r.maintOnly);
+    if (!q) return base;
+    return base.filter(
       (r) => r.driver.includes(q) || r.vehicleName.includes(q) || r.destination.includes(q) || r.date.includes(q)
     );
   }, [data.reports, query]);
 
   const reportCodes = useMemo(() => {
-    const sorted = [...data.reports].sort((a, b) => (a.date + a.preTime).localeCompare(b.date + b.preTime));
+    const sorted = data.reports.filter((r) => !r.maintOnly).sort((a, b) => (a.date + a.preTime).localeCompare(b.date + b.preTime));
     const map = new Map<string, string>();
     sorted.forEach((r, idx) => map.set(r.id, `R-${101 + idx}`));
     return map;

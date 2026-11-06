@@ -55,7 +55,7 @@ export default function VehiclesTab({
 
   const driveCounts = useMemo(() => {
     const map = new Map<string, number>();
-    data.reports.forEach((r) => map.set(r.vehicleId, (map.get(r.vehicleId) || 0) + 1));
+    data.reports.filter((r) => !r.maintOnly).forEach((r) => map.set(r.vehicleId, (map.get(r.vehicleId) || 0) + 1));
     return map;
   }, [data.reports]);
 
@@ -200,7 +200,7 @@ export default function VehiclesTab({
   const maintCost = maintRows.reduce((sum, m) => sum + (m.cost || 0), 0);
   const maintRequests = viewVehicle ? openMaintRequests(data.reports).filter((r) => r.vehicleId === viewVehicle.id) : [];
   const driveRows = viewVehicle
-    ? data.reports.filter((r) => r.vehicleId === viewVehicle.id).sort((a, b) => (b.date + b.preTime).localeCompare(a.date + a.preTime))
+    ? data.reports.filter((r) => !r.maintOnly && r.vehicleId === viewVehicle.id).sort((a, b) => (b.date + b.preTime).localeCompare(a.date + a.preTime))
     : [];
   const driveKm = driveRows.reduce((sum, r) => sum + (r.postDone ? r.tripKm || 0 : 0), 0);
   const driveOut = driveRows.filter((r) => !r.postDone).length;

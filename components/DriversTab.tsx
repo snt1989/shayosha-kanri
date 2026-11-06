@@ -38,7 +38,7 @@ export default function DriversTab({
   const fileRef = useRef<HTMLInputElement>(null);
 
   const reportsOf = (d: Driver) =>
-    data.reports.filter((r) => (r.driverId ? r.driverId === d.id : r.driver.replace(/\s/g, '') === `${d.lastName}${d.firstName}`));
+    data.reports.filter((r) => !r.maintOnly && (r.driverId ? r.driverId === d.id : r.driver.replace(/\s/g, '') === `${d.lastName}${d.firstName}`));
   const countById = useMemo(() => {
     const m: Record<string, number> = {};
     data.drivers.forEach((d) => {

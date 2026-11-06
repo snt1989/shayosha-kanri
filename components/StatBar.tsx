@@ -5,7 +5,7 @@ import { daysUntil, todayStr } from '@/lib/utils';
 
 export default function StatBar({ data }: { data: AppData }) {
   const today = todayStr();
-  const todayReports = data.reports.filter((r) => r.date === today);
+  const todayReports = data.reports.filter((r) => !r.maintOnly && r.date === today);
   const doneCount = todayReports.filter((r) => r.postDone).length;
   const outCount = todayReports.length - doneCount;
 

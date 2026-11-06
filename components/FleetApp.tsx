@@ -199,6 +199,9 @@ export default function FleetApp() {
   async function resolveMaintRequest(id: string, done: boolean) {
     return withSync(() => jsonFetch(`/api/reports/${id}/maint-request`, { method: 'POST', body: JSON.stringify({ done }) }));
   }
+  async function submitMaintRequest(r: { vehicleId: string; type: string; urgency: string; note: string; driverId: string }) {
+    return withSync(() => jsonFetch('/api/maint-requests', { method: 'POST', body: JSON.stringify(r) }));
+  }
   async function saveVehicle(v: Vehicle) {
     return withSync(() => jsonFetch('/api/vehicles', { method: 'POST', body: JSON.stringify(v) }));
   }
@@ -474,6 +477,7 @@ export default function FleetApp() {
             onSaveReservation={saveReservation}
             onDeleteReservation={deleteReservation}
             isAdmin={isAdmin}
+            onSubmitMaintRequest={submitMaintRequest}
           />
         )}
         {tab === 'reports' && (
