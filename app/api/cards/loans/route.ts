@@ -30,7 +30,16 @@ export async function POST(req: NextRequest) {
   if (dueDate && dueDate < todayJst()) {
     return NextResponse.json({ success: false, message: '返却予定日は、今日以降にしてください。' }, { status: 400 });
   }
-  const v = b.vehicleId ? app.vehicles.find((x) => x.id === b.vehicleId) : undefined;
+  const vid = String(b.vehicleId || '');
+  const veh = vid ? app.vehicles.find((x) => x.id === vid) : undefined;
+  const rent = vid && !veh ? (app.rentals || []).find((x) => x.id === vid) : undefined;
+  const v = veh
+    ? { id: veh.id, name: veh.name }
+    : vid === 'rental'
+      ? { id: 'rental', name: 'レンタカー' }
+      : rent
+      ? { id: rent.id, name: `レンタカー ${[rent.carModel || rent.carClass, rent.plate].filter(Boolean).join(' ')}`.trim() }
+      : undefined;
   const loan: CardLoan = {
     id: 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
     cardId: card.id,
