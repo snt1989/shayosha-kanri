@@ -290,13 +290,6 @@ export default function CardsTab({
               <label>使用する車両（任意）</label>
               <select value={form.vehicleId} onChange={(e) => setForm({ ...form, vehicleId: e.target.value })}>
                 <option value="">指定しない</option>
-                <optgroup label="社用車">
-                  {data.vehicles.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.name}（{v.plate}）
-                    </option>
-                  ))}
-                </optgroup>
                 <optgroup label="レンタカー">
                   <option value="rental">レンタカー（車両の登録なし）</option>
                 </optgroup>
