@@ -79,3 +79,10 @@ export function canEditMaintRequest(r: Report, who: { driverId?: string | null; 
   if (!r.maintRequest || r.maintRequestDone) return false;
   return Boolean(who.isAdmin || who.mechanic || (who.driverId && r.driverId && who.driverId === r.driverId));
 }
+
+// 日報を入力した本人か（運転者ログイン中の人のID、または昔の日報は名前の一致で見る）
+export function isReportOwner(r: Report, driver?: { id: string; lastName: string; firstName: string } | null): boolean {
+  if (!driver) return false;
+  if (r.driverId) return r.driverId === driver.id;
+  return r.driver.replace(/\s/g, '') === `${driver.lastName}${driver.firstName}`;
+}

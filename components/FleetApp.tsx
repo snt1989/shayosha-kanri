@@ -163,7 +163,7 @@ export default function FleetApp() {
 
   async function saveReport(r: Report) {
     try {
-      return await withSync(() => jsonFetch('/api/reports', { method: 'POST', body: JSON.stringify(r) }));
+      return await withSync(() => jsonFetch('/api/reports', { method: 'POST', headers: { 'x-driver-id': currentDriver?.id || '' }, body: JSON.stringify(r) }));
     } catch (e) {
       handleAdminApiError(e);
       throw e;

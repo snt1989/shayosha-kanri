@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppData, Driver, MAINT_URGENCIES, Report, Vehicle } from '@/lib/types';
-import { nowTimeStr, todayStr } from '@/lib/utils';
+import { isReportOwner, nowTimeStr, todayStr } from '@/lib/utils';
 import { downloadCsv } from '@/lib/csv';
 import { extractOdometerReading, loadTesseract } from '@/lib/ocr';
 import Modal from './Modal';
@@ -178,9 +178,12 @@ export default function ReportsTab({
     setReturnMode(false);
     setEditing(emptyReport(data, currentDriver));
   }
+  // 確定済みの日報を編集できるのは、入力した本人（運転者ログイン）か管理者
+  const canEditReport = (r: Report) => isAdmin || isReportOwner(r, currentDriver);
   function openEdit(r: Report) {
-    if (!isAdmin) {
-      onRequestLogin();
+    if (!canEditReport(r)) {
+      if (!currentDriver) onRequestDriverLogin();
+      else alert('この日報を編集できるのは、入力した本人か管理者です。');
       return;
     }
     setReturnMode(false);
@@ -299,7 +302,7 @@ export default function ReportsTab({
             </h3>
             <div style={{ fontSize: 12, color: 'var(--slate-500)' }}>
               運転前後の酒気帯び確認・簡易点検・実走行kmを記録保管します。
-              確定済み日報の編集・削除は管理者ログインが必要です。
+              確定済み日報の編集は、入力した本人（運転者ログイン）か管理者ができます。削除は管理者ログインが必要です。
             </div>
           </div>
           <div className="actions">
@@ -413,7 +416,7 @@ export default function ReportsTab({
                     </td>
                     <td>
                       <button className="btn btn-sm" onClick={() => openEdit(r)}>
-                        {isAdmin ? '編集' : '🔒 編集'}
+                        {canEditReport(r) ? '編集' : '🔒 編集'}
                       </button>{' '}
                       <button className="btn btn-sm btn-danger" onClick={() => handleDelete(r.id)}>
                         {isAdmin ? '削除' : '🔒 削除'}

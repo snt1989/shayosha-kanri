@@ -20,11 +20,30 @@ export async function POST(req: NextRequest) {
 
   // 既に「帰着済」として確定している日報の再編集（内容の書き換え）は、記録の改ざん防止のため
   // 管理者ログイン必須とする。新規登録や、まだ出庫中の日報を自分で帰着登録する操作は誰でも可能。
-  if (wasCompleted && !isAdminReq) {
+  // 入力した本人（運転者ログイン）は、自分の確定済みの日報を編集できる。
+  // ※ 運転者のログインは端末側の確認なので、サーバーでは運転者IDが日報の運転者と一致するかまでを見る。
+  const existing = idx >= 0 ? data.reports[idx] : null;
+  const editorId = req.headers.get('x-driver-id') || '';
+  const editor = editorId ? data.drivers.find((d) => d.id === editorId) : undefined;
+  const isOwner = Boolean(
+    existing &&
+      editor &&
+      (existing.driverId
+        ? existing.driverId === editor.id
+        : existing.driver.replace(/\s/g, '') === `${editor.lastName}${editor.firstName}`)
+  );
+  if (wasCompleted && !isAdminReq && !isOwner) {
     return NextResponse.json(
-      { success: false, message: '確定済みの日報を編集するには管理者ログインが必要です。' },
+      { success: false, message: '確定済みの日報を編集できるのは、入力した本人か管理者です。' },
       { status: 401 }
     );
+  }
+  // 本人による編集では、運転者そのものは書き換えさせない
+  if (existing && isOwner && !isAdminReq) {
+    r.driverId = existing.driverId;
+    r.driverLast = existing.driverLast;
+    r.driverFirst = existing.driverFirst;
+    r.driver = existing.driver;
   }
 
   if (idx >= 0) {
@@ -42,7 +61,7 @@ export async function POST(req: NextRequest) {
 
   pushLog(data, {
     actor: isAdminReq ? 'admin' : 'user',
-    action: idx < 0 ? '日報新規登録' : wasCompleted ? '日報編集（確定済み）' : r.postDone ? '日報帰着登録' : '日報更新',
+    action: idx < 0 ? '日報新規登録' : wasCompleted ? (isAdminReq ? '日報編集（確定済み）' : '日報編集（確定済み・本人）') : r.postDone ? '日報帰着登録' : '日報更新',
     target: `${r.date} ${r.driver} / ${r.vehicleName}`,
     detail: r.destination,
   });
