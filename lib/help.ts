@@ -1,6 +1,6 @@
 // 「使い方」タブのQ&A。画面の動作を変えたときは、ここも合わせて直す。
 
-export type HelpTarget = 'dashboard' | 'reports' | 'fuel' | 'rental' | 'maintenance' | 'vehicles' | 'cards' | 'calendar' | 'admin';
+export type HelpTarget = 'dashboard' | 'reports' | 'fuel' | 'rental' | 'maintenance' | 'vehicles' | 'cards' | 'calendar' | 'settings' | 'admin';
 
 // 答えの1ブロック。文字列は段落、steps は番号つきの手順、list は箇条書き。
 export type HelpBlock = string | { steps: string[] } | { list: string[] };
@@ -458,6 +458,22 @@ export const HELP_SECTIONS: HelpSection[] = [
         q: '車両ごとの整備記録を見るには？',
         a: [
           '「車両台帳」のページで、車両ごとの整備記録を表示できます。ここでは見るだけで、追加・修正・削除は整備台帳で行います。',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'settings',
+    icon: '⚙️',
+    title: '設定（メニューの並び替え）',
+    go: 'settings',
+    items: [
+      {
+        q: 'メニューの並びを変えるには？',
+        a: [
+          '「⚙️ 設定」のページ（パソコンは上のタブの最後、スマホは「☰ メニュー」の中）を開き、動かしたい項目の「↑」「↓」を押します。上から順に、パソコンでは上のタブに、スマホでは下のバーの左から並びます。',
+          'スマホの下のバーに出るのは、並びの上から4つです。よく使うページを上の4つに入れてください。残りは「☰ メニュー」に入ります。「標準の並びに戻す」で、もとの並びに戻せます。',
+          '並びはこの端末のブラウザに保存されます。他の人や、他の端末の並びは変わりません（別の端末でも変えたいときは、その端末で設定してください）。',
         ],
       },
     ],

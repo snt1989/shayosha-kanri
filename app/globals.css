@@ -2181,3 +2181,25 @@ table.bulk-grid {
     border-radius: 5px;
   }
 }
+
+/* 設定：メニューの並び替え */
+.menu-order-list { margin-top: 12px; }
+.menu-order-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  background: var(--slate-50);
+  border: 1px solid var(--slate-200);
+  border-radius: 10px;
+}
+.menu-order-row.in-bar { background: var(--sky-100); border-color: var(--sky-600); }
+.menu-order-no { width: 18px; text-align: center; font-size: 12px; font-weight: 800; color: var(--slate-500); }
+.menu-order-ic { font-size: 20px; width: 26px; text-align: center; }
+.menu-order-label { flex: 1; min-width: 0; font-weight: 700; font-size: 14px; }
+.menu-order-row .pill { flex-shrink: 0; white-space: nowrap; font-size: 10px; padding: 2px 6px; }
+.menu-order-row .btn { flex-shrink: 0; }
+.menu-order-divider { font-size: 11px; font-weight: 700; color: var(--slate-500); margin: 10px 2px 6px; text-align: center; }
+.menu-order-row .btn { min-width: 40px; }
+.pill-sky { background: var(--sky-100); color: var(--sky-700); }

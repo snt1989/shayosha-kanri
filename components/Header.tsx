@@ -2,26 +2,13 @@
 
 import { useState, type ReactNode } from 'react';
 
-type Tab = 'dashboard' | 'reports' | 'maintenance' | 'vehicles' | 'fuel' | 'rental' | 'calendar' | 'cards' | 'help' | 'admin';
+import { BAR_COUNT, TAB_META, TabKey } from '@/lib/menu';
+
+type Tab = TabKey | 'settings';
 type SyncStatus = 'idle' | 'saving' | 'error';
 
-const TABS: { key: Tab; label: string; icon: string; admin?: boolean }[] = [
-  { key: 'dashboard', label: 'ダッシュボード', icon: '📊' },
-  { key: 'reports', label: '運転日報', icon: '📝' },
-  { key: 'calendar', label: 'カレンダー', icon: '📅' },
-  { key: 'fuel', label: '給油台帳', icon: '⛽' },
-  { key: 'rental', label: 'レンタカー', icon: '🚗' },
-  { key: 'cards', label: 'カード貸出', icon: '💳' },
-  { key: 'maintenance', label: '整備台帳', icon: '🔧' },
-  { key: 'vehicles', label: '車両台帳', icon: '🚘' },
-  { key: 'help', label: '使い方', icon: '❓' },
-  { key: 'admin', label: '管理画面', icon: '🛠️', admin: true },
-];
-
-// スマホでは、画面下のバーに毎日使う4つだけを出し、残りと各種ログインは「メニュー」にまとめる
-const MAIN_TABS: Tab[] = ['dashboard', 'reports', 'fuel', 'rental'];
-
 export default function Header({
+  order,
   tab,
   onTabChange,
   syncStatus,
@@ -37,6 +24,8 @@ export default function Header({
   onMechanicLogout,
   bell,
 }: {
+  // メニューの並び順（「設定」で変えられる）。スマホの下のバーには、上から4つが出る
+  order: TabKey[];
   tab: Tab;
   onTabChange: (t: Tab) => void;
   syncStatus: SyncStatus;
@@ -54,6 +43,11 @@ export default function Header({
 }) {
   const syncLabel = syncStatus === 'saving' ? '同期中…' : syncStatus === 'error' ? '同期エラー' : '同期完了';
   const syncCls = syncStatus === 'saving' ? 'saving' : syncStatus === 'error' ? 'error' : 'ok';
+  const TABS: { key: Tab; label: string; icon: string; admin?: boolean }[] = [
+    ...order.map((k) => ({ key: k as Tab, ...TAB_META[k] })),
+    { key: 'settings', label: '設定', icon: '⚙️' },
+  ];
+  const MAIN_TABS: Tab[] = order.slice(0, BAR_COUNT);
   const [menuOpen, setMenuOpen] = useState(false);
   const inMenu = !MAIN_TABS.includes(tab);
   const goTab = (t: Tab) => {

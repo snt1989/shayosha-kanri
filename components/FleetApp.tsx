@@ -17,10 +17,12 @@ import AdminTab from './AdminTab';
 import VehicleLedgerTab from './VehicleLedgerTab';
 import CardsTab from './CardsTab';
 import CalendarTab from './CalendarTab';
+import SettingsTab from './SettingsTab';
+import { DEFAULT_ORDER, TabKey, loadOrder, saveOrder } from '@/lib/menu';
 import AdminLoginModal from './AdminLoginModal';
 import DriverLoginModal from './DriverLoginModal';
 
-type Tab = 'dashboard' | 'reports' | 'maintenance' | 'vehicles' | 'fuel' | 'rental' | 'calendar' | 'cards' | 'help' | 'admin';
+type Tab = 'dashboard' | 'reports' | 'maintenance' | 'vehicles' | 'fuel' | 'rental' | 'calendar' | 'cards' | 'help' | 'settings' | 'admin';
 type SyncStatus = 'idle' | 'saving' | 'error';
 const DRIVER_SESSION_KEY = 'fleet_current_driver_id';
 const MECHANIC_SESSION_KEY = 'fleet_current_mechanic';
@@ -57,6 +59,13 @@ export default function FleetApp() {
   const [currentDriverId, setCurrentDriverId] = useState<string | null>(null);
   const [showDriverLogin, setShowDriverLogin] = useState(false);
   const [mechanicName, setMechanicName] = useState<string | null>(null);
+  // メニューの並び順（端末ごと。初回表示は標準の並びで、読み込み後に保存済みの並びへ）
+  const [menuOrder, setMenuOrder] = useState<TabKey[]>(DEFAULT_ORDER);
+  useEffect(() => setMenuOrder(loadOrder()), []);
+  const changeMenuOrder = (o: TabKey[]) => {
+    setMenuOrder(o);
+    saveOrder(o);
+  };
   const [showMechanicLogin, setShowMechanicLogin] = useState(false);
   // 入力操作（出発登録・帰着登録・予約）の途中でログインを求めたときの案内と、ログイン後に続ける操作
   const [driverLoginNotice, setDriverLoginNotice] = useState<string | null>(null);
@@ -454,6 +463,7 @@ export default function FleetApp() {
   return (
     <div className="app-shell">
       <Header
+        order={menuOrder}
         tab={tab}
         onTabChange={setTab}
         syncStatus={syncStatus}
@@ -554,6 +564,7 @@ export default function FleetApp() {
             }}
           />
         )}
+        {tab === 'settings' && <SettingsTab order={menuOrder} onChange={changeMenuOrder} />}
         {tab === 'calendar' && (
           <CalendarTab
             data={data}
