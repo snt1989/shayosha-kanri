@@ -2235,3 +2235,14 @@ table.bulk-grid {
 .check-dropdown-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 14px; }
 .check-dropdown-item:hover { background: var(--slate-50); }
 .check-dropdown-item input { width: 18px; height: 18px; }
+
+/* 整備台帳の一覧：1行を短くして見やすくする */
+.ledger-table td { vertical-align: top; }
+.ledger-row { cursor: pointer; }
+.ledger-row:hover { background: var(--slate-50, #f8fafc); }
+.ledger-content { min-width: 220px; max-width: 420px; }
+.ledger-sub { font-size: 11.5px; color: var(--slate-500); margin-top: 2px; }
+.ledger-sub b { color: var(--slate-600); font-weight: 600; margin-right: 2px; }
+.clamp-1, .clamp-2 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+.clamp-1 { -webkit-line-clamp: 1; }
+.clamp-2 { -webkit-line-clamp: 2; }

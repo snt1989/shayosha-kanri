@@ -60,7 +60,17 @@ export default function MaintenanceTab({
     const rows: LedgerRow[] = [];
     data.vehicles.forEach((v) => {
       v.maintHistory.forEach((m, index) => {
-        rows.push({ ...m, vehicleId: v.id, vehicleName: v.name, plate: v.plate, index });
+        // 以前は依頼内容が備考の先頭に「【依頼】」つきで入っていたので、依頼内容と備考に分けて扱う
+        const legacy = !m.request && m.note.startsWith('【依頼】');
+        rows.push({
+          ...m,
+          request: legacy ? m.note.replace(/^【依頼】/, '') : m.request,
+          note: legacy ? '' : m.note,
+          vehicleId: v.id,
+          vehicleName: v.name,
+          plate: v.plate,
+          index,
+        });
       });
     });
     // 実施日の新しい順（同日は登録の新しい順＝車両内で先頭のもの）
@@ -79,7 +89,7 @@ export default function MaintenanceTab({
     return allRows.filter((r) => {
       if (vehicleFilter && r.vehicleId !== vehicleFilter) return false;
       if (typeFilter && r.type !== typeFilter) return false;
-      if (q && !(r.note.includes(q) || (r.shop || '').includes(q) || r.type.includes(q) || r.vehicleName.includes(q) || r.plate.includes(q))) {
+      if (q && !(r.note.includes(q) || (r.work || '').includes(q) || (r.request || '').includes(q) || (r.shop || '').includes(q) || r.type.includes(q) || r.vehicleName.includes(q) || r.plate.includes(q))) {
         return false;
       }
       return true;
@@ -167,7 +177,7 @@ export default function MaintenanceTab({
     };
     if (editing.rec.cost !== undefined && !Number.isNaN(editing.rec.cost)) rec.cost = editing.rec.cost;
     if (editing.rec.shop) rec.shop = editing.rec.shop;
-    if (editing.rec.request) rec.request = editing.rec.request;
+    if (editing.rec.request?.trim()) rec.request = editing.rec.request.trim();
     if (editing.rec.work?.trim()) rec.work = editing.rec.work.trim();
     // 記録した整備士。整備士としてログイン中ならその名前、編集のときは元の記録の名前を引き継ぐ
     const by = mechanic || editing.rec.by || (canEdit ? '管理者' : '');
@@ -277,7 +287,7 @@ export default function MaintenanceTab({
           <div className="actions">
             <input
               className="search"
-              placeholder="備考・実施先で検索"
+              placeholder="内容・備考・実施先で検索"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               style={{ padding: '9px 12px', border: '1px solid var(--slate-300)', borderRadius: 8, minWidth: 160 }}
@@ -342,41 +352,52 @@ export default function MaintenanceTab({
           </div>
         ) : (
           <div className="table-wrap">
-            <table className="data-table">
+            <table className="data-table ledger-table">
               <thead>
                 <tr>
                   <th>実施日</th>
                   <th>車両</th>
                   <th>整備種別</th>
-                  <th>走行km</th>
-                  <th>費用</th>
-                  <th>実施先</th>
-                  <th>整備士</th>
-                  <th>依頼内容</th>
-                  <th>整備内容</th>
-                  <th>備考</th>
+                  <th>内容</th>
+                  <th>走行km／費用</th>
+                  <th>実施先／整備士</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={`${r.vehicleId}-${r.index}`}>
-                    <td>{r.date}</td>
+                  <tr key={`${r.vehicleId}-${r.index}`} className="ledger-row" onClick={() => openEdit(r)} title="押すと、内容を見て編集できます">
+                    <td style={{ whiteSpace: 'nowrap' }}>{r.date}</td>
                     <td>
                       {r.vehicleName}
-                      <div style={{ fontSize: 11, color: 'var(--slate-500)' }}>{r.plate}</div>
+                      <div className="ledger-sub">{r.plate}</div>
                     </td>
                     <td>
                       <span className="pill pill-slate">{r.type}</span>
                     </td>
-                    <td>{r.km.toLocaleString()}</td>
-                    <td>{yen(r.cost)}</td>
-                    <td>{r.shop || '-'}</td>
-                    <td>{r.by || '-'}</td>
-                    <td style={{ whiteSpace: 'pre-wrap' }}>{r.request || '-'}</td>
-                    <td style={{ whiteSpace: 'pre-wrap' }}>{r.work || '-'}</td>
-                    <td style={{ whiteSpace: 'pre-wrap' }}>{r.note}</td>
+                    <td className="ledger-content">
+                      {r.work && <div className="clamp-2">{r.work}</div>}
+                      {r.request && (
+                        <div className="ledger-sub clamp-1">
+                          <b>依頼</b> {r.request}
+                        </div>
+                      )}
+                      {r.note && (
+                        <div className="ledger-sub clamp-1">
+                          <b>備考</b> {r.note}
+                        </div>
+                      )}
+                      {!r.work && !r.request && !r.note && '-'}
+                    </td>
                     <td style={{ whiteSpace: 'nowrap' }}>
+                      {r.km ? r.km.toLocaleString() : '-'}
+                      <div className="ledger-sub">{yen(r.cost)}</div>
+                    </td>
+                    <td>
+                      {r.shop || '-'}
+                      <div className="ledger-sub">{r.by || '-'}</div>
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>
                       <button className="btn btn-sm" onClick={() => openEdit(r)}>
                         {canEdit ? '' : '🔒 '}編集
                       </button>{' '}
@@ -421,14 +442,6 @@ export default function MaintenanceTab({
           {editing.requestId && (
             <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 10 }}>
               整備が終わったら「✓ 完了として保存」、まだ様子を見るときは「👀 経過観察にして保存」を押します（記録は、どちらでも台帳に残ります）。
-            </div>
-          )}
-          {editing.rec.request && (
-            <div className="field">
-              <label>依頼内容</label>
-              <div className="notice-box" style={{ margin: 0, whiteSpace: 'pre-wrap', maxHeight: 160, overflowY: 'auto' }}>
-                {editing.rec.request}
-              </div>
             </div>
           )}
           <div className="field-row">
@@ -488,6 +501,16 @@ export default function MaintenanceTab({
                 onChange={(e) => setEditing({ ...editing, rec: { ...editing.rec, shop: e.target.value } })}
               />
             </div>
+          </div>
+          <div className="field">
+            <label>依頼内容</label>
+            <textarea
+              rows={3}
+              style={{ resize: 'vertical', minHeight: 70, lineHeight: 1.5 }}
+              value={editing.rec.request || ''}
+              placeholder="依頼があったときの症状・内容"
+              onChange={(e) => setEditing({ ...editing, rec: { ...editing.rec, request: e.target.value } })}
+            />
           </div>
           <div className="field">
             <label>整備内容（実施した整備・交換した部品など）</label>
