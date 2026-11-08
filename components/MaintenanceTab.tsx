@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { AppData, MAINT_URGENCIES, MaintRecord, Report, Vehicle } from '@/lib/types';
+import { AppData, MAINT_PROGRESS, MAINT_URGENCIES, MaintProgress, MaintRecord, Report, Vehicle } from '@/lib/types';
 import { canEditMaintRequest, openMaintRequests, todayStr } from '@/lib/utils';
 import MaintRequestModal, { MaintRequestInput } from './MaintRequestModal';
 import { downloadCsv, maintenanceToCsv } from '@/lib/csv';
@@ -22,6 +22,13 @@ type Editing = {
   rec: MaintRecord;
   requestId?: string; // 整備依頼への対応として登録するとき、その日報のid
 };
+
+// 進捗。依頼に結びついた記録は依頼の状態に合わせ、そうでない記録は記録に持たせた値（無ければ完了）
+function progressOf(m: MaintRecord, reports: Report[]): MaintProgress {
+  const r = m.requestId ? reports.find((x) => x.id === m.requestId) : undefined;
+  if (r) return r.maintRequestDone ? 'done' : r.maintRequestWatch ? 'watch' : 'pending';
+  return m.progress || 'done';
+}
 
 const yen = (n?: number) => (n === undefined || n === null || Number.isNaN(n) ? '-' : `${n.toLocaleString()} 円`);
 
@@ -53,6 +60,7 @@ export default function MaintenanceTab({
   const [query, setQuery] = useState('');
   const [vehicleFilter, setVehicleFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [progressFilter, setProgressFilter] = useState('');
   const [editing, setEditing] = useState<Editing | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -66,6 +74,7 @@ export default function MaintenanceTab({
           ...m,
           request: legacy ? m.note.replace(/^【依頼】/, '') : m.request,
           note: legacy ? '' : m.note,
+          progress: progressOf(m, data.reports),
           vehicleId: v.id,
           vehicleName: v.name,
           plate: v.plate,
@@ -75,7 +84,7 @@ export default function MaintenanceTab({
     });
     // 実施日の新しい順（同日は登録の新しい順＝車両内で先頭のもの）
     return rows.sort((a, b) => (a.date === b.date ? a.index - b.index : a.date < b.date ? 1 : -1));
-  }, [data.vehicles]);
+  }, [data.vehicles, data.reports]);
 
   // 既存記録で使われている種別も、マスタから外れていれば選択肢に残す
   const typeOptions = useMemo(() => {
@@ -89,15 +98,15 @@ export default function MaintenanceTab({
     return allRows.filter((r) => {
       if (vehicleFilter && r.vehicleId !== vehicleFilter) return false;
       if (typeFilter && r.type !== typeFilter) return false;
+      if (progressFilter && r.progress !== progressFilter) return false;
       if (q && !(r.note.includes(q) || (r.work || '').includes(q) || (r.request || '').includes(q) || (r.shop || '').includes(q) || r.type.includes(q) || r.vehicleName.includes(q) || r.plate.includes(q))) {
         return false;
       }
       return true;
     });
-  }, [allRows, query, vehicleFilter, typeFilter]);
+  }, [allRows, query, vehicleFilter, typeFilter, progressFilter]);
 
   const requests = useMemo(() => openMaintRequests(data.reports), [data.reports]);
-  const modalReq = editing?.requestId ? data.reports.find((x) => x.id === editing.requestId) : undefined;
 
   const totalCost = rows.reduce((sum, r) => sum + (r.cost || 0), 0);
   const thisYear = todayStr().slice(0, 4);
@@ -109,7 +118,7 @@ export default function MaintenanceTab({
     setEditing({
       vehicleId: v?.id || '',
       index: null,
-      rec: { date: todayStr(), type: '', km: v?.odometer || 0, note: '', cost: undefined, shop: '' },
+      rec: { date: todayStr(), type: '', km: v?.odometer || 0, note: '', cost: undefined, shop: '', progress: 'done' },
     });
   }
   // 整備依頼を請けて、依頼の内容を引き継いだ整備記録の登録画面を開く
@@ -129,6 +138,8 @@ export default function MaintenanceTab({
         note: '',
         cost: undefined,
         shop: '',
+        requestId: r.id,
+        progress: r.maintRequestWatch ? 'watch' : 'done',
       },
     });
   }
@@ -137,7 +148,7 @@ export default function MaintenanceTab({
     setEditing({
       vehicleId: r.vehicleId,
       index: r.index,
-      rec: { date: r.date, type: r.type, km: r.km, note: r.note, cost: r.cost, shop: r.shop || '', by: r.by, request: r.request, work: r.work },
+      rec: { date: r.date, type: r.type, km: r.km, note: r.note, cost: r.cost, shop: r.shop || '', by: r.by, request: r.request, work: r.work, requestId: r.requestId, progress: r.progress },
     });
   }
 
@@ -147,7 +158,7 @@ export default function MaintenanceTab({
     setEditing({ ...editing, vehicleId: id, rec: { ...editing.rec, km: editing.rec.km || v?.odometer || 0 } });
   }
 
-  async function handleSubmit(mode: 'done' | 'watch' = 'done') {
+  async function handleSubmit() {
     if (!editing) return;
     const v = data.vehicles.find((x) => x.id === editing.vehicleId);
     if (!v) {
@@ -172,6 +183,10 @@ export default function MaintenanceTab({
     if (editing.rec.shop) rec.shop = editing.rec.shop;
     if (editing.rec.request?.trim()) rec.request = editing.rec.request.trim();
     if (editing.rec.work?.trim()) rec.work = editing.rec.work.trim();
+    const progress: MaintProgress = editing.rec.progress || 'done';
+    rec.progress = progress;
+    const linkId = editing.requestId || editing.rec.requestId;
+    if (linkId) rec.requestId = linkId;
     // 記録した整備士。整備士としてログイン中ならその名前、編集のときは元の記録の名前を引き継ぐ
     const by = mechanic || editing.rec.by || (canEdit ? '管理者' : '');
     if (by) rec.by = by;
@@ -183,9 +198,17 @@ export default function MaintenanceTab({
     setSaving(true);
     try {
       await onSave({ ...v, maintHistory: list });
-      if (editing.requestId) {
-        if (mode === 'watch') await onWatchRequest(editing.requestId, true);
-        else await onResolveRequest(editing.requestId, true);
+      // 依頼に結びついた記録は、進捗を依頼の状態にも反映する（対応待ち／経過観察中／対応済）
+      const linked = linkId ? data.reports.find((x) => x.id === linkId) : undefined;
+      if (linked) {
+        if (progress === 'done') {
+          if (!linked.maintRequestDone) await onResolveRequest(linked.id, true);
+        } else if (progress === 'watch') {
+          if (linked.maintRequestDone) await onResolveRequest(linked.id, false);
+          await onWatchRequest(linked.id, true);
+        } else if (linked.maintRequestDone || linked.maintRequestWatch) {
+          await onResolveRequest(linked.id, false);
+        }
       }
       setEditing(null);
     } finally {
@@ -204,10 +227,13 @@ export default function MaintenanceTab({
   }
 
   function exportCsv() {
-    downloadCsv(`整備台帳_${todayStr()}.csv`, maintenanceToCsv(rows));
+    downloadCsv(
+      `整備台帳_${todayStr()}.csv`,
+      maintenanceToCsv(rows.map((r) => ({ ...r, progress: (MAINT_PROGRESS.find((p) => p.key === r.progress)?.label || '').replace(/^[👀✓]\s*/u, '') }))),
+    );
   }
 
-  const filtering = Boolean(query.trim() || vehicleFilter || typeFilter);
+  const filtering = Boolean(query.trim() || vehicleFilter || typeFilter || progressFilter);
 
   return (
     <div>
@@ -306,6 +332,19 @@ export default function MaintenanceTab({
                 </option>
               ))}
             </select>
+            <select
+              aria-label="進捗で絞り込み"
+              value={progressFilter}
+              onChange={(e) => setProgressFilter(e.target.value)}
+              style={{ padding: '9px 12px', border: '1px solid var(--slate-300)', borderRadius: 8 }}
+            >
+              <option value="">すべての進捗</option>
+              {MAINT_PROGRESS.map((p) => (
+                <option key={p.key} value={p.key}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
             <button className="btn btn-sm" onClick={exportCsv} disabled={rows.length === 0}>
               ⬇ 整備台帳CSV出力
             </button>
@@ -346,6 +385,7 @@ export default function MaintenanceTab({
                   <th>実施日</th>
                   <th>車両</th>
                   <th>整備種別</th>
+                  <th>進捗</th>
                   <th>内容</th>
                   <th>走行km／費用</th>
                   <th>実施先／整備士</th>
@@ -362,6 +402,12 @@ export default function MaintenanceTab({
                     </td>
                     <td>
                       <span className="pill pill-slate">{r.type}</span>
+                    </td>
+                    <td>
+                      {(() => {
+                        const p = MAINT_PROGRESS.find((x) => x.key === r.progress) || MAINT_PROGRESS[2];
+                        return <span className={`pill ${p.pill}`}>{p.label}</span>;
+                      })()}
                     </td>
                     <td className="ledger-content">
                       {r.work && <div className="clamp-2">{r.work}</div>}
@@ -410,40 +456,29 @@ export default function MaintenanceTab({
               <button className="btn" onClick={() => setEditing(null)}>
                 キャンセル
               </button>
-              {editing.requestId ? (
-                <>
-                  <button className="btn" onClick={() => handleSubmit('watch')} disabled={saving}>
-                    {saving ? '保存中…' : '👀 経過観察にして保存'}
-                  </button>
-                  <button className="btn btn-primary" onClick={() => handleSubmit('done')} disabled={saving}>
-                    {saving ? '保存中…' : '✓ 完了として保存'}
-                  </button>
-                </>
-              ) : (
-                <button className="btn btn-primary" onClick={() => handleSubmit('done')} disabled={saving}>
-                  {saving ? '保存中…' : '保存する'}
-                </button>
-              )}
+              <button className="btn btn-primary" onClick={handleSubmit} disabled={saving}>
+                {saving ? '保存中…' : '保存する'}
+              </button>
             </>
           }
         >
-          {editing.requestId && (
-            <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 10 }}>
-              {modalReq?.maintRequestWatch && <span className="pill pill-sky">👀 経過観察中</span>}
-              <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {modalReq?.maintRequestWatch && (
-                  <button
-                    className="btn btn-sm"
-                    disabled={saving}
-                    onClick={async () => {
-                      await onWatchRequest(editing.requestId as string, false);
-                      setEditing(null);
-                    }}
-                  >
-                    経過観察を解除
-                  </button>
-                )}
+          <div className="field">
+            <label>進捗</label>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {MAINT_PROGRESS.map((p) => (
                 <button
+                  key={p.key}
+                  type="button"
+                  className={`btn btn-sm ${(editing.rec.progress || 'done') === p.key ? 'btn-primary' : ''}`}
+                  aria-pressed={(editing.rec.progress || 'done') === p.key}
+                  onClick={() => setEditing({ ...editing, rec: { ...editing.rec, progress: p.key } })}
+                >
+                  {p.label}
+                </button>
+              ))}
+              {editing.requestId && (
+                <button
+                  type="button"
                   className="btn btn-sm"
                   disabled={saving}
                   onClick={async () => {
@@ -453,9 +488,9 @@ export default function MaintenanceTab({
                 >
                   記録は残さず、完了にする
                 </button>
-              </div>
+              )}
             </div>
-          )}
+          </div>
           <div className="field-row">
             <div className="field">
               <label>車両 *</label>

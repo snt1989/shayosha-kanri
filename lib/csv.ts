@@ -154,7 +154,7 @@ export function csvToMasters(text: string): Masters {
 }
 
 /* ---------- maintenance ledger ---------- */
-const MAINT_HEADERS = ['実施日', '車両呼称', 'ナンバー', '整備種別', '走行km', '費用（円）', '実施先', '整備士', '依頼内容', '整備内容', '備考'];
+const MAINT_HEADERS = ['実施日', '車両呼称', 'ナンバー', '整備種別', '走行km', '費用（円）', '実施先', '整備士', '進捗', '依頼内容', '整備内容', '備考'];
 
 export type MaintLedgerRow = {
   date: string;
@@ -165,6 +165,7 @@ export type MaintLedgerRow = {
   cost?: number;
   shop?: string;
   by?: string;
+  progress?: string;
   request?: string;
   work?: string;
   note: string;
@@ -173,7 +174,7 @@ export type MaintLedgerRow = {
 export function maintenanceToCsv(list: MaintLedgerRow[]): string {
   const rows: (string | number)[][] = [MAINT_HEADERS];
   list.forEach((m) => {
-    rows.push([m.date, m.vehicleName, m.plate, m.type, m.km, m.cost ?? '', m.shop || '', m.by || '', m.request || '', m.work || '', m.note]);
+    rows.push([m.date, m.vehicleName, m.plate, m.type, m.km, m.cost ?? '', m.shop || '', m.by || '', m.progress || '', m.request || '', m.work || '', m.note]);
   });
   return toCsv(rows);
 }

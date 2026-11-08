@@ -1,3 +1,10 @@
+export type MaintProgress = 'pending' | 'watch' | 'done';
+export const MAINT_PROGRESS: { key: MaintProgress; label: string; pill: string }[] = [
+  { key: 'pending', label: '対応待ち', pill: 'pill-red' },
+  { key: 'watch', label: '👀 経過観察', pill: 'pill-sky' },
+  { key: 'done', label: '✓ 完了', pill: 'pill-green' },
+];
+
 export type MaintRecord = {
   date: string;
   type: string;
@@ -9,6 +16,8 @@ export type MaintRecord = {
   by?: string; // 整備士としてログインして記録した人
   request?: string; // 依頼内容（整備依頼への対応として記録したとき、依頼の症状・内容）
   work?: string; // 整備内容（実際に行った整備、交換した部品など）
+  requestId?: string; // 整備依頼への対応として記録したとき、その依頼（日報）のid。進捗は依頼の状態と連動する
+  progress?: MaintProgress; // 進捗。無いときは完了として扱う（以前の記録）
 };
 
 export type Report = {
