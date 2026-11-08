@@ -34,6 +34,7 @@ export default function VehicleOcrModal({
   target,
   onApply,
   onFileSaved,
+  preload,
 }: {
   data: AppData;
   onClose: () => void;
@@ -42,6 +43,8 @@ export default function VehicleOcrModal({
   onApply?: (patch: Partial<Vehicle>) => void;
   // 車検証の画像を保存し終えたあとに呼ぶ（一覧の最新化用）
   onFileSaved?: () => void;
+  // 開いた直後に、その車両の保存済みの画像（車検証／検査証記録事項）を読み込んでおく
+  preload?: DocKind;
 }) {
   // 読み込む書類は2種類：車検証（自動車検査証）と、検査証記録事項。どちらか片方でも、両方でも読み込める。
   // 項目は両方から集めて、足りないところを補い合う（有効期間の満了する日は、記録事項にだけ載っていることが多い）
@@ -56,6 +59,31 @@ export default function VehicleOcrModal({
   // AI（Claude）での読み取りが使えるか（サーバーにAPIキーが設定されているか）。管理者のみ
   const [aiAvail, setAiAvail] = useState<boolean | null>(null);
   const [aiRunning, setAiRunning] = useState<DocKind | null>(null);
+  // 保存済みの画像（車両に登録してある車検証・検査証記録事項）を読み込む。管理者のみ
+  async function loadSaved(kind: DocKind) {
+    if (!target) return;
+    setReading(kind);
+    try {
+      const res = await fetch(`/api/vehicles/${encodeURIComponent(target.id)}/shaken${kind === 'record' ? '?kind=record' : ''}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error('not found');
+      const blob = await res.blob();
+      const url: string = await new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(String(fr.result));
+        fr.onerror = () => reject(new Error('read'));
+        fr.readAsDataURL(blob);
+      });
+      setDoc(kind, { photo: url, pdfText: '', ocrText: '' });
+    } catch {
+      alert('保存済みの画像を読み込めませんでした。管理者ログインが切れていないか、確認してください。');
+    } finally {
+      setReading(null);
+    }
+  }
+  useEffect(() => {
+    if (preload) loadSaved(preload);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => {
     fetch('/api/shaken-ai', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
@@ -302,9 +330,16 @@ export default function VehicleOcrModal({
           <div key={d.kind} style={{ marginBottom: 14 }}>
             <div className="section-heading" style={{ marginTop: 4 }}>{d.label}</div>
             {!doc.photo ? (
-              <div className="photo-drop" onClick={() => fileRefs[d.kind].current?.click()}>
-                📷 タップして{d.short}の写真（またはPDF）を選ぶ
-              </div>
+              <>
+                <div className="photo-drop" onClick={() => fileRefs[d.kind].current?.click()}>
+                  📷 タップして{d.short}の写真（またはPDF）を選ぶ
+                </div>
+                {target && (d.kind === 'record' ? target.recordFileAt : target.shakenFileAt) && (
+                  <button className="btn btn-sm" style={{ marginTop: 8 }} onClick={() => loadSaved(d.kind)} disabled={reading !== null}>
+                    📎 登録済みの{d.short}の画像から読み込む
+                  </button>
+                )}
+              </>
             ) : (
               <div>
                 <img src={doc.photo} alt={`${d.short}のプレビュー`} className="photo-preview" />
@@ -312,6 +347,11 @@ export default function VehicleOcrModal({
                   <button className="btn btn-sm" onClick={() => fileRefs[d.kind].current?.click()}>
                     写真を変更
                   </button>
+                  {target && (d.kind === 'record' ? target.recordFileAt : target.shakenFileAt) && (
+                    <button className="btn btn-sm" onClick={() => loadSaved(d.kind)} disabled={reading !== null}>
+                      📎 登録済みの画像
+                    </button>
+                  )}
                   {aiAvail && (
                     <button className="btn btn-sm btn-primary" onClick={() => runAi(d.kind)} disabled={aiRunning !== null || running !== null}>
                       {aiRunning === d.kind ? 'AIで読み取り中…' : '🤖 AIで読み取る（おすすめ）'}

@@ -45,6 +45,8 @@ export default function VehiclesTab({
   const [showShakenOcr, setShowShakenOcr] = useState(false);
   // 登録済みの車両に車検証を追加する（車両カードの「車検証」）／編集中の車両に読み取り結果を入れる（編集画面）
   const [ocrTarget, setOcrTarget] = useState<Vehicle | null>(null);
+  // 登録済みの画像を読み込んだ状態で、読み取りの画面を開くとき、どちらの書類か
+  const [ocrPreload, setOcrPreload] = useState<'cert' | 'record' | undefined>(undefined);
   const [showEditOcr, setShowEditOcr] = useState(false);
   // 保存した車検証の画像を見る（管理者のみ）
   const [viewShaken, setViewShaken] = useState<Vehicle | null>(null);
@@ -304,7 +306,10 @@ export default function VehiclesTab({
                           <button className="btn btn-sm btn-primary" onClick={() => openEdit(v)}>
                             ✏️ 編集
                           </button>
-                          <button className="btn btn-sm" onClick={() => setOcrTarget(v)}>
+                          <button className="btn btn-sm" onClick={() => {
+                            setOcrPreload(undefined);
+                            setOcrTarget(v);
+                          }}>
                             📷 車検証
                           </button>
                           {v.shakenFileAt && (
@@ -507,6 +512,16 @@ export default function VehiclesTab({
           wide
           footer={
             <>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  setOcrPreload(viewKind);
+                  setOcrTarget(viewShaken);
+                  setViewShaken(null);
+                }}
+              >
+                🤖 この画像から読み取る
+              </button>
               <button className="btn btn-danger" onClick={() => deleteShakenFile(viewShaken)}>
                 画像を削除
               </button>
@@ -543,7 +558,19 @@ export default function VehiclesTab({
         </Modal>
       )}
       {showShakenOcr && <VehicleOcrModal data={data} onClose={() => setShowShakenOcr(false)} onSave={onSave} onFileSaved={onRefresh} />}
-      {ocrTarget && <VehicleOcrModal data={data} target={ocrTarget} onClose={() => setOcrTarget(null)} onSave={onSave} onFileSaved={onRefresh} />}
+      {ocrTarget && (
+        <VehicleOcrModal
+          data={data}
+          target={ocrTarget}
+          preload={ocrPreload}
+          onClose={() => {
+            setOcrTarget(null);
+            setOcrPreload(undefined);
+          }}
+          onSave={onSave}
+          onFileSaved={onRefresh}
+        />
+      )}
       {showEditOcr && editing && (
         <VehicleOcrModal
           data={data}
