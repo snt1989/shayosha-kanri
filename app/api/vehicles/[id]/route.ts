@@ -20,6 +20,7 @@ export async function DELETE(
     return NextResponse.json({ success: false }, { status: 404 });
   }
   if (target?.shakenFileAt) await kvDel(`fleet:shaken:v1:${id}`);
+  if (target?.recordFileAt) await kvDel(`fleet:shaken:v1:${id}:record`);
   pushLog(data, {
     actor: isAdminReq ? 'admin' : 'user',
     action: '車両削除',

@@ -21,6 +21,12 @@ import Modal from './Modal';
 // - onApply：保存はせず、読み取った内容を編集中の画面に入れるだけ（編集画面の「車検証から読み取る」）
 type Extra = Pick<Vehicle, 'maker' | 'chassisNo' | 'firstRegistered' | 'capacity' | 'grossWeight' | 'displacement' | 'fuelType'>;
 
+type DocKind = 'cert' | 'record';
+const DOCS: { kind: DocKind; label: string; short: string }[] = [
+  { kind: 'cert', label: '① 車検証（自動車検査証）', short: '車検証' },
+  { kind: 'record', label: '② 検査証記録事項', short: '検査証記録事項' },
+];
+
 export default function VehicleOcrModal({
   data,
   onClose,
@@ -37,14 +43,16 @@ export default function VehicleOcrModal({
   // 車検証の画像を保存し終えたあとに呼ぶ（一覧の最新化用）
   onFileSaved?: () => void;
 }) {
-  const [photo, setPhoto] = useState('');
-  // 読み取った車検証の画像も、あとで見られるよう保存する
+  // 読み込む書類は2種類：車検証（自動車検査証）と、検査証記録事項。どちらか片方でも、両方でも読み込める。
+  // 項目は両方から集めて、足りないところを補い合う（有効期間の満了する日は、記録事項にだけ載っていることが多い）
+  type DocState = { photo: string; pdfText: string; ocrText: string };
+  const emptyDoc: DocState = { photo: '', pdfText: '', ocrText: '' };
+  const [docs, setDocs] = useState<Record<DocKind, DocState>>({ cert: emptyDoc, record: emptyDoc });
+  const setDoc = (k: DocKind, patch: Partial<DocState>) => setDocs((d) => ({ ...d, [k]: { ...d[k], ...patch } }));
+  // 読み取った書類の画像も、あとで見られるよう保存する
   const [saveImage, setSaveImage] = useState(true);
-  // PDFに文字が入っていたとき（電子車検証のPDFなど）は、OCRをせず、その文字を使う
-  const [pdfText, setPdfText] = useState('');
-  const [reading, setReading] = useState(false);
-  const [ocrText, setOcrText] = useState('');
-  const [running, setRunning] = useState(false);
+  const [reading, setReading] = useState<DocKind | null>(null);
+  const [running, setRunning] = useState<DocKind | null>(null);
   const [progress, setProgress] = useState(0);
   const [name, setName] = useState('');
   const [plate, setPlate] = useState(target?.plate || '');
@@ -60,7 +68,7 @@ export default function VehicleOcrModal({
     fuelType: target?.fuelType || '',
   });
   const [saving, setSaving] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const fileRefs = { cert: useRef<HTMLInputElement>(null), record: useRef<HTMLInputElement>(null) };
 
   // 台帳に同じナンバーの車両があるか
   const matched = useMemo(() => {
@@ -71,29 +79,28 @@ export default function VehicleOcrModal({
   const existing = target || matched;
   const plateDiffers = !!target && !!plate.trim() && normPlate(plate) !== normPlate(target.plate);
 
-  async function handleFile(file: File | null) {
+  async function handleFile(kind: DocKind, file: File | null) {
     if (!file) return;
-    setPdfText('');
-    setOcrText('');
+    setDoc(kind, { pdfText: '', ocrText: '' });
     if (isPdfFile(file)) {
-      setReading(true);
+      setReading(kind);
       try {
         const r = await readPdf(file);
-        setPhoto(r.image);
+        setDoc(kind, { photo: r.image });
         // 文字が十分に入っているPDFは、その文字を使う
         if (r.text.replace(/\s/g, '').length >= 40) {
-          setPdfText(r.text);
+          setDoc(kind, { pdfText: r.text });
           applyText(r.text, true, r.boxes);
         }
       } catch {
         alert('PDFを開けませんでした。ファイルをご確認いただくか、写真（画像）でお試しください。');
       } finally {
-        setReading(false);
+        setReading(null);
       }
       return;
     }
     const reader = new FileReader();
-    reader.onload = () => setPhoto(String(reader.result));
+    reader.onload = () => setDoc(kind, { photo: String(reader.result) });
     reader.readAsDataURL(file);
   }
 
@@ -118,11 +125,12 @@ export default function VehicleOcrModal({
     return found;
   }
 
-  async function runOcr() {
+  async function runOcr(kind: DocKind) {
+    const photo = docs[kind].photo;
     if (!photo) return;
-    setRunning(true);
+    setRunning(kind);
     setProgress(0);
-    setOcrText('');
+    setDoc(kind, { ocrText: '' });
     try {
       const Tesseract = await loadTesseract();
       const img = await preprocessForOcr(photo);
@@ -148,12 +156,12 @@ export default function VehicleOcrModal({
           boxes = b2;
         }
       }
-      setOcrText(text);
+      setDoc(kind, { ocrText: text });
       applyText(text, false, boxes);
     } catch {
       alert('OCR処理に失敗しました。手入力で登録してください。');
     } finally {
-      setRunning(false);
+      setRunning(null);
     }
   }
 
@@ -206,10 +214,17 @@ export default function VehicleOcrModal({
           ...Object.fromEntries(Object.entries(extra).filter(([, v]) => v)),
         });
       }
-      if (saveImage && photo && savedId) {
-        const ok = await uploadShakenImage(savedId, photo);
-        if (ok) onFileSaved?.();
-        else alert('車両は保存しましたが、車検証の画像は保存できませんでした（管理者ログインが切れた、または画像が大きすぎる可能性があります）。車両カードの「車検証」からもう一度保存できます。');
+      if (saveImage && savedId) {
+        const failed: string[] = [];
+        let any = false;
+        for (const d of DOCS) {
+          if (!docs[d.kind].photo) continue;
+          const ok = await uploadShakenImage(savedId, docs[d.kind].photo, d.kind);
+          if (ok) any = true;
+          else failed.push(d.short);
+        }
+        if (any) onFileSaved?.();
+        if (failed.length > 0) alert(`車両は保存しましたが、${failed.join('・')}の画像は保存できませんでした（管理者ログインが切れた、または画像が大きすぎる可能性があります）。車両カードの「車検証」からもう一度保存できます。`);
       }
       onClose();
     } finally {
@@ -233,50 +248,65 @@ export default function VehicleOcrModal({
       }
     >
       <div className="notice-box">
-        車検証の写真またはPDFから、ナンバー・型式・車検満了日・車台番号などの自動読み取りを試みます（ブラウザ内で処理し、外部送信なし）。読み取り精度は写真の状態により変わるため、登録前に必ず内容を車検証と見比べて、修正してください。
+        「車検証（自動車検査証）」と「検査証記録事項」のどちらでも、写真またはPDFから、ナンバー・型式・車検満了日・車台番号などの自動読み取りを試みます（ブラウザ内で処理し、外部送信なし）。両方読み込むと、足りない項目を補い合います（車検満了日は、記録事項にだけ載っていることが多いです）。読み取り精度は写真の状態により変わるため、登録前に必ず内容を書類と見比べて、修正してください。
       </div>
 
-      {!photo ? (
-        <div className="photo-drop" onClick={() => fileRef.current?.click()}>
-          📷 タップして車検証の写真（またはPDF）を選ぶ
-        </div>
-      ) : (
-        <div>
-          <img src={photo} alt="車検証プレビュー" className="photo-preview" />
-          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-            <button className="btn btn-sm" onClick={() => fileRef.current?.click()}>
-              写真を変更
-            </button>
-            <button className="btn btn-sm btn-primary" onClick={runOcr} disabled={running}>
-              {running ? `解析中…${progress}%` : '🔍 OCRで読み取る'}
-            </button>
+      {DOCS.map((d) => {
+        const doc = docs[d.kind];
+        return (
+          <div key={d.kind} style={{ marginBottom: 14 }}>
+            <div className="section-heading" style={{ marginTop: 4 }}>{d.label}</div>
+            {!doc.photo ? (
+              <div className="photo-drop" onClick={() => fileRefs[d.kind].current?.click()}>
+                📷 タップして{d.short}の写真（またはPDF）を選ぶ
+              </div>
+            ) : (
+              <div>
+                <img src={doc.photo} alt={`${d.short}のプレビュー`} className="photo-preview" />
+                <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                  <button className="btn btn-sm" onClick={() => fileRefs[d.kind].current?.click()}>
+                    写真を変更
+                  </button>
+                  <button className="btn btn-sm btn-primary" onClick={() => runOcr(d.kind)} disabled={running !== null}>
+                    {running === d.kind ? `解析中…${progress}%` : '🔍 OCRで読み取る'}
+                  </button>
+                </div>
+              </div>
+            )}
+            <input
+              ref={fileRefs[d.kind]}
+              type="file"
+              accept="image/*,application/pdf,.pdf"
+              hidden
+              onChange={(e) => {
+                handleFile(d.kind, e.target.files?.[0] || null);
+                e.target.value = '';
+              }}
+            />
+            {reading === d.kind && <div className="notice-box">PDFを読み込み中…</div>}
+            {doc.pdfText && (
+              <div className="notice-box">
+                PDFに入っている文字から、項目を読み取りました（OCRは使っていません）。内容を{d.short}と見比べて、修正してください。読み取れなかった項目は、「🔍 OCRで読み取る」でも試せます。
+                <details style={{ marginTop: 6 }}>
+                  <summary style={{ cursor: 'pointer' }}>PDFから取り出した文字を見る</summary>
+                  <div className="ocr-text-preview" style={{ marginTop: 6 }}>{doc.pdfText.trim()}</div>
+                </details>
+              </div>
+            )}
+            {doc.ocrText && (
+              <>
+                <div className="section-heading">OCR読み取り結果（テキスト）</div>
+                <div className="ocr-text-preview">{doc.ocrText.trim() || '(テキストを検出できませんでした)'}</div>
+              </>
+            )}
           </div>
-        </div>
-      )}
-      <input ref={fileRef} type="file" accept="image/*,application/pdf,.pdf" hidden onChange={(e) => handleFile(e.target.files?.[0] || null)} />
+        );
+      })}
 
-      {reading && <div className="notice-box">PDFを読み込み中…</div>}
-      {pdfText && (
-        <div className="notice-box">
-          PDFに入っている文字から、項目を読み取りました（OCRは使っていません）。内容を車検証と見比べて、修正してください。読み取れなかった項目は、下の「🔍 OCRで読み取る」でも試せます。
-          <details style={{ marginTop: 6 }}>
-            <summary style={{ cursor: 'pointer' }}>PDFから取り出した文字を見る</summary>
-            <div className="ocr-text-preview" style={{ marginTop: 6 }}>{pdfText.trim()}</div>
-          </details>
-        </div>
-      )}
-
-      {ocrText && (
-        <>
-          <div className="section-heading">OCR読み取り結果（テキスト）</div>
-          <div className="ocr-text-preview">{ocrText.trim() || '(テキストを検出できませんでした)'}</div>
-        </>
-      )}
-
-      {photo && !onApply && (
+      {(docs.cert.photo || docs.record.photo) && !onApply && (
         <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, margin: '4px 0 8px' }}>
           <input type="checkbox" checked={saveImage} onChange={(e) => setSaveImage(e.target.checked)} />
-          この車検証の画像も保存して、あとで見られるようにする（管理者だけが見られます）
+          読み込んだ書類の画像も保存して、あとで見られるようにする（管理者だけが見られます）
         </label>
       )}
 

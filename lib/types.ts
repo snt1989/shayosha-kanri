@@ -87,6 +87,7 @@ export type Vehicle = {
   grossWeight?: string; // 車両総重量 例: 2,610kg
   displacement?: string; // 総排気量 例: 2.76L
   fuelType?: string; // 燃料の種類
+  recordFileAt?: string; // 検査証記録事項の画像を保存した日時（ISO）。あるときだけ「記録事項を見る」を出す
   shakenFileAt?: string; // 車検証の画像を保存した日時（ISO）。あるときだけ「車検証を見る」を出す
 };
 

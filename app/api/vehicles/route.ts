@@ -22,9 +22,13 @@ export async function POST(req: NextRequest) {
     const keep = data.vehicles[idx].shakenFileAt;
     if (keep) v.shakenFileAt = keep;
     else delete v.shakenFileAt;
+    const keepRec = data.vehicles[idx].recordFileAt;
+    if (keepRec) v.recordFileAt = keepRec;
+    else delete v.recordFileAt;
     data.vehicles[idx] = v;
   } else {
     delete v.shakenFileAt;
+    delete v.recordFileAt;
     data.vehicles.push(v);
   }
 

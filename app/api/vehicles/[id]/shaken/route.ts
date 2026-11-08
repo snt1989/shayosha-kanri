@@ -7,7 +7,10 @@ import { kvDel, kvGet, kvSet } from '@/lib/kv';
 export const dynamic = 'force-dynamic';
 
 // 車検証には所有者・使用者・車台番号などが載っているため、保存・閲覧・削除は管理者のみ。
-const keyOf = (id: string) => `fleet:shaken:v1:${id}`;
+// 画像は2種類：車検証（自動車検査証。kind=cert、既定）と、検査証記録事項（kind=record）
+const kindOf = (req: NextRequest): 'cert' | 'record' => (new URL(req.url).searchParams.get('kind') === 'record' ? 'record' : 'cert');
+const keyOf = (id: string, kind: 'cert' | 'record' = 'cert') => (kind === 'record' ? `fleet:shaken:v1:${id}:record` : `fleet:shaken:v1:${id}`);
+const LABEL = { cert: '車検証', record: '検査証記録事項' } as const;
 const PREFIX = 'data:image/jpeg;base64,';
 const MAX_CHARS = 900_000;
 
@@ -30,7 +33,7 @@ async function persist(data: Awaited<ReturnType<typeof loadData>>) {
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!isAdmin(req)) return NextResponse.json({ success: false, error: 'admin only' }, { status: 401 });
   const { id } = await params;
-  const stored = await kvGet<Stored | null>(keyOf(id), null);
+  const stored = await kvGet<Stored | null>(keyOf(id, kindOf(req)), null);
   if (!stored?.image?.startsWith(PREFIX)) return new NextResponse('not found', { status: 404 });
   const bytes = Buffer.from(stored.image.slice(PREFIX.length), 'base64');
   return new NextResponse(bytes, {
@@ -49,10 +52,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const data = await loadData();
   const v = data.vehicles.find((x) => x.id === id);
   if (!v) return NextResponse.json({ success: false, error: 'vehicle not found' }, { status: 404 });
+  const kind = kindOf(req);
   const savedAt = new Date().toISOString();
-  await kvSet<Stored>(keyOf(id), { image, savedAt });
-  v.shakenFileAt = savedAt;
-  pushLog(data, { actor: 'admin', action: '車検証の画像を保存', target: v.name, detail: v.plate });
+  await kvSet<Stored>(keyOf(id, kind), { image, savedAt });
+  if (kind === 'record') v.recordFileAt = savedAt;
+  else v.shakenFileAt = savedAt;
+  pushLog(data, { actor: 'admin', action: `${LABEL[kind]}の画像を保存`, target: v.name, detail: v.plate });
   await persist(data);
   return NextResponse.json({ success: true, savedAt });
 }
@@ -60,12 +65,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!isAdmin(req)) return NextResponse.json({ success: false, error: 'admin only' }, { status: 401 });
   const { id } = await params;
-  await kvDel(keyOf(id));
+  const kind = kindOf(req);
+  await kvDel(keyOf(id, kind));
   const data = await loadData();
   const v = data.vehicles.find((x) => x.id === id);
   if (v) {
-    delete v.shakenFileAt;
-    pushLog(data, { actor: 'admin', action: '車検証の画像を削除', target: v.name, detail: v.plate });
+    if (kind === 'record') delete v.recordFileAt;
+    else delete v.shakenFileAt;
+    pushLog(data, { actor: 'admin', action: `${LABEL[kind]}の画像を削除`, target: v.name, detail: v.plate });
     await persist(data);
   }
   return NextResponse.json({ success: true });

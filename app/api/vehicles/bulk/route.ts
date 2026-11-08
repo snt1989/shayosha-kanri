@@ -12,11 +12,15 @@ export async function POST(req: NextRequest) {
   const data = await loadData();
   // 車検証の画像の印は、一括編集やCSV取込で消えないよう、今保存されているものを引き継ぐ
   const flags = new Map(data.vehicles.map((v) => [v.id, v.shakenFileAt]));
+  const recFlags = new Map(data.vehicles.map((v) => [v.id, v.recordFileAt]));
   data.vehicles = (list || []).map((v) => {
     const nv: Vehicle = { ...v, maintHistory: v.maintHistory || [] };
     const keep = flags.get(v.id);
     if (keep) nv.shakenFileAt = keep;
     else delete nv.shakenFileAt;
+    const keepRec = recFlags.get(v.id);
+    if (keepRec) nv.recordFileAt = keepRec;
+    else delete nv.recordFileAt;
     return nv;
   });
   pushLog(data, {

@@ -48,6 +48,8 @@ export default function VehiclesTab({
   const [showEditOcr, setShowEditOcr] = useState(false);
   // 保存した車検証の画像を見る（管理者のみ）
   const [viewShaken, setViewShaken] = useState<Vehicle | null>(null);
+  // 見ている画像の種類：車検証、または検査証記録事項
+  const [viewKind, setViewKind] = useState<'cert' | 'record'>('cert');
   const [shakenMissing, setShakenMissing] = useState(false);
   // 各車両の「整備記録」「運転記録」を一覧で見る画面
   const [viewing, setViewing] = useState<{ vehicleId: string; kind: 'maint' | 'drive' } | null>(null);
@@ -93,14 +95,19 @@ export default function VehiclesTab({
   }
 
   async function deleteShakenFile(v: Vehicle) {
-    if (!confirm(`「${v.name}」の車検証の画像を削除しますか？（車両の登録内容は消えません）`)) return;
+    const label = viewKind === 'record' ? '検査証記録事項' : '車検証';
+    if (!confirm(`「${v.name}」の${label}の画像を削除しますか？（車両の登録内容は消えません）`)) return;
     try {
-      await fetch(`/api/vehicles/${encodeURIComponent(v.id)}/shaken`, { method: 'DELETE' });
+      await fetch(`/api/vehicles/${encodeURIComponent(v.id)}/shaken${viewKind === 'record' ? '?kind=record' : ''}`, { method: 'DELETE' });
     } finally {
       setViewShaken(null);
       await onRefresh?.();
     }
   }
+
+  const shakenUrl = viewShaken
+    ? `/api/vehicles/${encodeURIComponent(viewShaken.id)}/shaken?${viewKind === 'record' ? 'kind=record&' : ''}t=${encodeURIComponent((viewKind === 'record' ? viewShaken.recordFileAt : viewShaken.shakenFileAt) || '')}`
+    : '';
 
   function shakenBadge(v: Vehicle) {
     const days = daysUntil(v.shakenDate);
@@ -305,10 +312,23 @@ export default function VehiclesTab({
                               className="btn btn-sm"
                               onClick={() => {
                                 setShakenMissing(false);
+                                setViewKind('cert');
                                 setViewShaken(v);
                               }}
                             >
                               📎 車検証を見る
+                            </button>
+                          )}
+                          {v.recordFileAt && (
+                            <button
+                              className="btn btn-sm"
+                              onClick={() => {
+                                setShakenMissing(false);
+                                setViewKind('record');
+                                setViewShaken(v);
+                              }}
+                            >
+                              📎 記録事項を見る
                             </button>
                           )}
                         </>
@@ -482,7 +502,7 @@ export default function VehiclesTab({
 
       {viewShaken && (
         <Modal
-          title={`車検証：${viewShaken.name}`}
+          title={`${viewKind === 'record' ? '検査証記録事項' : '車検証'}：${viewShaken.name}`}
           onClose={() => setViewShaken(null)}
           wide
           footer={
@@ -492,8 +512,8 @@ export default function VehiclesTab({
               </button>
               <a
                 className="btn"
-                href={`/api/vehicles/${encodeURIComponent(viewShaken.id)}/shaken`}
-                download={`車検証_${viewShaken.plate || viewShaken.id}.jpg`}
+                href={`/api/vehicles/${encodeURIComponent(viewShaken.id)}/shaken${viewKind === 'record' ? '?kind=record' : ''}`}
+                download={`${viewKind === 'record' ? '検査証記録事項' : '車検証'}_${viewShaken.plate || viewShaken.id}.jpg`}
               >
                 ⬇️ ダウンロード
               </a>
@@ -508,12 +528,12 @@ export default function VehiclesTab({
           ) : (
             <>
               <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 8 }}>
-                保存日時：{new Date(viewShaken.shakenFileAt || '').toLocaleString('ja-JP')}　※ 管理者だけが見られます。写真をタップすると拡大します。
+                保存日時：{new Date((viewKind === 'record' ? viewShaken.recordFileAt : viewShaken.shakenFileAt) || '').toLocaleString('ja-JP')}　※ 管理者だけが見られます。写真をタップすると拡大します。
               </div>
-              <a href={`/api/vehicles/${encodeURIComponent(viewShaken.id)}/shaken?t=${encodeURIComponent(viewShaken.shakenFileAt || '')}`} target="_blank" rel="noreferrer">
+              <a href={shakenUrl} target="_blank" rel="noreferrer">
                 <img
-                  src={`/api/vehicles/${encodeURIComponent(viewShaken.id)}/shaken?t=${encodeURIComponent(viewShaken.shakenFileAt || '')}`}
-                  alt="保存した車検証"
+                  src={shakenUrl}
+                  alt={viewKind === 'record' ? '保存した検査証記録事項' : '保存した車検証'}
                   className="photo-preview"
                   onError={() => setShakenMissing(true)}
                 />
