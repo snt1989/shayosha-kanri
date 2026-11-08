@@ -232,7 +232,7 @@ export default function RentalTab({
           <div className="empty-state">レンタカーの記録はありません</div>
         ) : (
           <div className="table-wrap">
-            <table className="data-table">
+            <table className="data-table rental-table">
               <thead>
                 <tr>
                   <th>利用期間</th>

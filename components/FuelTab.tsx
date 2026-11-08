@@ -171,7 +171,7 @@ export default function FuelTab({
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '12px 0' }}>
+        <div className="filter-row" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '12px 0' }}>
           <select aria-label="車両で絞り込み" value={vehicleFilter} onChange={(e) => setVehicleFilter(e.target.value)} style={selectStyle}>
             <option value="">すべての車両</option>
             {data.vehicles.map((v) => (
@@ -197,7 +197,7 @@ export default function FuelTab({
           <div className="empty-state">給油の記録はありません。「＋ 給油を記録」から登録できます。</div>
         ) : (
           <div className="table-wrap">
-            <table className="data-table">
+            <table className="data-table fuel-table">
               <thead>
                 <tr>
                   <th>給油日</th>
@@ -235,7 +235,7 @@ export default function FuelTab({
                       <td>{f.km > 0 ? f.km.toLocaleString() : '-'}</td>
                       <td>{typeof eff === 'number' ? `${oneDecimal(eff)} km/L` : '-'}</td>
                       <td>{f.driver}</td>
-                      <td>{f.note || '-'}</td>
+                      <td className={f.note ? undefined : 'cell-empty'}>{f.note || '-'}</td>
                       <td>
                         <div className="eactions">
                           <button className="btn btn-sm" onClick={() => openEdit(f)} title={isAdmin ? '' : '管理者ログインが必要です'}>

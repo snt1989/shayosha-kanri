@@ -2462,3 +2462,77 @@ table.bulk-grid {
   .photo-thumbs { display: flex; margin: 6px 0 0; gap: 6px; }
   .photo-thumbs img { width: 52px; height: 52px; }
 }
+
+/* スマホ：給油台帳・レンタカーの1件を、見出し→車両・内容→項目→ボタンの順に詰めて表示する */
+@media (max-width: 640px) {
+  .filter-row { display: grid !important; grid-template-columns: 1fr 1fr; }
+  .filter-row > select { width: 100%; min-width: 0; }
+  table.data-table.fuel-table tbody tr,
+  table.data-table.rental-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 10px;
+    row-gap: 2px;
+    padding: 12px 14px;
+  }
+  table.data-table.fuel-table td,
+  table.data-table.rental-table td {
+    display: block;
+    padding: 2px 0;
+    border: 0;
+    text-align: left;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  table.data-table.fuel-table td::before,
+  table.data-table.rental-table td::before { display: none; }
+  table.data-table.fuel-table td .cell-sub,
+  table.data-table.rental-table td .cell-sub { display: block; }
+  /* 項目名を小さく上に出す欄 */
+  table.data-table.fuel-table td:nth-child(3)::before,
+  table.data-table.fuel-table td:nth-child(4)::before,
+  table.data-table.fuel-table td:nth-child(6)::before,
+  table.data-table.fuel-table td:nth-child(7)::before,
+  table.data-table.fuel-table td:nth-child(8)::before,
+  table.data-table.fuel-table td:nth-child(9)::before {
+    display: block;
+    float: none;
+    max-width: none;
+    margin: 0 0 1px;
+    font-size: 11px;
+  }
+  /* 給油台帳 */
+  table.data-table.fuel-table td:nth-child(1) { grid-column: 1; grid-row: 1; font-weight: 700; font-size: 15px; }
+  table.data-table.fuel-table td:nth-child(5) { grid-column: 2; grid-row: 1; text-align: right; font-weight: 700; font-size: 15px; }
+  table.data-table.fuel-table td:nth-child(2) { grid-column: 1 / -1; grid-row: 2; font-weight: 600; margin-bottom: 4px; }
+  table.data-table.fuel-table td:nth-child(4) { grid-column: 1; grid-row: 3; font-size: 13px; }
+  table.data-table.fuel-table td:nth-child(3) { grid-column: 2; grid-row: 3; font-size: 13px; }
+  table.data-table.fuel-table td:nth-child(6) { grid-column: 1; grid-row: 4; font-size: 13px; }
+  table.data-table.fuel-table td:nth-child(8) { grid-column: 2; grid-row: 4; font-size: 13px; }
+  table.data-table.fuel-table td:nth-child(7) { grid-column: 1; grid-row: 5; font-size: 13px; }
+  table.data-table.fuel-table td:nth-child(9) { grid-column: 2; grid-row: 5; font-size: 13px; }
+  table.data-table.fuel-table td:nth-child(10) { grid-column: 1 / -1; grid-row: 6; font-size: 13px; margin-top: 4px; padding: 6px 8px; background: var(--slate-50, #f8fafc); border-radius: 8px; }
+  table.data-table.fuel-table td.cell-empty { display: none; }
+  table.data-table.fuel-table td:nth-child(11) { grid-column: 1 / -1; grid-row: 7; margin-top: 6px; }
+  /* レンタカー */
+  table.data-table.rental-table td:nth-child(1) { grid-column: 1; grid-row: 1; font-weight: 700; font-size: 15px; }
+  table.data-table.rental-table td:nth-child(4) { grid-column: 2; grid-row: 1; text-align: right; font-weight: 700; font-size: 15px; }
+  table.data-table.rental-table td:nth-child(2) { grid-column: 1 / -1; grid-row: 2; font-weight: 600; margin: 2px 0 4px; }
+  table.data-table.rental-table td:nth-child(3) { grid-column: 1 / -1; grid-row: 3; font-size: 13px; }
+  table.data-table.rental-table td:nth-child(3) .cell-sub { display: inline; margin-left: 8px; }
+  table.data-table.rental-table td:nth-child(5) { grid-column: 1 / -1; grid-row: 4; margin-top: 6px; }
+  /* ボタンは横いっぱいに並べる */
+  table.data-table.fuel-table td:nth-child(11) .eactions,
+  table.data-table.rental-table td:nth-child(5) .eactions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: stretch; }
+  table.data-table.fuel-table td:nth-child(11) .btn,
+  table.data-table.rental-table td:nth-child(5) .btn { flex: 1 1 0; min-height: 40px; justify-content: center; }
+  .pill-row { gap: 6px !important; }
+}
+@media (max-width: 640px) {
+  table.data-table.fuel-table:not(.reorder-table) td:first-child,
+  table.data-table.rental-table:not(.reorder-table) td:first-child,
+  table.data-table.ledger-table:not(.reorder-table) td:first-child {
+    border-bottom: 0;
+    padding-top: 2px;
+  }
+}
