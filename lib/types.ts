@@ -47,6 +47,9 @@ export type Report = {
   // 整備台帳で対応を記録すると true（対応待ち → 対応済）
   maintRequestDone?: boolean;
   maintRequestDoneAt?: string;
+  // 経過観察中（依頼は残したまま、様子を見ている状態）
+  maintRequestWatch?: boolean;
+  maintRequestWatchAt?: string;
   // ダッシュボードから直接出した整備依頼（運転の記録ではない）。日報の一覧・集計・CSVには出さない
   maintOnly?: boolean;
 };

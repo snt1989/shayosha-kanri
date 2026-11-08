@@ -10,7 +10,8 @@ export const dynamic = 'force-dynamic';
 // 日報本体は変更せずこのフィールドだけを更新する専用のAPIにしている。
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { done } = (await req.json()) as { done?: boolean };
+  const body = (await req.json()) as { done?: boolean; watch?: boolean };
+  const { done } = body;
 
   const data = await loadData();
   const r = data.reports.find((x) => x.id === id);
@@ -18,13 +19,29 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ success: false, message: '整備依頼が見つかりません。' }, { status: 404 });
   }
 
-  const isDone = Boolean(done);
-  r.maintRequestDone = isDone;
-  r.maintRequestDoneAt = isDone ? new Date().toISOString().slice(0, 10) : '';
+  const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  let action: string;
+  if (typeof body.watch === 'boolean' && done === undefined) {
+    // 経過観察にする／解除する（依頼は対応待ちのまま残る）
+    if (r.maintRequestDone) {
+      return NextResponse.json({ success: false, message: 'この依頼は、すでに対応済です。' }, { status: 409 });
+    }
+    r.maintRequestWatch = body.watch;
+    r.maintRequestWatchAt = body.watch ? today : '';
+    action = body.watch ? '整備依頼を経過観察にした' : '整備依頼の経過観察を解除した';
+  } else {
+    const isDone = Boolean(done);
+    r.maintRequestDone = isDone;
+    r.maintRequestDoneAt = isDone ? new Date().toISOString().slice(0, 10) : '';
+    // 完了にしたら経過観察は終わり。対応待ちに戻したときも、観察中の印は外す
+    r.maintRequestWatch = false;
+    r.maintRequestWatchAt = '';
+    action = isDone ? '整備依頼を対応済にした' : '整備依頼を対応待ちに戻した';
+  }
 
   pushLog(data, {
     actor: isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value) ? 'admin' : 'user',
-    action: isDone ? '整備依頼を対応済にした' : '整備依頼を対応待ちに戻した',
+    action,
     target: `${r.date} ${r.driver} / ${r.vehicleName}`,
     detail: `${r.maintRequestType || ''} ${r.maintRequestNote || ''}`.trim(),
   });

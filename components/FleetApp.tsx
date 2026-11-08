@@ -209,6 +209,9 @@ export default function FleetApp() {
   async function resolveMaintRequest(id: string, done: boolean) {
     return withSync(() => jsonFetch(`/api/reports/${id}/maint-request`, { method: 'POST', body: JSON.stringify({ done }) }));
   }
+  async function watchMaintRequest(id: string, watch: boolean) {
+    return withSync(() => jsonFetch(`/api/reports/${id}/maint-request`, { method: 'POST', body: JSON.stringify({ watch }) }));
+  }
   async function submitMaintRequest(r: { vehicleId: string; type: string; urgency: string; note: string; driverId: string }) {
     return withSync(() => jsonFetch('/api/maint-requests', { method: 'POST', body: JSON.stringify(r) }));
   }
@@ -523,6 +526,7 @@ export default function FleetApp() {
             data={data}
             onSave={saveVehicle}
             onResolveRequest={resolveMaintRequest}
+            onWatchRequest={watchMaintRequest}
             mechanic={activeMechanic}
             canEdit={Boolean(activeMechanic) || isAdmin}
             currentDriverId={currentDriver?.id || null}

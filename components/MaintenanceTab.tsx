@@ -29,6 +29,7 @@ export default function MaintenanceTab({
   data,
   onSave,
   onResolveRequest,
+  onWatchRequest,
   mechanic,
   canEdit,
   currentDriverId,
@@ -38,6 +39,7 @@ export default function MaintenanceTab({
   data: AppData;
   onSave: (v: Vehicle) => Promise<unknown>;
   onResolveRequest: (reportId: string, done: boolean) => Promise<unknown>;
+  onWatchRequest: (reportId: string, watch: boolean) => Promise<unknown>;
   // 整備士としてログイン中の名前（管理者だけのときは null）
   mechanic: string | null;
   // 記録の追加・修正・削除、依頼への対応ができるか（整備士または管理者のログイン）
@@ -122,6 +124,10 @@ export default function MaintenanceTab({
     if (!canEdit) return onRequestMechanicLogin();
     await onResolveRequest(r.id, true);
   }
+  async function toggleWatch(r: Report) {
+    if (!canEdit) return onRequestMechanicLogin();
+    await onWatchRequest(r.id, !r.maintRequestWatch);
+  }
   function openEdit(r: LedgerRow) {
     if (!canEdit) return onRequestMechanicLogin();
     setEditing({
@@ -202,7 +208,7 @@ export default function MaintenanceTab({
             🛠 整備依頼（対応待ち）<span className="pill pill-red" style={{ marginLeft: 8 }}>{requests.length}件</span>
           </h3>
           <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 8 }}>
-            帰着登録で受け付けた依頼です。整備を実施したら「整備記録として登録」で台帳に残すと、対応済になります。
+            帰着登録やダッシュボードで受け付けた依頼です。整備を実施したら「整備記録として登録」で台帳に残すと、対応済になります。記録を残さず閉じるときは「完了」、しばらく様子を見るときは「経過観察」を押します。
           </div>
           <div className="alert-list">
             {requests.map((r) => {
@@ -214,6 +220,11 @@ export default function MaintenanceTab({
                   <div style={{ flex: 1 }}>
                     <strong>{r.vehicleName}</strong>
                     {r.plate ? `（${r.plate}）` : ''}— {r.maintRequestType || '整備'}
+                    {r.maintRequestWatch && (
+                      <span className="pill pill-sky" style={{ marginLeft: 6 }}>
+                        👀 経過観察中{r.maintRequestWatchAt ? `（${r.maintRequestWatchAt}〜）` : ''}
+                      </span>
+                    )}
                     {r.maintRequestUrgency && r.maintRequestUrgency !== MAINT_URGENCIES[0] && (
                       <span className={`pill ${urgent ? 'pill-red' : 'pill-amber'}`} style={{ marginLeft: 6 }}>
                         {r.maintRequestUrgency}
@@ -233,8 +244,11 @@ export default function MaintenanceTab({
                     <button className="btn btn-sm btn-primary" onClick={() => openFromRequest(r)} disabled={!vehicleExists}>
                       整備記録として登録
                     </button>
+                    <button className="btn btn-sm" onClick={() => toggleWatch(r)}>
+                      {r.maintRequestWatch ? '経過観察を解除' : '👀 経過観察'}
+                    </button>
                     <button className="btn btn-sm" onClick={() => closeRequestWithoutRecord(r)}>
-                      記録せず完了にする
+                      ✓ 完了
                     </button>
                   </div>
                 </div>
