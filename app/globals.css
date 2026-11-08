@@ -2246,3 +2246,33 @@ table.bulk-grid {
 .clamp-1, .clamp-2 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
 .clamp-1 { -webkit-line-clamp: 1; }
 .clamp-2 { -webkit-line-clamp: 2; }
+
+/* スマホ：一覧のお知らせ・依頼の行を、文章を横いっぱいに、ボタンは下の段に並べる */
+@media (max-width: 640px) {
+  .alert-item {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 8px;
+  }
+  .alert-item > div {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+  }
+  .alert-item > .alert-actions {
+    flex: 1 1 100%;
+  }
+  .alert-item > .alert-actions .btn {
+    flex: 1 1 calc(50% - 6px);
+    min-height: 40px;
+    justify-content: center;
+  }
+  .alert-item > .btn {
+    flex: 1 1 100%;
+    min-height: 40px;
+    justify-content: center;
+  }
+  .alert-item > .pill {
+    margin-left: 28px;
+  }
+}

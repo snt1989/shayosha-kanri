@@ -282,7 +282,7 @@ export default function MaintenanceTab({
                       {!vehicleExists && '（車両は台帳から削除済み）'}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <div className="alert-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {canEditMaintRequest(r, { driverId: currentDriverId, mechanic: canEdit ? mechanic || '管理者' : null, isAdmin: canEdit && !mechanic }) && (
                       <button className="btn btn-sm" onClick={() => setEditingReq(r)}>
                         ✏️ 編集

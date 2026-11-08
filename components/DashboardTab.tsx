@@ -139,7 +139,7 @@ export default function DashboardTab({
                       {r.maintRequestNote}　依頼: {r.date} {r.driver}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <div className="alert-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {canEditMaintRequest(r, { driverId: currentDriver?.id, mechanic, isAdmin }) && (
                       <button className="btn btn-sm" onClick={() => setEditingReq(r)}>
                         ✏️ 編集
