@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useMobileLimit } from '@/lib/useLimit';
 import { AppData, Driver, MAINT_URGENCIES, Report, Reservation, cardKindIcon } from '@/lib/types';
 import { canEditMaintRequest, openMaintRequests, rentalReservations, reservationRange, todayStr } from '@/lib/utils';
 import AlertsPanel, { MaintPrefill } from './AlertsPanel';
@@ -51,6 +52,8 @@ export default function DashboardTab({
     .filter((r) => !r.postDone)
     .sort((a, b) => (a.date + a.preTime).localeCompare(b.date + b.preTime));
   const maintRequests = openMaintRequests(data.reports);
+  const openLim = useMobileLimit(openReports, 3);
+  const reqLim = useMobileLimit(maintRequests, 3);
   // 利用中（返却前で期間が残っている）レンタカーと、そこに入っている予約
   const activeRentals = data.rentals
     .filter((n) => !n.returnedAt && n.endDate >= today)
@@ -58,7 +61,7 @@ export default function DashboardTab({
 
   return (
     <div>
-      <div className="card" style={{ marginBottom: 14 }}>
+      <div className="card dash-intro" style={{ marginBottom: 14 }}>
         <h3 className="card-title" style={{ marginBottom: 4 }}>
           📊 ダッシュボード
         </h3>
@@ -78,7 +81,7 @@ export default function DashboardTab({
           <div className="empty-state">帰着未登録の日報はありません</div>
         ) : (
           <div className="alert-list">
-            {openReports.map((r) => {
+            {openLim.shown.map((r) => {
               const overdue = r.date < today;
               return (
                 <div key={r.id} className={`alert-item ${overdue ? 'danger' : 'warn'}`}>
@@ -97,6 +100,7 @@ export default function DashboardTab({
                 </div>
               );
             })}
+          {openLim.more}
           </div>
         )}
       </div>
@@ -118,7 +122,7 @@ export default function DashboardTab({
           <div className="empty-state">対応待ちの整備依頼はありません</div>
         ) : (
           <div className="alert-list">
-            {maintRequests.map((r) => {
+            {reqLim.shown.map((r) => {
               const urgent = r.maintRequestUrgency === MAINT_URGENCIES[2];
               return (
                 <div key={r.id} className={`alert-item ${urgent ? 'danger' : 'warn'}`}>
@@ -164,6 +168,7 @@ export default function DashboardTab({
                 </div>
               );
             })}
+          {reqLim.more}
           </div>
         )}
       </div>

@@ -3,6 +3,7 @@
 import { AppData, Vehicle } from '@/lib/types';
 import { computeAlerts } from '@/lib/alerts';
 import { openMaintRequests } from '@/lib/utils';
+import { useMobileLimit } from '@/lib/useLimit';
 
 export type MaintPrefill = { vehicleId: string; type: string; note: string };
 
@@ -21,6 +22,9 @@ export default function AlertsPanel({
   // 条件は lib/alerts.ts（モバイルアプリと共通）
   const { shaken: shakenAlerts, oil: oilAlerts, license: licenseAlerts, ngAlcohol, total } = computeAlerts(data);
 
+  const shakenLim = useMobileLimit(shakenAlerts, 3);
+  const oilLim = useMobileLimit(oilAlerts, 3);
+  const licenseLim = useMobileLimit(licenseAlerts, 3);
   const pending = openMaintRequests(data.reports);
   // 同じ車両・同じ種類の依頼が対応待ちなら、「依頼済み」と表示して二重に出さない
   const requested = (vehicleId: string, type: string) =>
@@ -53,7 +57,7 @@ export default function AlertsPanel({
           <div className="empty-state">直近の車検予定はありません</div>
         ) : (
           <div className="alert-list">
-            {shakenAlerts.map(({ v, days }) => (
+            {shakenLim.shown.map(({ v, days }) => (
               <div key={v.id} className={`alert-item ${days !== null && (days as number) < 0 ? 'danger' : 'warn'}`}>
                 <span>🚗</span>
                 <div style={{ flex: 1 }}>
@@ -63,6 +67,7 @@ export default function AlertsPanel({
                 {requestUi(v, '車検', `車検の満了日（${v.shakenDate}）が近いため、車検をお願いします。`)}
               </div>
             ))}
+{shakenLim.more}
           </div>
         )}
 
@@ -72,7 +77,7 @@ export default function AlertsPanel({
               🛢️ オイル交換アラート（残り1,000km以内）
             </h3>
             <div className="alert-list">
-              {oilAlerts.map((v) => (
+              {oilLim.shown.map((v) => (
                 <div key={v.id} className="alert-item warn">
                   <span>🛢️</span>
                   <div style={{ flex: 1 }}>
@@ -82,6 +87,7 @@ export default function AlertsPanel({
                   {requestUi(v, 'オイル', `オイル交換の目安（${v.oilKm.toLocaleString()}km）が近いため、オイル交換をお願いします。（現在 ${v.odometer.toLocaleString()}km）`)}
                 </div>
               ))}
+{oilLim.more}
             </div>
           </>
         )}
@@ -93,7 +99,7 @@ export default function AlertsPanel({
           <div className="empty-state">直近の免許更新予定はありません</div>
         ) : (
           <div className="alert-list">
-            {licenseAlerts.map(({ d, days }) => (
+            {licenseLim.shown.map(({ d, days }) => (
               <div key={d.id} className={`alert-item ${days !== null && (days as number) < 0 ? 'danger' : 'warn'}`}>
                 <span>🪪</span>
                 <div>
@@ -105,6 +111,7 @@ export default function AlertsPanel({
                 </div>
               </div>
             ))}
+{licenseLim.more}
           </div>
         )}
 

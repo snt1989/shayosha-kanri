@@ -6,6 +6,7 @@ import { todayStr } from '@/lib/utils';
 import { computeEfficiency } from '@/lib/fuel';
 import { downloadCsv, fuelLogsToCsv } from '@/lib/csv';
 import Modal from './Modal';
+import { useMobileLimit } from '@/lib/useLimit';
 
 const yen = (n: number) => `${n.toLocaleString()} 円`;
 const oneDecimal = (n: number) => (Math.round(n * 10) / 10).toLocaleString();
@@ -132,6 +133,8 @@ export default function FuelTab({
   const unit = rec && rec.liters > 0 && rec.amount > 0 ? rec.amount / rec.liters : null;
   const selectStyle = { padding: '8px 10px', border: '1px solid var(--slate-300)', borderRadius: 8 } as const;
 
+  const lim = useMobileLimit(rows, 3, `${query}|${vehicleFilter}|${monthFilter}`);
+
   return (
     <div>
       <div className="card">
@@ -214,7 +217,7 @@ export default function FuelTab({
                 </tr>
               </thead>
               <tbody>
-                {rows.map((f) => {
+                {lim.shown.map((f) => {
                   const eff = efficiency.get(f.id);
                   return (
                     <tr key={f.id}>
@@ -253,6 +256,7 @@ export default function FuelTab({
             </table>
           </div>
         )}
+        {lim.more}
         <div style={{ fontSize: 11, color: 'var(--slate-400)', marginTop: 8 }}>
           燃費は「満タン給油」を基準に、前回の満タン給油からの走行距離 ÷ その間の給油量で計算します（最初の満タン給油は基準のため「-」）。
         </div>

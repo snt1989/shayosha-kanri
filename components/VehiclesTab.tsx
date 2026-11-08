@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
+import { useMobileLimit } from '@/lib/useLimit';
 import { AppData, Vehicle } from '@/lib/types';
 import { daysUntil, genId, openMaintRequests, todayStr } from '@/lib/utils';
 import { csvToVehicles, downloadCsv, vehiclesToCsv } from '@/lib/csv';
@@ -213,6 +214,7 @@ export default function VehiclesTab({
     : [];
   const driveKm = driveRows.reduce((sum, r) => sum + (r.postDone ? r.tripKm || 0 : 0), 0);
   const driveOut = driveRows.filter((r) => !r.postDone).length;
+  const lim = useMobileLimit(filtered, 3, query);
 
   return (
     <div>
@@ -265,7 +267,7 @@ export default function VehiclesTab({
           <div className="empty-state">車両データがありません</div>
         ) : (
           <div className="cardgrid">
-            {filtered.map((v) => {
+            {lim.shown.map((v) => {
               const remainOil = Math.max(0, v.oilKm - v.odometer);
               return (
                 <div className="entity-card" key={v.id}>
@@ -357,6 +359,7 @@ export default function VehiclesTab({
             })}
           </div>
         )}
+        {lim.more}
       </div>
 
       {viewing && viewVehicle && viewing.kind === 'maint' && (

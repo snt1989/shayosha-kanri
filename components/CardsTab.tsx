@@ -5,6 +5,7 @@ import { AppData, CARD_KINDS, CardKind, CardLoan, Driver, FleetCard, cardKindIco
 import { downloadCsv } from '@/lib/csv';
 import { todayStr } from '@/lib/utils';
 import Modal from './Modal';
+import { useMobileLimit } from '@/lib/useLimit';
 import { fmtDateTime, isOverdue, useCards } from './useCards';
 
 async function api(url: string, init?: RequestInit) {
@@ -104,6 +105,8 @@ export default function CardsTab({
       });
     downloadCsv(`カード貸出履歴_${today}.csv`, rows.map((r) => r.map(esc).join(',')).join('\r\n'));
   }
+
+  const lim = useMobileLimit(history, 5);
 
   return (
     <div>
@@ -232,7 +235,7 @@ export default function CardsTab({
                 </tr>
               </thead>
               <tbody>
-                {history.map((l) => (
+                {lim.shown.map((l) => (
                   <tr key={l.id}>
                     <td data-label="借りた日時">{fmtDateTime(l.borrowedAt)}</td>
                     <td data-label="カード">{cardName(l.cardId)}</td>
@@ -263,6 +266,7 @@ export default function CardsTab({
             </table>
           </div>
         )}
+        {lim.more}
       </div>
 
       {borrowing && currentDriver && (

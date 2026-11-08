@@ -5,6 +5,7 @@ import { AppData, Driver, Rental, RentalTrip } from '@/lib/types';
 import { rentalReservations, reservationRange, todayStr } from '@/lib/utils';
 import { downloadCsv, rentalsToCsv } from '@/lib/csv';
 import Modal from './Modal';
+import { useMobileLimit } from '@/lib/useLimit';
 import RentalTripsPanel from './RentalTripsPanel';
 
 const yen = (n?: number) => (n ? `${n.toLocaleString()} 円` : '-');
@@ -167,6 +168,8 @@ export default function RentalTab({
   const numIn = (v: string) => (v === '' ? 0 : Math.max(0, Number(v) || 0));
   const tripCount = (id: string) => data.rentalTrips.filter((t) => t.rentalId === id).length;
 
+  const lim = useMobileLimit(rows, 3, query);
+
   if (view === 'trips') {
     return (
       <RentalTripsPanel
@@ -243,7 +246,7 @@ export default function RentalTab({
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
+                {lim.shown.map((r) => (
                   <tr
                     key={r.id}
                     onClick={() => {
@@ -308,6 +311,7 @@ export default function RentalTab({
             </table>
           </div>
         )}
+        {lim.more}
       </div>
 
       {ret && (

@@ -6,6 +6,7 @@ import { isReportOwner, nowTimeStr, todayStr } from '@/lib/utils';
 import { downloadCsv } from '@/lib/csv';
 import { extractOdometerReading, loadTesseract } from '@/lib/ocr';
 import Modal from './Modal';
+import { useMobileLimit } from '@/lib/useLimit';
 import PhotoField from './PhotoField';
 import { compressPhoto } from '@/lib/image';
 
@@ -299,6 +300,8 @@ export default function ReportsTab({
     downloadCsv(`運転日報_${todayStr()}.csv`, reportsToCsv(filtered).replace(/^﻿/, ''));
   }
 
+  const lim = useMobileLimit(filtered, 3, query);
+
   return (
     <div>
       <div className="card">
@@ -359,7 +362,7 @@ export default function ReportsTab({
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((r) => (
+                {lim.shown.map((r) => (
                   <tr key={r.id}>
                     <td>
                       {r.date}
@@ -435,6 +438,7 @@ export default function ReportsTab({
             </table>
           </div>
         )}
+        {lim.more}
       </div>
 
       {editing && (

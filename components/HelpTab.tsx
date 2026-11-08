@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useIsMobile } from '@/lib/useLimit';
+import { useEffect, useMemo, useState } from 'react';
 import { HELP_SECTIONS, HelpBlock, HelpTarget } from '@/lib/help';
 
 const SCREEN_NAMES: Record<HelpTarget, string> = {
@@ -42,6 +43,11 @@ export default function HelpTab({ onNavigate }: { onNavigate: (tab: HelpTarget) 
   const [query, setQuery] = useState('');
   const [sectionId, setSectionId] = useState('');
   const q = norm(query.trim());
+  const mobile = useIsMobile();
+  // スマホでは、最初は先頭の分類だけを出す（全部だと画面がとても長くなるため）。「すべて」で全部見られる
+  useEffect(() => {
+    if (mobile) setSectionId((cur) => cur || HELP_SECTIONS[0]?.id || '');
+  }, [mobile]);
 
   const sections = useMemo(
     () =>
@@ -75,7 +81,10 @@ export default function HelpTab({ onNavigate }: { onNavigate: (tab: HelpTarget) 
               aria-label="質問を検索"
               placeholder="キーワードで探す（例：返却）"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                if (mobile && e.target.value.trim()) setSectionId('');
+              }}
             />
           </div>
         </div>

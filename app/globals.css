@@ -2506,12 +2506,12 @@ table.bulk-grid {
   table.data-table.fuel-table td:nth-child(1) { grid-column: 1; grid-row: 1; font-weight: 700; font-size: 15px; }
   table.data-table.fuel-table td:nth-child(5) { grid-column: 2; grid-row: 1; text-align: right; font-weight: 700; font-size: 15px; }
   table.data-table.fuel-table td:nth-child(2) { grid-column: 1 / -1; grid-row: 2; font-weight: 600; margin-bottom: 4px; }
-  table.data-table.fuel-table td:nth-child(4) { grid-column: 1; grid-row: 3; font-size: 13px; }
-  table.data-table.fuel-table td:nth-child(3) { grid-column: 2; grid-row: 3; font-size: 13px; }
-  table.data-table.fuel-table td:nth-child(6) { grid-column: 1; grid-row: 4; font-size: 13px; }
-  table.data-table.fuel-table td:nth-child(8) { grid-column: 2; grid-row: 4; font-size: 13px; }
-  table.data-table.fuel-table td:nth-child(7) { grid-column: 1; grid-row: 5; font-size: 13px; }
-  table.data-table.fuel-table td:nth-child(9) { grid-column: 2; grid-row: 5; font-size: 13px; }
+  table.data-table.fuel-table td:nth-child(4) { order: 1; font-size: 13px; }
+  table.data-table.fuel-table td:nth-child(3) { order: 2; font-size: 13px; }
+  table.data-table.fuel-table td:nth-child(6) { order: 3; font-size: 13px; }
+  table.data-table.fuel-table td:nth-child(8) { order: 4; font-size: 13px; }
+  table.data-table.fuel-table td:nth-child(7) { order: 5; font-size: 13px; }
+  table.data-table.fuel-table td:nth-child(9) { order: 6; font-size: 13px; }
   table.data-table.fuel-table td:nth-child(10) { grid-column: 1 / -1; grid-row: 6; font-size: 13px; margin-top: 4px; padding: 6px 8px; background: var(--slate-50, #f8fafc); border-radius: 8px; }
   table.data-table.fuel-table td.cell-empty { display: none; }
   table.data-table.fuel-table td:nth-child(11) { grid-column: 1 / -1; grid-row: 7; margin-top: 6px; }
@@ -2622,4 +2622,33 @@ table.bulk-grid {
   /* 車両台帳：カードのボタンは2列で揃える */
   .efoot .eactions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
   .efoot .eactions .btn { width: 100%; min-height: 40px; justify-content: center; }
+}
+
+.show-more { display: none; }
+@media (max-width: 640px) {
+  .show-more { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 4px; }
+  .show-more .btn { width: 100%; min-height: 44px; justify-content: center; }
+  .show-more .btn-sm { min-height: 36px; }
+}
+
+/* スマホ：1画面〜1.5画面に収まるよう、説明文など画面の上を取る部分を省く（くわしい説明は「使い方」にあります） */
+@media (max-width: 640px) {
+  .dash-intro { display: none; }
+  .card > .card-title + div[style*='font-size: 12px'],
+  .toolbar2 .card-title + div[style*='font-size: 12px'] { display: none; }
+  .card { padding: 14px; margin-bottom: 12px; }
+}
+@media (max-width: 640px) {
+  .empty-state { padding: 12px 8px; font-size: 13px; }
+  .alert-item { padding: 10px 12px; font-size: 13px; }
+  .alert-item > .btn { min-height: 36px; }
+  .alert-item > .alert-actions .btn { min-height: 36px; }
+}
+@media (max-width: 640px) {
+  /* 依頼のボタンは、編集・削除・登録を1行に並べる */
+  .alert-item > .alert-actions { flex-wrap: nowrap !important; }
+  .alert-item > .alert-actions .btn { flex: 1 1 auto; padding-left: 8px; padding-right: 8px; white-space: nowrap; }
+  .alert-item > .alert-actions .btn-primary { flex: 2 1 auto; }
+  /* 整備台帳：車両名が折り返さないよう、左の列を広めに */
+  table.data-table.ledger-table tr.ledger-row { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
 }

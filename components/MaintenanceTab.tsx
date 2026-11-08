@@ -8,6 +8,7 @@ import PhotoField, { PhotoThumbs } from './PhotoField';
 import { cleanPhotoIds } from '@/lib/photo-ids';
 import { downloadCsv, maintenanceToCsv } from '@/lib/csv';
 import Modal from './Modal';
+import { useMobileLimit } from '@/lib/useLimit';
 
 // 整備記録は各車両の maintHistory に保存されている。整備台帳はそれを全車両分まとめて
 // 一覧・絞り込み・追加・編集・削除できる画面（データの持ち方は変えていない）。
@@ -271,6 +272,8 @@ export default function MaintenanceTab({
 
   const filtering = Boolean(query.trim() || vehicleFilter || typeFilter || progressFilter);
 
+  const lim = useMobileLimit(rows, 3, `${query}|${vehicleFilter}|${typeFilter}|${progressFilter}`);
+  const reqLim = useMobileLimit(requests, 3);
   return (
     <div>
       {requests.length > 0 && (
@@ -282,7 +285,7 @@ export default function MaintenanceTab({
             帰着登録やダッシュボードで受け付けた依頼です。「整備記録として登録」から、完了・経過観察を選べます。
           </div>
           <div className="alert-list">
-            {requests.map((r) => {
+            {reqLim.shown.map((r) => {
               const urgent = r.maintRequestUrgency === MAINT_URGENCIES[2];
               const vehicleExists = data.vehicles.some((v) => v.id === r.vehicleId);
               return (
@@ -440,7 +443,7 @@ export default function MaintenanceTab({
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
+                {lim.shown.map((r) => (
                   <tr key={`${r.vehicleId}-${r.index}`} className="ledger-row" onClick={() => openEdit(r)} title="押すと、内容を見て編集できます">
                     <td style={{ whiteSpace: 'nowrap' }}>{r.date}</td>
                     <td>
@@ -498,6 +501,7 @@ export default function MaintenanceTab({
             </table>
           </div>
         )}
+        {lim.more}
       </div>
 
       {editing && (
