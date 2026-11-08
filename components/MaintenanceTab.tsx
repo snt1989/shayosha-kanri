@@ -217,7 +217,7 @@ export default function MaintenanceTab({
             🛠 整備依頼（対応待ち）<span className="pill pill-red" style={{ marginLeft: 8 }}>{requests.length}件</span>
           </h3>
           <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 8 }}>
-            帰着登録やダッシュボードで受け付けた依頼です。「整備記録として登録」を押すと入力画面が開き、その中の「✓ 完了として保存」で対応済に、「👀 経過観察にして保存」で経過観察中にできます。
+            帰着登録やダッシュボードで受け付けた依頼です。「整備記録として登録」から、完了・経過観察を選べます。
           </div>
           <div className="alert-list">
             {requests.map((r) => {
@@ -429,8 +429,7 @@ export default function MaintenanceTab({
         >
           {editing.requestId && (
             <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 10 }}>
-              整備が終わったら「✓ 完了として保存」、まだ様子を見るときは「👀 経過観察にして保存」を押します（記録は、どちらでも台帳に残ります）。
-              {modalReq?.maintRequestWatch && <span className="pill pill-sky" style={{ marginLeft: 6 }}>👀 経過観察中</span>}
+              {modalReq?.maintRequestWatch && <span className="pill pill-sky">👀 経過観察中</span>}
               <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {modalReq?.maintRequestWatch && (
                   <button
