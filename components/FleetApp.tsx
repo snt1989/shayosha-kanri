@@ -212,10 +212,10 @@ export default function FleetApp() {
   async function watchMaintRequest(id: string, watch: boolean) {
     return withSync(() => jsonFetch(`/api/reports/${id}/maint-request`, { method: 'POST', body: JSON.stringify({ watch }) }));
   }
-  async function submitMaintRequest(r: { vehicleId: string; type: string; urgency: string; note: string; driverId: string }) {
+  async function submitMaintRequest(r: { vehicleId: string; type: string; urgency: string; note: string; driverId: string; photos?: string[] }) {
     return withSync(() => jsonFetch('/api/maint-requests', { method: 'POST', body: JSON.stringify(r) }));
   }
-  async function editMaintRequest(id: string, r: { vehicleId: string; type: string; urgency: string; note: string }) {
+  async function editMaintRequest(id: string, r: { vehicleId: string; type: string; urgency: string; note: string; photos?: string[] }) {
     return withSync(() =>
       jsonFetch(`/api/reports/${id}/maint-request/edit`, {
         method: 'POST',
@@ -223,7 +223,7 @@ export default function FleetApp() {
       })
     );
   }
-  async function reopenMaintRequest(r: { vehicleId: string; type: string; note: string; watch: boolean }) {
+  async function reopenMaintRequest(r: { vehicleId: string; type: string; note: string; watch: boolean; photos?: string[] }) {
     return withSync(() =>
       jsonFetch('/api/maint-requests/reopen', {
         method: 'POST',

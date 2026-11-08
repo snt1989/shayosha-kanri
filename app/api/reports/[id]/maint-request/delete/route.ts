@@ -39,6 +39,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     r.maintRequestType = '';
     r.maintRequestUrgency = '';
     r.maintRequestNote = '';
+    r.maintRequestPhotos = [];
     r.maintRequestDone = false;
     r.maintRequestDoneAt = '';
     r.maintRequestWatch = false;

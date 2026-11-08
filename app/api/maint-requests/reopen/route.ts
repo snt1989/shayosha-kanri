@@ -3,6 +3,7 @@ import { loadData, saveData } from '@/lib/store';
 import { MAINT_URGENCIES, Report } from '@/lib/types';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
+import { cleanPhotoIds } from '@/lib/photo-ids';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,7 @@ export async function POST(req: NextRequest) {
     note?: string;
     watch?: boolean;
     mechanic?: string;
+    photos?: string[];
   };
   const data = await loadData();
   const isAdminReq = isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value);
@@ -61,6 +63,7 @@ export async function POST(req: NextRequest) {
     maintRequestType: type,
     maintRequestUrgency: MAINT_URGENCIES[0],
     maintRequestNote: note,
+    maintRequestPhotos: cleanPhotoIds(b.photos),
     maintRequestDone: false,
     maintRequestWatch: Boolean(b.watch),
     maintRequestWatchAt: b.watch ? todayJst() : '',

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { loadData, saveData } from '@/lib/store';
 import { MAINT_URGENCIES } from '@/lib/types';
 import { pushLog } from '@/lib/log';
+import { cleanPhotoIds } from '@/lib/photo-ids';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 
 export const dynamic = 'force-dynamic';
@@ -18,6 +19,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     vehicleId?: string;
     driverId?: string;
     mechanic?: string;
+    photos?: string[];
   };
   const data = await loadData();
   const r = data.reports.find((x) => x.id === id);
@@ -40,6 +42,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   r.maintRequestType = String(b.type ?? r.maintRequestType ?? '').trim().slice(0, 40);
   r.maintRequestUrgency = (MAINT_URGENCIES as readonly string[]).includes(String(b.urgency)) ? String(b.urgency) : r.maintRequestUrgency || MAINT_URGENCIES[0];
   r.maintRequestNote = note;
+  if (Array.isArray(b.photos)) r.maintRequestPhotos = cleanPhotoIds(b.photos);
   if (r.maintOnly && b.vehicleId && b.vehicleId !== r.vehicleId) {
     const v = data.vehicles.find((x) => x.id === b.vehicleId);
     if (!v) return NextResponse.json({ success: false, message: '車両が見つかりません。' }, { status: 404 });

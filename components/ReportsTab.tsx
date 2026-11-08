@@ -6,6 +6,8 @@ import { isReportOwner, nowTimeStr, todayStr } from '@/lib/utils';
 import { downloadCsv } from '@/lib/csv';
 import { extractOdometerReading, loadTesseract } from '@/lib/ocr';
 import Modal from './Modal';
+import PhotoField from './PhotoField';
+import { compressPhoto } from '@/lib/image';
 
 // 「前回使った車両」: 運転者が分かればその人の直近の日報、なければ全体で直近の日報の車両。
 // 台帳から削除済みの車両は対象外。data.reports は新しい順に保存されている。
@@ -217,7 +219,12 @@ export default function ReportsTab({
   function handlePhotoFile(file: File | null) {
     if (!editing || !file) return;
     const reader = new FileReader();
-    reader.onload = () => setEditing((cur) => (cur ? { ...cur, inspectionPhoto: String(reader.result) } : cur));
+    // 点検写真も、保存するデータが重くならないよう最軽量に縮める（縮められないときは元のまま）
+    reader.onload = async () => {
+      const raw = String(reader.result);
+      const small = await compressPhoto(raw).catch(() => raw);
+      setEditing((cur) => (cur ? { ...cur, inspectionPhoto: small } : cur));
+    };
     reader.readAsDataURL(file);
   }
 
@@ -271,7 +278,7 @@ export default function ReportsTab({
     try {
       const maint = editing.maintRequest
         ? {}
-        : { maintRequest: false, maintRequestType: '', maintRequestUrgency: '', maintRequestNote: '', maintRequestDone: false, maintRequestDoneAt: '' };
+        : { maintRequest: false, maintRequestType: '', maintRequestUrgency: '', maintRequestNote: '', maintRequestPhotos: [], maintRequestDone: false, maintRequestDoneAt: '' };
       await onSave({ ...editing, ...maint, driver, tripKm });
       setEditing(null);
     } finally {
@@ -708,6 +715,11 @@ export default function ReportsTab({
                       onChange={(e) => setEditing({ ...editing, maintRequestNote: e.target.value })}
                     />
                   </div>
+                  <PhotoField
+                    ids={editing.maintRequestPhotos || []}
+                    onChange={(ids) => setEditing((cur) => (cur ? { ...cur, maintRequestPhotos: ids } : cur))}
+                    label="写真（任意・故障箇所や警告灯など）"
+                  />
                 </>
               )}
             </>

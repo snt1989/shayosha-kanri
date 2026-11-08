@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react';
 import { AppData, MAINT_PROGRESS, MAINT_URGENCIES, MaintProgress, MaintRecord, Report, Vehicle } from '@/lib/types';
 import { canEditMaintRequest, openMaintRequests, todayStr } from '@/lib/utils';
 import MaintRequestModal, { MaintRequestInput } from './MaintRequestModal';
+import PhotoField, { PhotoThumbs } from './PhotoField';
+import { cleanPhotoIds } from '@/lib/photo-ids';
 import { downloadCsv, maintenanceToCsv } from '@/lib/csv';
 import Modal from './Modal';
 
@@ -58,7 +60,7 @@ export default function MaintenanceTab({
   onEditRequest: (id: string, r: MaintRequestInput) => Promise<unknown>;
   onDeleteRequest: (id: string) => Promise<unknown>;
   // 依頼と結びついていない記録を「整備中／経過観察」にしたとき、記録の内容で依頼を作り直す（作った依頼のidを返す）
-  onReopenRequest: (r: { vehicleId: string; type: string; note: string; watch: boolean }) => Promise<{ id?: string } | unknown>;
+  onReopenRequest: (r: { vehicleId: string; type: string; note: string; watch: boolean; photos?: string[] }) => Promise<{ id?: string } | unknown>;
   onRequestMechanicLogin: () => void;
 }) {
   const [editingReq, setEditingReq] = useState<Report | null>(null);
@@ -145,6 +147,7 @@ export default function MaintenanceTab({
         shop: '',
         requestId: r.id,
         progress: r.maintRequestWatch ? 'watch' : 'done',
+        photos: r.maintRequestPhotos,
       },
     });
   }
@@ -153,7 +156,7 @@ export default function MaintenanceTab({
     setEditing({
       vehicleId: r.vehicleId,
       index: r.index,
-      rec: { date: r.date, type: r.type, km: r.km, note: r.note, cost: r.cost, shop: r.shop || '', by: r.by, request: r.request, work: r.work, nextOilKm: r.nextOilKm, requestId: r.requestId, progress: r.progress },
+      rec: { date: r.date, type: r.type, km: r.km, note: r.note, cost: r.cost, shop: r.shop || '', by: r.by, request: r.request, work: r.work, nextOilKm: r.nextOilKm, requestId: r.requestId, progress: r.progress, photos: r.photos },
     });
   }
 
@@ -188,6 +191,8 @@ export default function MaintenanceTab({
     if (editing.rec.shop) rec.shop = editing.rec.shop;
     if (editing.rec.request?.trim()) rec.request = editing.rec.request.trim();
     if (editing.rec.work?.trim()) rec.work = editing.rec.work.trim();
+    const photos = cleanPhotoIds(editing.rec.photos);
+    if (photos.length) rec.photos = photos;
     const isOil = editing.rec.type.includes('オイル');
     const nextOil = Number(editing.rec.nextOilKm) || 0;
     if (isOil && nextOil > 0 && nextOil <= rec.km) {
@@ -218,6 +223,7 @@ export default function MaintenanceTab({
           type: rec.type,
           note: rec.request || rec.work || rec.note || '',
           watch: progress === 'watch',
+          photos,
         })) as { id?: string } | undefined;
         if (res?.id) {
           linkId = res.id;
@@ -298,6 +304,7 @@ export default function MaintenanceTab({
                     <div style={{ fontSize: 12, marginTop: 2 }}>
                       {r.maintRequestNote}　依頼: {r.date} {r.driver}
                       {!vehicleExists && '（車両は台帳から削除済み）'}
+                      <PhotoThumbs ids={r.maintRequestPhotos} />
                     </div>
                   </div>
                   <div className="alert-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -466,7 +473,8 @@ export default function MaintenanceTab({
                           <b>備考</b> {r.note}
                         </div>
                       )}
-                      {!r.work && !r.request && !r.note && '-'}
+                      {!r.work && !r.request && !r.note && !r.photos?.length && '-'}
+                      <PhotoThumbs ids={r.photos} />
                     </td>
                     <td style={{ whiteSpace: 'nowrap' }}>
                       {r.km ? r.km.toLocaleString() : '-'}
@@ -626,6 +634,7 @@ export default function MaintenanceTab({
               onChange={(e) => setEditing({ ...editing, rec: { ...editing.rec, note: e.target.value } })}
             />
           </div>
+          <PhotoField ids={editing.rec.photos || []} onChange={(ids) => setEditing((cur) => (cur ? { ...cur, rec: { ...cur.rec, photos: ids } } : cur))} label="写真（任意・整備前後、部品、請求書など）" />
         </Modal>
       )}
       {editingReq && (

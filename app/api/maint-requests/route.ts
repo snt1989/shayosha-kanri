@@ -3,6 +3,7 @@ import { loadData, saveData } from '@/lib/store';
 import { MAINT_URGENCIES, Report } from '@/lib/types';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
+import { cleanPhotoIds } from '@/lib/photo-ids';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,6 +18,7 @@ export async function POST(req: NextRequest) {
     urgency?: string;
     note?: string;
     driverId?: string;
+    photos?: string[];
   };
   const note = String(b.note || '').trim().slice(0, 500);
   if (!b.vehicleId || !note) {
@@ -61,6 +63,7 @@ export async function POST(req: NextRequest) {
     maintRequestType: String(b.type || '').trim().slice(0, 40),
     maintRequestUrgency: urgency,
     maintRequestNote: note,
+    maintRequestPhotos: cleanPhotoIds(b.photos),
     maintRequestDone: false,
   };
   data.reports.unshift(r);

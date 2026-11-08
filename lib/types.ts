@@ -19,6 +19,7 @@ export type MaintRecord = {
   nextOilKm?: number; // オイル交換のとき、次回交換の走行距離（km）。保存すると車両台帳の oilKm に反映する
   requestId?: string; // 整備依頼への対応として記録したとき、その依頼（日報）のid。進捗は依頼の状態と連動する
   progress?: MaintProgress; // 進捗。無いときは完了として扱う（以前の記録）
+  photos?: string[]; // 添付した写真のid（最大3枚。本体は /api/photos/{id}）
 };
 
 export type Report = {
@@ -56,6 +57,7 @@ export type Report = {
   maintRequestType?: string;
   maintRequestUrgency?: string;
   maintRequestNote?: string;
+  maintRequestPhotos?: string[]; // 依頼に添付した写真のid（最大3枚）
   // 整備台帳で対応を記録すると true（対応待ち → 対応済）
   maintRequestDone?: boolean;
   maintRequestDoneAt?: string;

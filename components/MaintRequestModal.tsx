@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { AppData, Driver, MAINT_URGENCIES, Report } from '@/lib/types';
 import Modal from './Modal';
+import PhotoField from './PhotoField';
 
-export type MaintRequestInput = { vehicleId: string; type: string; urgency: string; note: string; driverId: string };
+export type MaintRequestInput = { vehicleId: string; type: string; urgency: string; note: string; driverId: string; photos: string[] };
 
 // ダッシュボードから直接出す整備依頼の入力画面。
 // 帰着登録のときに出す依頼と同じく、整備台帳で対応済にするまで「対応待ち」に表示される。
@@ -34,6 +35,7 @@ export default function MaintRequestModal({
   const typeOptions = type && !data.masters.maintTypes.includes(type) ? [type, ...data.masters.maintTypes] : data.masters.maintTypes;
   const [urgency, setUrgency] = useState<string>(editing?.maintRequestUrgency || MAINT_URGENCIES[0]);
   const [note, setNote] = useState(editing?.maintRequestNote ?? initialNote ?? '');
+  const [photos, setPhotos] = useState<string[]>(editing?.maintRequestPhotos || []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -43,7 +45,7 @@ export default function MaintRequestModal({
     setSaving(true);
     setError('');
     try {
-      await onSubmit({ vehicleId, type, urgency, note: note.trim(), driverId: driver?.id || '' });
+      await onSubmit({ vehicleId, type, urgency, note: note.trim(), driverId: driver?.id || '', photos });
       onClose();
     } catch {
       setError('送信できませんでした。通信を確認して、もう一度お試しください。');
@@ -108,6 +110,7 @@ export default function MaintRequestModal({
         <label>依頼の内容（必須・500文字まで）</label>
         <textarea rows={4} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} placeholder="例：ブレーキを踏むとキーキー音がする／左後ろのタイヤの空気圧が低い" />
       </div>
+      <PhotoField ids={photos} onChange={setPhotos} label="写真（任意・故障箇所や警告灯など）" />
       {urgency === MAINT_URGENCIES[2] && (
         <div className="notice-box" style={{ borderColor: 'var(--red-600, #dc2626)' }}>
           「至急（使用不可）」は、その車を使わないでほしいときに選びます。必要なら、管理者にも直接連絡してください。
