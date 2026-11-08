@@ -42,6 +42,7 @@ export default function MaintenanceTab({
   currentDriverId,
   onEditRequest,
   onDeleteRequest,
+  onReopenRequest,
   onRequestMechanicLogin,
 }: {
   data: AppData;
@@ -56,6 +57,8 @@ export default function MaintenanceTab({
   currentDriverId: string | null;
   onEditRequest: (id: string, r: MaintRequestInput) => Promise<unknown>;
   onDeleteRequest: (id: string) => Promise<unknown>;
+  // 依頼と結びついていない記録を「整備中／経過観察」にしたとき、記録の内容で依頼を作り直す（作った依頼のidを返す）
+  onReopenRequest: (r: { vehicleId: string; type: string; note: string; watch: boolean }) => Promise<{ id?: string } | unknown>;
   onRequestMechanicLogin: () => void;
 }) {
   const [editingReq, setEditingReq] = useState<Report | null>(null);
@@ -194,7 +197,7 @@ export default function MaintenanceTab({
     if (isOil && nextOil > 0) rec.nextOilKm = nextOil;
     const progress: MaintProgress = editing.rec.progress || 'done';
     rec.progress = progress;
-    const linkId = editing.requestId || editing.rec.requestId;
+    let linkId = editing.requestId || editing.rec.requestId;
     if (linkId) rec.requestId = linkId;
     // 記録した整備士。整備士としてログイン中ならその名前、編集のときは元の記録の名前を引き継ぐ
     const by = mechanic || editing.rec.by || (canEdit ? '管理者' : '');
@@ -207,11 +210,26 @@ export default function MaintenanceTab({
     setSaving(true);
     try {
       // オイル交換の次回交換距離は、その車両のいちばん新しいオイル交換の記録のときだけ、車両台帳に反映する
+      // 依頼と結びついていない（または依頼がもう無い）記録を「整備中／経過観察」にしたら、整備依頼に戻す
+      let reopened = false;
+      if (progress !== 'done' && !(linkId && data.reports.some((x) => x.id === linkId && x.maintRequest))) {
+        const res = (await onReopenRequest({
+          vehicleId: v.id,
+          type: rec.type,
+          note: rec.request || rec.work || rec.note || '',
+          watch: progress === 'watch',
+        })) as { id?: string } | undefined;
+        if (res?.id) {
+          linkId = res.id;
+          rec.requestId = res.id;
+          reopened = true;
+        }
+      }
       const newestOil = !v.maintHistory.some((m, i) => i !== editing.index && m.type.includes('オイル') && m.date > rec.date);
       const applyOil = isOil && nextOil > 0 && newestOil;
       await onSave({ ...v, maintHistory: list, ...(applyOil ? { oilKm: nextOil } : {}) });
       // 依頼に結びついた記録は、進捗を依頼の状態にも反映する（対応待ち／経過観察中／対応済）
-      const linked = linkId ? data.reports.find((x) => x.id === linkId) : undefined;
+      const linked = linkId && !reopened ? data.reports.find((x) => x.id === linkId) : undefined;
       if (linked) {
         if (progress === 'done') {
           if (!linked.maintRequestDone) await onResolveRequest(linked.id, true);
