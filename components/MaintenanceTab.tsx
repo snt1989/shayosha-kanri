@@ -148,7 +148,7 @@ export default function MaintenanceTab({
     setEditing({
       vehicleId: r.vehicleId,
       index: r.index,
-      rec: { date: r.date, type: r.type, km: r.km, note: r.note, cost: r.cost, shop: r.shop || '', by: r.by, request: r.request, work: r.work, requestId: r.requestId, progress: r.progress },
+      rec: { date: r.date, type: r.type, km: r.km, note: r.note, cost: r.cost, shop: r.shop || '', by: r.by, request: r.request, work: r.work, nextOilKm: r.nextOilKm, requestId: r.requestId, progress: r.progress },
     });
   }
 
@@ -183,6 +183,13 @@ export default function MaintenanceTab({
     if (editing.rec.shop) rec.shop = editing.rec.shop;
     if (editing.rec.request?.trim()) rec.request = editing.rec.request.trim();
     if (editing.rec.work?.trim()) rec.work = editing.rec.work.trim();
+    const isOil = editing.rec.type.includes('オイル');
+    const nextOil = Number(editing.rec.nextOilKm) || 0;
+    if (isOil && nextOil > 0 && nextOil <= rec.km) {
+      alert('次回交換の走行距離は、今回の走行kmより大きい値を入力してください。');
+      return;
+    }
+    if (isOil && nextOil > 0) rec.nextOilKm = nextOil;
     const progress: MaintProgress = editing.rec.progress || 'done';
     rec.progress = progress;
     const linkId = editing.requestId || editing.rec.requestId;
@@ -197,7 +204,10 @@ export default function MaintenanceTab({
 
     setSaving(true);
     try {
-      await onSave({ ...v, maintHistory: list });
+      // オイル交換の次回交換距離は、その車両のいちばん新しいオイル交換の記録のときだけ、車両台帳に反映する
+      const newestOil = !v.maintHistory.some((m, i) => i !== editing.index && m.type.includes('オイル') && m.date > rec.date);
+      const applyOil = isOil && nextOil > 0 && newestOil;
+      await onSave({ ...v, maintHistory: list, ...(applyOil ? { oilKm: nextOil } : {}) });
       // 依頼に結びついた記録は、進捗を依頼の状態にも反映する（対応待ち／経過観察中／対応済）
       const linked = linkId ? data.reports.find((x) => x.id === linkId) : undefined;
       if (linked) {
@@ -411,6 +421,11 @@ export default function MaintenanceTab({
                     </td>
                     <td className="ledger-content">
                       {r.work && <div className="clamp-2">{r.work}</div>}
+                      {r.nextOilKm ? (
+                        <div className="ledger-sub">
+                          <b>次回交換</b> {r.nextOilKm.toLocaleString()}km
+                        </div>
+                      ) : null}
                       {r.request && (
                         <div className="ledger-sub clamp-1">
                           <b>依頼</b> {r.request}
@@ -549,6 +564,21 @@ export default function MaintenanceTab({
               />
             </div>
           </div>
+          {editing.rec.type.includes('オイル') && (
+            <div className="field">
+              <label>次回オイル交換の走行距離（km）</label>
+              <input
+                type="number"
+                min={0}
+                value={editing.rec.nextOilKm ?? ''}
+                placeholder={`現在の目安: ${(data.vehicles.find((x) => x.id === editing.vehicleId)?.oilKm || 0).toLocaleString()}`}
+                onChange={(e) => setEditing({ ...editing, rec: { ...editing.rec, nextOilKm: e.target.value === '' ? undefined : Number(e.target.value) } })}
+              />
+              <div style={{ fontSize: 12, color: 'var(--slate-500)', marginTop: 4 }}>
+                入力して保存すると、車両台帳の「次回オイル交換目安」が自動で更新されます（走行kmの数字で入れます。例：5,000km先なら今回の走行km＋5,000）。
+              </div>
+            </div>
+          )}
           <div className="field">
             <label>依頼内容</label>
             <textarea
