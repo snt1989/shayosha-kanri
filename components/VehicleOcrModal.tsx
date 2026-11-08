@@ -1,12 +1,12 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppData, Vehicle } from '@/lib/types';
 import { genId } from '@/lib/utils';
 import { loadTesseract, preprocessForOcr } from '@/lib/ocr';
 import { isPdfFile, readPdf } from '@/lib/pdf';
-import { uploadShakenImage } from '@/lib/image';
-import { extractShakenWithLayout, normPlate } from '@/lib/shaken';
+import { compressToJpeg, uploadShakenImage } from '@/lib/image';
+import { extractShakenWithLayout, normPlate, ShakenFields } from '@/lib/shaken';
 import { Box, pairLabelsAndValues } from '@/lib/shaken-layout';
 
 // 文字の位置がわかるときは、項目名と値を位置で組み合わせて読む。わからないときは、文章だけで読む
@@ -53,6 +53,15 @@ export default function VehicleOcrModal({
   const [saveImage, setSaveImage] = useState(true);
   const [reading, setReading] = useState<DocKind | null>(null);
   const [running, setRunning] = useState<DocKind | null>(null);
+  // AI（Claude）での読み取りが使えるか（サーバーにAPIキーが設定されているか）。管理者のみ
+  const [aiAvail, setAiAvail] = useState<boolean | null>(null);
+  const [aiRunning, setAiRunning] = useState<DocKind | null>(null);
+  useEffect(() => {
+    fetch('/api/shaken-ai', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => setAiAvail(Boolean(j?.configured)))
+      .catch(() => setAiAvail(false));
+  }, []);
   const [progress, setProgress] = useState(0);
   const [name, setName] = useState('');
   const [plate, setPlate] = useState(target?.plate || '');
@@ -106,7 +115,11 @@ export default function VehicleOcrModal({
 
   // 文字から項目を取り出してフォームに入れる。入れられた項目があれば true
   function applyText(text: string, fromPdf: boolean, boxes?: Box[]): boolean {
-    const f = readFields(text, boxes);
+    return applyFields(readFields(text, boxes), fromPdf);
+  }
+
+  // 読み取った項目をフォームに入れる（OCR・PDFの文字・AIのどれからでも使う）
+  function applyFields(f: ShakenFields, quiet: boolean): boolean {
     if (f.plate) setPlate(f.plate);
     if (f.modelType) setModelType(f.modelType);
     if (f.shakenDate) setShakenDate(f.shakenDate);
@@ -121,8 +134,30 @@ export default function VehicleOcrModal({
       fuelType: f.fuelType || e.fuelType,
     }));
     const found = Object.keys(f).length > 0;
-    if (!found && !fromPdf) alert('車検証から項目を読み取れませんでした。写真を撮り直すか、手入力してください。');
+    if (!found && !quiet) alert('書類から項目を読み取れませんでした。写真を撮り直すか、手入力してください。');
     return found;
+  }
+
+  async function runAi(kind: DocKind) {
+    const photo = docs[kind].photo;
+    if (!photo) return;
+    setAiRunning(kind);
+    try {
+      // 送る画像は、約1.2MB以下のJPEGに縮める（文字が読める大きさは残す）
+      const image = await compressToJpeg(photo, 2200, 1_200_000);
+      const res = await fetch('/api/shaken-ai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image }) });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j.success) {
+        alert(j.message || 'AIでの読み取りに失敗しました。OCRで読み取るか、手入力してください。');
+        return;
+      }
+      const f = j.fields as ShakenFields;
+      if (!applyFields(f, true)) alert('AIが、この画像から項目を読み取れませんでした。写真を撮り直すか、手入力してください。');
+    } catch {
+      alert('AIでの読み取りに失敗しました。OCRで読み取るか、手入力してください。');
+    } finally {
+      setAiRunning(null);
+    }
   }
 
   async function runOcr(kind: DocKind) {
@@ -248,9 +283,19 @@ export default function VehicleOcrModal({
       }
     >
       <div className="notice-box">
-        「車検証（自動車検査証）」と「検査証記録事項」のどちらでも、写真またはPDFから、ナンバー・型式・車検満了日・車台番号などの自動読み取りを試みます（ブラウザ内で処理し、外部送信なし）。両方読み込むと、足りない項目を補い合います（車検満了日は、記録事項にだけ載っていることが多いです）。読み取り精度は写真の状態により変わるため、登録前に必ず内容を書類と見比べて、修正してください。
+        「車検証（自動車検査証）」と「検査証記録事項」のどちらでも、写真またはPDFから、ナンバー・型式・車検満了日・車台番号などの自動読み取りを試みます（OCRとPDFの読み取りは、ブラウザ内で処理し、外部送信なし）。両方読み込むと、足りない項目を補い合います（車検満了日は、記録事項にだけ載っていることが多いです）。読み取り精度は写真の状態により変わるため、登録前に必ず内容を書類と見比べて、修正してください。
       </div>
 
+      {aiAvail && (
+        <div className="notice-box">
+          「🤖 AIで読み取る」は、写真をAI（Anthropic社のClaude）に送って読み取ります。OCRより正確ですが、写真が社外に送られます（所有者・使用者の氏名や住所は取り出しません）。外に出したくないときは、「🔍 OCRで読み取る」を使ってください。
+        </div>
+      )}
+      {aiAvail === false && (
+        <div className="notice-box" style={{ fontSize: 12 }}>
+          ※ AIでの読み取りは、まだ設定されていません（管理者が、サーバーに ANTHROPIC_API_KEY を設定すると使えます）。
+        </div>
+      )}
       {DOCS.map((d) => {
         const doc = docs[d.kind];
         return (
@@ -267,7 +312,12 @@ export default function VehicleOcrModal({
                   <button className="btn btn-sm" onClick={() => fileRefs[d.kind].current?.click()}>
                     写真を変更
                   </button>
-                  <button className="btn btn-sm btn-primary" onClick={() => runOcr(d.kind)} disabled={running !== null}>
+                  {aiAvail && (
+                    <button className="btn btn-sm btn-primary" onClick={() => runAi(d.kind)} disabled={aiRunning !== null || running !== null}>
+                      {aiRunning === d.kind ? 'AIで読み取り中…' : '🤖 AIで読み取る（おすすめ）'}
+                    </button>
+                  )}
+                  <button className={`btn btn-sm ${aiAvail ? '' : 'btn-primary'}`} onClick={() => runOcr(d.kind)} disabled={running !== null || aiRunning !== null}>
                     {running === d.kind ? `解析中…${progress}%` : '🔍 OCRで読み取る'}
                   </button>
                 </div>
