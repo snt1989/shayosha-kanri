@@ -6,7 +6,11 @@ import { genId } from '@/lib/utils';
 import { loadTesseract, preprocessForOcr } from '@/lib/ocr';
 import { isPdfFile, readPdf } from '@/lib/pdf';
 import { uploadShakenImage } from '@/lib/image';
-import { extractShakenFields, normPlate } from '@/lib/shaken';
+import { extractShakenWithLayout, normPlate } from '@/lib/shaken';
+import { Box, pairLabelsAndValues } from '@/lib/shaken-layout';
+
+// 文字の位置がわかるときは、項目名と値を位置で組み合わせて読む。わからないときは、文章だけで読む
+const readFields = (text: string, boxes?: Box[]) => extractShakenWithLayout(text, boxes && boxes.length ? pairLabelsAndValues(boxes) : '');
 import Modal from './Modal';
 
 // 車検証の写真から、ナンバー・型式・車検満了日を読み取って、車両台帳に登録する。
@@ -79,7 +83,7 @@ export default function VehicleOcrModal({
         // 文字が十分に入っているPDFは、その文字を使う
         if (r.text.replace(/\s/g, '').length >= 40) {
           setPdfText(r.text);
-          applyText(r.text, true);
+          applyText(r.text, true, r.boxes);
         }
       } catch {
         alert('PDFを開けませんでした。ファイルをご確認いただくか、写真（画像）でお試しください。');
@@ -94,8 +98,8 @@ export default function VehicleOcrModal({
   }
 
   // 文字から項目を取り出してフォームに入れる。入れられた項目があれば true
-  function applyText(text: string, fromPdf: boolean): boolean {
-    const f = extractShakenFields(text);
+  function applyText(text: string, fromPdf: boolean, boxes?: Box[]): boolean {
+    const f = readFields(text, boxes);
     if (f.plate) setPlate(f.plate);
     if (f.modelType) setModelType(f.modelType);
     if (f.shakenDate) setShakenDate(f.shakenDate);
@@ -126,16 +130,26 @@ export default function VehicleOcrModal({
         if (m.status === 'recognizing text' && typeof m.progress === 'number') setProgress(Math.round(m.progress * 100));
       };
       // 1回目：ページ全体を自動で区切って読む。項目が少ししか取れなければ、2回目に「ひとかたまりの文章」として読み直し、多いほうを使う
+      // 単語の位置（Tesseractが返すときだけ）。項目名と値を位置で組み合わせるのに使う
+      const boxesOf = (r: any): Box[] =>
+        (r?.data?.words || [])
+          .filter((w: any) => w?.text && w?.bbox)
+          .map((w: any) => ({ text: String(w.text), x0: w.bbox.x0, y0: w.bbox.y0, x1: w.bbox.x1, y1: w.bbox.y1 }));
       const first = await Tesseract.recognize(img, 'jpn+eng', { logger });
       let text: string = first?.data?.text || '';
-      if (Object.keys(extractShakenFields(text)).length < 4) {
+      let boxes = boxesOf(first);
+      if (Object.keys(readFields(text, boxes)).length < 4) {
         setProgress(0);
         const second = await Tesseract.recognize(img, 'jpn+eng', { logger, tessedit_pageseg_mode: '6' });
         const t2: string = second?.data?.text || '';
-        if (Object.keys(extractShakenFields(t2)).length > Object.keys(extractShakenFields(text)).length) text = t2;
+        const b2 = boxesOf(second);
+        if (Object.keys(readFields(t2, b2)).length > Object.keys(readFields(text, boxes)).length) {
+          text = t2;
+          boxes = b2;
+        }
       }
       setOcrText(text);
-      applyText(text, false);
+      applyText(text, false, boxes);
     } catch {
       alert('OCR処理に失敗しました。手入力で登録してください。');
     } finally {
@@ -245,6 +259,10 @@ export default function VehicleOcrModal({
       {pdfText && (
         <div className="notice-box">
           PDFに入っている文字から、項目を読み取りました（OCRは使っていません）。内容を車検証と見比べて、修正してください。読み取れなかった項目は、下の「🔍 OCRで読み取る」でも試せます。
+          <details style={{ marginTop: 6 }}>
+            <summary style={{ cursor: 'pointer' }}>PDFから取り出した文字を見る</summary>
+            <div className="ocr-text-preview" style={{ marginTop: 6 }}>{pdfText.trim()}</div>
+          </details>
         </div>
       )}
 

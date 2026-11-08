@@ -39,6 +39,13 @@ function valid(y: number, m: number, d: number): string | null {
 // ナンバーの比較用（空白・ハイフン・全角半角の違いを無視する）
 export const normPlate = (s: string) => s.normalize('NFKC').replace(/[\s　\-ー‐−・]/g, '');
 
+// 文字の位置（座標）が分かるときは、項目名と値を位置で組み合わせた結果を優先し、足りない項目を、文章として読んだ結果で補う
+export function extractShakenWithLayout(text: string, layoutText: string): ShakenFields {
+  const a = layoutText ? extractShakenFields(layoutText) : {};
+  const b = extractShakenFields(text);
+  return { ...b, ...a };
+}
+
 export function extractShakenFields(text: string): ShakenFields {
   const out: ShakenFields = {};
   const t = text.normalize('NFKC');
@@ -58,17 +65,29 @@ export function extractShakenFields(text: string): ShakenFields {
     out.plate = `${plate[1]} ${plate[2]} ${plate[3]} ${serial}`;
   }
 
-  // 型式（例: 3BF-GDH206K、DBA-ZVW30）
-  const model = flat.match(/型式[\s:：]{0,8}([A-Z0-9][A-Z0-9-]{2,14})/);
+  // 型式（例: 3BF-GDH206K、DBA-ZVW30）。項目名の近くに無いときは、型式の形（英数字-英数字）をしたものを探す
+  const model = flat.match(/(?<!原動機の)型式[\s:：]{0,8}([A-Z0-9][A-Z0-9-]{2,14})/);
   if (model) out.modelType = model[1];
+  else {
+    const m2 = [...flat.matchAll(/(?<![A-Z0-9-])([A-Z0-9]{2,4}-[A-Z0-9]{3,9})(?![A-Z0-9-])/g)].map((x) => x[1]).find((x) => !/^[A-Z0-9]{3,8}-\d{5,8}$/.test(x));
+    if (m2) out.modelType = m2;
+  }
 
   // 車名（トヨタ、日産 など）
   const name = flat.match(/車名[\s:：]{0,8}((?:(?!型式)[一-龠ぁ-んァ-ヶー]){2,10})/);
   if (name) out.carName = name[1];
+  else {
+    const mk = flat.match(/(トヨタ|日産|ホンダ|スズキ|ダイハツ|マツダ|スバル|三菱ふそう|三菱|いすゞ|日野|UDトラックス|ヤマハ|カワサキ|レクサス|メルセデス・ベンツ|フォルクスワーゲン|ＢＭＷ|BMW)/);
+    if (mk) out.carName = mk[1];
+  }
 
   // 車台番号（例: GDH206-1234567）
   const chassis = flat.match(/車台番号[\s:：]{0,8}([A-Z0-9]{2,8}) ?-? ?(\d{4,8})/);
   if (chassis) out.chassisNo = `${chassis[1]}-${chassis[2]}`;
+  else {
+    const c2 = flat.match(/(?<![A-Z0-9-])([A-Z0-9]{3,8})-(\d{5,8})(?![\d-])/);
+    if (c2) out.chassisNo = `${c2[1]}-${c2[2]}`;
+  }
 
   // 初度登録年月（令和5年11月 → 2023-11）
   const first = flat.match(/初度登録年月[\s:：]{0,8}(令和|平成|昭和) ?(元|\d{1,2}) ?年 ?(\d{1,2}) ?月/);
