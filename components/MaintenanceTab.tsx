@@ -503,19 +503,6 @@ export default function MaintenanceTab({
                   {p.label}
                 </button>
               ))}
-              {editing.requestId && (
-                <button
-                  type="button"
-                  className="btn btn-sm"
-                  disabled={saving}
-                  onClick={async () => {
-                    await onResolveRequest(editing.requestId as string, true);
-                    setEditing(null);
-                  }}
-                >
-                  記録は残さず、完了にする
-                </button>
-              )}
             </div>
           </div>
           <div className="field-row">

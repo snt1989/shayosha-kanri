@@ -1,6 +1,6 @@
 export type MaintProgress = 'pending' | 'watch' | 'done';
 export const MAINT_PROGRESS: { key: MaintProgress; label: string; pill: string }[] = [
-  { key: 'pending', label: '対応待ち', pill: 'pill-red' },
+  { key: 'pending', label: '整備中', pill: 'pill-red' },
   { key: 'watch', label: '👀 経過観察', pill: 'pill-sky' },
   { key: 'done', label: '✓ 完了', pill: 'pill-green' },
 ];
