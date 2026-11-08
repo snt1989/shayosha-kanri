@@ -223,6 +223,14 @@ export default function FleetApp() {
       })
     );
   }
+  async function deleteMaintRequest(id: string) {
+    return withSync(() =>
+      jsonFetch(`/api/reports/${id}/maint-request/delete`, {
+        method: 'POST',
+        body: JSON.stringify({ driverId: currentDriver?.id || '', mechanic: activeMechanic || '' }),
+      })
+    );
+  }
   async function saveVehicle(v: Vehicle) {
     return withSync(() => jsonFetch('/api/vehicles', { method: 'POST', body: JSON.stringify(v) }));
   }
@@ -502,6 +510,7 @@ export default function FleetApp() {
             isAdmin={isAdmin}
             onSubmitMaintRequest={submitMaintRequest}
             onEditMaintRequest={editMaintRequest}
+            onDeleteMaintRequest={deleteMaintRequest}
             mechanic={activeMechanic}
           />
         )}
@@ -531,6 +540,7 @@ export default function FleetApp() {
             canEdit={Boolean(activeMechanic) || isAdmin}
             currentDriverId={currentDriver?.id || null}
             onEditRequest={editMaintRequest}
+            onDeleteRequest={deleteMaintRequest}
             onRequestMechanicLogin={() => setShowMechanicLogin(true)}
           />}
         {tab === 'fuel' && (

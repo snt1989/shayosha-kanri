@@ -20,6 +20,7 @@ export default function DashboardTab({
   isAdmin,
   onSubmitMaintRequest,
   onEditMaintRequest,
+  onDeleteMaintRequest,
   mechanic,
 }: {
   data: AppData;
@@ -33,6 +34,7 @@ export default function DashboardTab({
   isAdmin: boolean;
   onSubmitMaintRequest: (r: MaintRequestInput) => Promise<unknown>;
   onEditMaintRequest: (id: string, r: MaintRequestInput) => Promise<unknown>;
+  onDeleteMaintRequest: (id: string) => Promise<unknown>;
   mechanic: string | null;
 }) {
   const [editingReq, setEditingReq] = useState<Report | null>(null);
@@ -141,6 +143,16 @@ export default function DashboardTab({
                     {canEditMaintRequest(r, { driverId: currentDriver?.id, mechanic, isAdmin }) && (
                       <button className="btn btn-sm" onClick={() => setEditingReq(r)}>
                         ✏️ 編集
+                      </button>
+                    )}
+                    {canEditMaintRequest(r, { driverId: currentDriver?.id, mechanic, isAdmin }) && (
+                      <button
+                        className="btn btn-sm btn-danger"
+                        onClick={() => {
+                          if (confirm(`${r.vehicleName} の整備依頼「${r.maintRequestType || '整備'}」を削除しますか？`)) onDeleteMaintRequest(r.id);
+                        }}
+                      >
+                        削除
                       </button>
                     )}
                     <button className="btn btn-sm btn-primary" onClick={onOpenMaintenance}>

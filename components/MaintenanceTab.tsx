@@ -41,6 +41,7 @@ export default function MaintenanceTab({
   canEdit,
   currentDriverId,
   onEditRequest,
+  onDeleteRequest,
   onRequestMechanicLogin,
 }: {
   data: AppData;
@@ -54,6 +55,7 @@ export default function MaintenanceTab({
   // 依頼を出した本人が、自分の依頼を直せるように
   currentDriverId: string | null;
   onEditRequest: (id: string, r: MaintRequestInput) => Promise<unknown>;
+  onDeleteRequest: (id: string) => Promise<unknown>;
   onRequestMechanicLogin: () => void;
 }) {
   const [editingReq, setEditingReq] = useState<Report | null>(null);
@@ -284,6 +286,16 @@ export default function MaintenanceTab({
                     {canEditMaintRequest(r, { driverId: currentDriverId, mechanic: canEdit ? mechanic || '管理者' : null, isAdmin: canEdit && !mechanic }) && (
                       <button className="btn btn-sm" onClick={() => setEditingReq(r)}>
                         ✏️ 編集
+                      </button>
+                    )}
+                    {canEditMaintRequest(r, { driverId: currentDriverId, mechanic: canEdit ? mechanic || '管理者' : null, isAdmin: canEdit && !mechanic }) && (
+                      <button
+                        className="btn btn-sm btn-danger"
+                        onClick={() => {
+                          if (confirm(`${r.vehicleName} の整備依頼「${r.maintRequestType || '整備'}」を削除しますか？`)) onDeleteRequest(r.id);
+                        }}
+                      >
+                        削除
                       </button>
                     )}
                     <button className="btn btn-sm btn-primary" onClick={() => openFromRequest(r)} disabled={!vehicleExists}>
