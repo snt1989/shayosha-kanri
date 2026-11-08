@@ -144,7 +144,7 @@ export default function MaintenanceTab({
     setEditing({ ...editing, vehicleId: id, rec: { ...editing.rec, km: editing.rec.km || v?.odometer || 0 } });
   }
 
-  async function handleSubmit() {
+  async function handleSubmit(mode: 'done' | 'watch' = 'done') {
     if (!editing) return;
     const v = data.vehicles.find((x) => x.id === editing.vehicleId);
     if (!v) {
@@ -180,7 +180,10 @@ export default function MaintenanceTab({
     setSaving(true);
     try {
       await onSave({ ...v, maintHistory: list });
-      if (editing.requestId) await onResolveRequest(editing.requestId, true);
+      if (editing.requestId) {
+        if (mode === 'watch') await onWatchRequest(editing.requestId, true);
+        else await onResolveRequest(editing.requestId, true);
+      }
       setEditing(null);
     } finally {
       setSaving(false);
@@ -398,12 +401,28 @@ export default function MaintenanceTab({
               <button className="btn" onClick={() => setEditing(null)}>
                 キャンセル
               </button>
-              <button className="btn btn-primary" onClick={handleSubmit} disabled={saving}>
-                {saving ? '保存中…' : '保存する'}
-              </button>
+              {editing.requestId ? (
+                <>
+                  <button className="btn" onClick={() => handleSubmit('watch')} disabled={saving}>
+                    {saving ? '保存中…' : '👀 経過観察にして保存'}
+                  </button>
+                  <button className="btn btn-primary" onClick={() => handleSubmit('done')} disabled={saving}>
+                    {saving ? '保存中…' : '✓ 完了として保存'}
+                  </button>
+                </>
+              ) : (
+                <button className="btn btn-primary" onClick={() => handleSubmit('done')} disabled={saving}>
+                  {saving ? '保存中…' : '保存する'}
+                </button>
+              )}
             </>
           }
         >
+          {editing.requestId && (
+            <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 10 }}>
+              整備が終わったら「✓ 完了として保存」、まだ様子を見るときは「👀 経過観察にして保存」を押します（記録は、どちらでも台帳に残ります）。
+            </div>
+          )}
           {editing.rec.request && (
             <div className="field">
               <label>依頼内容</label>
