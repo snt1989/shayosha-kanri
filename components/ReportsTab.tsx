@@ -343,7 +343,7 @@ export default function ReportsTab({
           <div className="empty-state">日報データがありません</div>
         ) : (
           <div className="table-wrap">
-            <table className="data-table">
+            <table className="data-table reports-table">
               <thead>
                 <tr>
                   <th>日付</th>

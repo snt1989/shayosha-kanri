@@ -2380,7 +2380,8 @@ table.bulk-grid {
   .modal-box,
   .modal-box-wide,
   .modal-box-xwide {
-    overflow-x: hidden;
+    /* hidden にすると、このボックス自体がスクロール枠になり、下のボタン・上の見出しの固定（sticky）が効かなくなる */
+    overflow-x: clip;
   }
   .modal-box input,
   .modal-box select,
@@ -2535,4 +2536,90 @@ table.bulk-grid {
     border-bottom: 0;
     padding-top: 2px;
   }
+}
+
+/* スマホ：カレンダー・運転日報・使い方・車両台帳をさらに見やすく */
+@media (max-width: 640px) {
+  /* カレンダー：横にスクロールせず、7日が画面に収まるように。予定は色の帯で示し、詳細は日付を押して下に出す */
+  .cal-grid {
+    min-width: 0;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 3px;
+  }
+  .cal-cell {
+    min-height: 58px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .cal-day { font-size: 12px; text-align: center; }
+  .cal-grid .cal-chip {
+    font-size: 0;
+    line-height: 0;
+    padding: 0;
+    height: 5px;
+    border-radius: 3px;
+  }
+  .cal-more { font-size: 10px; text-align: center; }
+  .cal-head { font-size: 11px; }
+
+  /* 運転日報：1件を、日付とステータス／運転者・車両／行先／確認項目／ボタン の順にまとめる */
+  table.data-table.reports-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 10px;
+    row-gap: 2px;
+    padding: 12px 14px;
+  }
+  table.data-table.reports-table td {
+    display: block;
+    padding: 2px 0;
+    border: 0;
+    text-align: left;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  table.data-table.reports-table td::before { display: none; }
+  table.data-table.reports-table:not(.reorder-table) td:first-child { border-bottom: 0; padding-top: 2px; }
+  table.data-table.reports-table td .cell-sub { display: block; }
+  table.data-table.reports-table td[data-empty] { display: none; }
+  table.data-table.reports-table td:nth-child(1) { grid-column: 1; grid-row: 1; font-weight: 700; font-size: 15px; }
+  table.data-table.reports-table td:nth-child(9) { grid-column: 2; grid-row: 1; text-align: right; }
+  table.data-table.reports-table td:nth-child(9) .cell-sub-pill { display: inline-block; margin-top: 4px; }
+  table.data-table.reports-table td:nth-child(2) { grid-column: 1; grid-row: 2; font-weight: 600; margin-top: 4px; }
+  table.data-table.reports-table td:nth-child(3) { grid-column: 2; grid-row: 2; margin-top: 4px; font-size: 13px; }
+  table.data-table.reports-table td:nth-child(4) {
+    grid-column: 1 / -1; grid-row: 3; margin: 6px 0 2px; padding: 8px 10px;
+    background: var(--slate-50, #f8fafc); border-radius: 8px; font-size: 13px; line-height: 1.5;
+  }
+  table.data-table.reports-table td:nth-child(5),
+  table.data-table.reports-table td:nth-child(6),
+  table.data-table.reports-table td:nth-child(7),
+  table.data-table.reports-table td:nth-child(8) { font-size: 13px; }
+  table.data-table.reports-table td:nth-child(5)::before,
+  table.data-table.reports-table td:nth-child(6)::before,
+  table.data-table.reports-table td:nth-child(7)::before,
+  table.data-table.reports-table td:nth-child(8)::before {
+    display: block; float: none; max-width: none; margin: 0 0 2px; font-size: 11px;
+  }
+  table.data-table.reports-table td:nth-child(5) { grid-column: 1; grid-row: 4; }
+  table.data-table.reports-table td:nth-child(6) { grid-column: 2; grid-row: 4; }
+  table.data-table.reports-table td:nth-child(7) { grid-column: 1; grid-row: 5; }
+  table.data-table.reports-table td:nth-child(8) { grid-column: 2; grid-row: 5; }
+  table.data-table.reports-table td:nth-child(10) { grid-column: 1 / -1; grid-row: 6; display: flex; gap: 8px; margin-top: 6px; }
+  table.data-table.reports-table td:nth-child(10) .btn { flex: 1; min-height: 40px; justify-content: center; }
+
+  /* 使い方：分類のボタンは横に1列で流し、画面の上を取りすぎないようにする */
+  .help-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-right: -4px;
+    padding-bottom: 6px;
+  }
+  .help-chip { white-space: nowrap; flex: 0 0 auto; }
+  .help-item summary { padding: 10px 12px; font-size: 14px; line-height: 1.5; }
+
+  /* 車両台帳：カードのボタンは2列で揃える */
+  .efoot .eactions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+  .efoot .eactions .btn { width: 100%; min-height: 40px; justify-content: center; }
 }
