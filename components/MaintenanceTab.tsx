@@ -457,7 +457,13 @@ export default function MaintenanceTab({
           </div>
           <div className="field">
             <label>備考</label>
-            <input value={editing.rec.note} onChange={(e) => setEditing({ ...editing, rec: { ...editing.rec, note: e.target.value } })} />
+            <textarea
+              rows={6}
+              style={{ resize: 'vertical', minHeight: 120, lineHeight: 1.5 }}
+              value={editing.rec.note}
+              placeholder="実施した内容、交換した部品など"
+              onChange={(e) => setEditing({ ...editing, rec: { ...editing.rec, note: e.target.value } })}
+            />
           </div>
         </Modal>
       )}
