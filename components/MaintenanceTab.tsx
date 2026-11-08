@@ -97,6 +97,7 @@ export default function MaintenanceTab({
   }, [allRows, query, vehicleFilter, typeFilter]);
 
   const requests = useMemo(() => openMaintRequests(data.reports), [data.reports]);
+  const modalReq = editing?.requestId ? data.reports.find((x) => x.id === editing.requestId) : undefined;
 
   const totalCost = rows.reduce((sum, r) => sum + (r.cost || 0), 0);
   const thisYear = todayStr().slice(0, 4);
@@ -130,14 +131,6 @@ export default function MaintenanceTab({
         shop: '',
       },
     });
-  }
-  async function closeRequestWithoutRecord(r: Report) {
-    if (!canEdit) return onRequestMechanicLogin();
-    await onResolveRequest(r.id, true);
-  }
-  async function toggleWatch(r: Report) {
-    if (!canEdit) return onRequestMechanicLogin();
-    await onWatchRequest(r.id, !r.maintRequestWatch);
   }
   function openEdit(r: LedgerRow) {
     if (!canEdit) return onRequestMechanicLogin();
@@ -224,7 +217,7 @@ export default function MaintenanceTab({
             🛠 整備依頼（対応待ち）<span className="pill pill-red" style={{ marginLeft: 8 }}>{requests.length}件</span>
           </h3>
           <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 8 }}>
-            帰着登録やダッシュボードで受け付けた依頼です。整備を実施したら「整備記録として登録」で台帳に残すと、対応済になります。記録を残さず閉じるときは「完了」、しばらく様子を見るときは「経過観察」を押します。
+            帰着登録やダッシュボードで受け付けた依頼です。「整備記録として登録」を押すと入力画面が開き、その中の「✓ 完了として保存」で対応済に、「👀 経過観察にして保存」で経過観察中にできます。
           </div>
           <div className="alert-list">
             {requests.map((r) => {
@@ -260,12 +253,7 @@ export default function MaintenanceTab({
                     <button className="btn btn-sm btn-primary" onClick={() => openFromRequest(r)} disabled={!vehicleExists}>
                       整備記録として登録
                     </button>
-                    <button className="btn btn-sm" onClick={() => toggleWatch(r)}>
-                      {r.maintRequestWatch ? '経過観察を解除' : '👀 経過観察'}
-                    </button>
-                    <button className="btn btn-sm" onClick={() => closeRequestWithoutRecord(r)}>
-                      ✓ 完了
-                    </button>
+
                   </div>
                 </div>
               );
@@ -442,6 +430,31 @@ export default function MaintenanceTab({
           {editing.requestId && (
             <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 10 }}>
               整備が終わったら「✓ 完了として保存」、まだ様子を見るときは「👀 経過観察にして保存」を押します（記録は、どちらでも台帳に残ります）。
+              {modalReq?.maintRequestWatch && <span className="pill pill-sky" style={{ marginLeft: 6 }}>👀 経過観察中</span>}
+              <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {modalReq?.maintRequestWatch && (
+                  <button
+                    className="btn btn-sm"
+                    disabled={saving}
+                    onClick={async () => {
+                      await onWatchRequest(editing.requestId as string, false);
+                      setEditing(null);
+                    }}
+                  >
+                    経過観察を解除
+                  </button>
+                )}
+                <button
+                  className="btn btn-sm"
+                  disabled={saving}
+                  onClick={async () => {
+                    await onResolveRequest(editing.requestId as string, true);
+                    setEditing(null);
+                  }}
+                >
+                  記録は残さず、完了にする
+                </button>
+              </div>
             </div>
           )}
           <div className="field-row">
