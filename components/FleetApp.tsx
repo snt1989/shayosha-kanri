@@ -492,7 +492,7 @@ export default function FleetApp() {
 
       <SetupNudge />
 
-      <div className="statbar">
+      <div className={`statbar ${tab === 'dashboard' ? '' : 'statbar-dash-only'}`}>
         <StatBar data={data} />
       </div>
 

@@ -2276,3 +2276,68 @@ table.bulk-grid {
     margin-left: 28px;
   }
 }
+
+/* スマホ：全ページを見やすく */
+@media (max-width: 640px) {
+  /* 上の集計タイルは、ダッシュボードだけに出す（ほかのページでは画面の上を取りすぎるため） */
+  .statbar-dash-only {
+    display: none;
+  }
+  /* ログイン状態の表示：「…」で切れず、2行までに折り返す */
+  .mobile-status-btn {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.35;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  /* 検索・絞り込み・ボタンの並び：絞り込みは2列、検索とボタンは横いっぱい */
+  .toolbar2 .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .toolbar2 .actions > input,
+  .toolbar2 .actions > .search,
+  .toolbar2 .actions > div {
+    grid-column: 1 / -1;
+    min-width: 0;
+    width: 100%;
+  }
+  .toolbar2 .actions > select,
+  .toolbar2 .actions > .btn {
+    width: 100%;
+    min-width: 0;
+  }
+  .toolbar2 .actions > .btn {
+    min-height: 40px;
+    justify-content: center;
+  }
+  /* 表のカード：項目名と値の行を、少しゆったりと */
+  table.data-table:not(.reorder-table) td {
+    padding: 7px 0;
+  }
+  /* 整備台帳：内容の欄は左寄せで、長い文を読みやすく */
+  .ledger-table td.ledger-content {
+    text-align: left;
+  }
+  .ledger-table td.ledger-content::before {
+    display: block;
+    float: none;
+    max-width: none;
+    margin-bottom: 2px;
+  }
+  .ledger-content {
+    min-width: 0;
+    max-width: none;
+  }
+  /* 押しやすさ：ボタンの高さを確保 */
+  .btn-sm {
+    min-height: 36px;
+  }
+  /* 画面の下のバーに隠れないよう、ページの下に余白 */
+  .main {
+    padding-bottom: 96px;
+  }
+}
