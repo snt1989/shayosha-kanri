@@ -114,7 +114,8 @@ export default function MaintenanceTab({
         date: todayStr(),
         type: typeOptions.includes(r.maintRequestType || '') ? (r.maintRequestType as string) : '',
         km: r.endKm || v.odometer || 0,
-        note: `【依頼】${r.maintRequestNote || ''}（${r.driver} ${r.date}）`,
+        request: `${r.maintRequestNote || ''}（${r.driver} ${r.date}）`,
+        note: '',
         cost: undefined,
         shop: '',
       },
@@ -133,7 +134,7 @@ export default function MaintenanceTab({
     setEditing({
       vehicleId: r.vehicleId,
       index: r.index,
-      rec: { date: r.date, type: r.type, km: r.km, note: r.note, cost: r.cost, shop: r.shop || '', by: r.by },
+      rec: { date: r.date, type: r.type, km: r.km, note: r.note, cost: r.cost, shop: r.shop || '', by: r.by, request: r.request, work: r.work },
     });
   }
 
@@ -166,6 +167,8 @@ export default function MaintenanceTab({
     };
     if (editing.rec.cost !== undefined && !Number.isNaN(editing.rec.cost)) rec.cost = editing.rec.cost;
     if (editing.rec.shop) rec.shop = editing.rec.shop;
+    if (editing.rec.request) rec.request = editing.rec.request;
+    if (editing.rec.work?.trim()) rec.work = editing.rec.work.trim();
     // 記録した整備士。整備士としてログイン中ならその名前、編集のときは元の記録の名前を引き継ぐ
     const by = mechanic || editing.rec.by || (canEdit ? '管理者' : '');
     if (by) rec.by = by;
@@ -346,6 +349,8 @@ export default function MaintenanceTab({
                   <th>費用</th>
                   <th>実施先</th>
                   <th>整備士</th>
+                  <th>依頼内容</th>
+                  <th>整備内容</th>
                   <th>備考</th>
                   <th></th>
                 </tr>
@@ -365,7 +370,9 @@ export default function MaintenanceTab({
                     <td>{yen(r.cost)}</td>
                     <td>{r.shop || '-'}</td>
                     <td>{r.by || '-'}</td>
-                    <td>{r.note}</td>
+                    <td style={{ whiteSpace: 'pre-wrap' }}>{r.request || '-'}</td>
+                    <td style={{ whiteSpace: 'pre-wrap' }}>{r.work || '-'}</td>
+                    <td style={{ whiteSpace: 'pre-wrap' }}>{r.note}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>
                       <button className="btn btn-sm" onClick={() => openEdit(r)}>
                         {canEdit ? '' : '🔒 '}編集
@@ -397,6 +404,14 @@ export default function MaintenanceTab({
             </>
           }
         >
+          {editing.rec.request && (
+            <div className="field">
+              <label>依頼内容</label>
+              <div className="notice-box" style={{ margin: 0, whiteSpace: 'pre-wrap', maxHeight: 160, overflowY: 'auto' }}>
+                {editing.rec.request}
+              </div>
+            </div>
+          )}
           <div className="field-row">
             <div className="field">
               <label>車両 *</label>
@@ -454,6 +469,16 @@ export default function MaintenanceTab({
                 onChange={(e) => setEditing({ ...editing, rec: { ...editing.rec, shop: e.target.value } })}
               />
             </div>
+          </div>
+          <div className="field">
+            <label>整備内容（実施した整備・交換した部品など）</label>
+            <textarea
+              rows={5}
+              style={{ resize: 'vertical', minHeight: 100, lineHeight: 1.5 }}
+              value={editing.rec.work || ''}
+              placeholder="例：バッテリー交換（○○製）。エンジン始動を確認"
+              onChange={(e) => setEditing({ ...editing, rec: { ...editing.rec, work: e.target.value } })}
+            />
           </div>
           <div className="field">
             <label>備考</label>

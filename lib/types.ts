@@ -7,6 +7,8 @@ export type MaintRecord = {
   cost?: number;
   shop?: string;
   by?: string; // 整備士としてログインして記録した人
+  request?: string; // 依頼内容（整備依頼への対応として記録したとき、依頼の症状・内容）
+  work?: string; // 整備内容（実際に行った整備、交換した部品など）
 };
 
 export type Report = {

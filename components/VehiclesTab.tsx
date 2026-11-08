@@ -387,6 +387,8 @@ export default function VehiclesTab({
                     <th>走行km</th>
                     <th>費用</th>
                     <th>実施先</th>
+                    <th>依頼内容</th>
+                    <th>整備内容</th>
                     <th>備考</th>
                   </tr>
                 </thead>
@@ -400,7 +402,9 @@ export default function VehiclesTab({
                       <td>{m.km ? m.km.toLocaleString() : '-'}</td>
                       <td>{m.cost === undefined ? '-' : `${m.cost.toLocaleString()} 円`}</td>
                       <td>{m.shop || '-'}</td>
-                      <td>{m.note}</td>
+                      <td style={{ whiteSpace: 'pre-wrap' }}>{m.request || '-'}</td>
+                      <td style={{ whiteSpace: 'pre-wrap' }}>{m.work || '-'}</td>
+                      <td style={{ whiteSpace: 'pre-wrap' }}>{m.note}</td>
                     </tr>
                   ))}
                 </tbody>
