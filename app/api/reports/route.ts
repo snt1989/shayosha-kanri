@@ -18,9 +18,8 @@ export async function POST(req: NextRequest) {
   const idx = data.reports.findIndex((x) => x.id === r.id);
   const wasCompleted = idx >= 0 && data.reports[idx].postDone;
 
-  // 既に「帰着済」として確定している日報の再編集（内容の書き換え）は、記録の改ざん防止のため
-  // 管理者ログイン必須とする。新規登録や、まだ出庫中の日報を自分で帰着登録する操作は誰でも可能。
-  // 入力した本人（運転者ログイン）は、自分の確定済みの日報を編集できる。
+  // 登録済みの日報の編集（出庫中の編集・帰着登録、帰着済みの書き換え）ができるのは、記入した本人と管理者だけ。
+  // 新規登録は誰でも可能。
   // ※ 運転者のログインは端末側の確認なので、サーバーでは運転者IDが日報の運転者と一致するかまでを見る。
   const existing = idx >= 0 ? data.reports[idx] : null;
   const editorId = req.headers.get('x-driver-id') || '';
@@ -32,9 +31,9 @@ export async function POST(req: NextRequest) {
         ? existing.driverId === editor.id
         : existing.driver.replace(/\s/g, '') === `${editor.lastName}${editor.firstName}`)
   );
-  if (wasCompleted && !isAdminReq && !isOwner) {
+  if (existing && !isAdminReq && !isOwner) {
     return NextResponse.json(
-      { success: false, message: '確定済みの日報を編集できるのは、入力した本人か管理者です。' },
+      { success: false, message: 'この日報を編集できるのは、記入した本人か管理者です。' },
       { status: 401 }
     );
   }

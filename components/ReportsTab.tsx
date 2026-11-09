@@ -181,7 +181,7 @@ export default function ReportsTab({
     setReturnMode(false);
     setEditing(emptyReport(data, currentDriver));
   }
-  // 確定済みの日報を編集できるのは、入力した本人（運転者ログイン）か管理者
+  // 日報（出庫中・帰着済みとも）を編集・帰着登録できるのは、記入した本人（運転者ログイン）か管理者だけ
   const canEditReport = (r: Report) => isAdmin || isReportOwner(r, currentDriver);
   function openEdit(r: Report) {
     if (!canEditReport(r)) {
@@ -195,6 +195,10 @@ export default function ReportsTab({
   function openReturnCheckin(r: Report) {
     if (!currentDriver) {
       onRequestDriverLogin();
+      return;
+    }
+    if (!canEditReport(r)) {
+      alert('この日報の帰着登録ができるのは、記入した本人か管理者です。');
       return;
     }
     setReturnMode(true);
