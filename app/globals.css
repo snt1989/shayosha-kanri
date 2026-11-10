@@ -2652,3 +2652,17 @@ table.bulk-grid {
   /* 整備台帳：車両名が折り返さないよう、左の列を広めに */
   table.data-table.ledger-table tr.ledger-row { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
 }
+
+/* AIアシスタント */
+.header-actions { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.assistant-note { font-size: 12px; color: var(--slate-500); background: var(--slate-50, #f8fafc); border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; line-height: 1.6; }
+.assistant-log { display: flex; flex-direction: column; gap: 8px; min-height: 120px; }
+.assistant-suggest { display: flex; flex-wrap: wrap; gap: 6px; }
+.assistant-suggest > div { width: 100%; }
+.assistant-msg { max-width: 92%; padding: 8px 12px; border-radius: 12px; font-size: 14px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.assistant-msg.user { align-self: flex-end; background: #0284c7; color: #fff; border-bottom-right-radius: 4px; }
+.assistant-msg.assistant { align-self: flex-start; background: var(--slate-100, #f1f5f9); color: var(--slate-800, #1e293b); border-bottom-left-radius: 4px; }
+.assistant-msg.error { align-self: stretch; max-width: 100%; background: #fef2f2; color: #b91c1c; }
+.assistant-form { display: flex; gap: 8px; align-items: flex-end; width: 100%; }
+.assistant-form textarea { flex: 1; min-width: 0; resize: none; font-size: 16px; font-family: inherit; border: 1px solid var(--slate-300); border-radius: 8px; padding: 8px 10px; background: #fff; }
+.assistant-form .btn { min-height: 44px; flex-shrink: 0; }
