@@ -32,6 +32,11 @@ body {
   margin: 0;
 }
 
+/* 画面の上端（ステータスバーの下）が、ヘッダーと同じ白でぼやけずに見えるように */
+html {
+  background: #fff;
+}
+
 body {
   background: var(--slate-100);
   color: var(--slate-800);
@@ -2678,3 +2683,15 @@ table.bulk-grid {
 .alert-item.u-soon { background: #fff7ed; border-color: #fed7aa; border-left: 5px solid #ea580c; color: #c2410c; }
 .alert-item.u-normal { background: var(--sky-50); border-color: var(--sky-100); border-left: 5px solid var(--sky-600); color: var(--sky-700); }
 .alert-item.u-soon .pill-amber { background: #ffedd5; color: #c2410c; }
+
+/* スマホ上部のモヤモヤ対策：ヘッダーを不透明の白にし、ステータスバーの領域（safe-area）までヘッダーの白で塗る */
+.appbar2 {
+  background: #fff;
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+}
+@media (max-width: 640px) {
+  .appbar2 {
+    padding-top: calc(8px + env(safe-area-inset-top, 0px));
+    box-shadow: none;
+  }
+}
