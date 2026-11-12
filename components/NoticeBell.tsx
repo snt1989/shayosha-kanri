@@ -46,6 +46,8 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
   const [readIds, setReadIds] = useState<string[]>([]);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
+  // 直しているお知らせのid（空なら新規投稿）
+  const [editingId, setEditingId] = useState('');
   const [form, setForm] = useState({ title: '', body: '', important: false, pinned: false, push: true });
 
   const auto = useMemo(() => (data ? buildAutoNotices(data) : []), [data]);
@@ -164,13 +166,15 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
       const res = await fetch('/api/notices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: form.title, body: form.body, level: form.important ? 'important' : 'info', pinned: form.pinned, push: form.push }),
+        body: JSON.stringify({ id: editingId || undefined, title: form.title, body: form.body, level: form.important ? 'important' : 'info', pinned: form.pinned, push: form.push }),
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) return setMsg(j.message || '投稿できませんでした。');
+      const wasEditing = Boolean(editingId);
+      setEditingId('');
       setForm({ title: '', body: '', important: false, pinned: false, push: form.push });
       await loadNotices();
-      setMsg(j.push?.enabled ? `投稿しました。${j.push.sent}台に通知を送りました。` : '投稿しました。');
+      setMsg(wasEditing ? '直しました。' : j.push?.enabled ? `投稿しました。${j.push.sent}台に通知を送りました。` : '投稿しました。');
     } catch {
       setMsg('通信できませんでした。');
     } finally {
@@ -178,11 +182,24 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
     }
   }
 
+  function startEdit(n: Notice) {
+    setEditingId(n.id);
+    setForm({ title: n.title, body: n.body, important: n.level === 'important', pinned: Boolean(n.pinned), push: false });
+    setMsg('');
+    setTimeout(() => document.querySelector('.notice-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+  }
+
+  function cancelEdit() {
+    setEditingId('');
+    setForm({ title: '', body: '', important: false, pinned: false, push: true });
+  }
+
   async function remove(n: Notice) {
     if (!window.confirm(`「${n.title}」を削除しますか？`)) return;
     const res = await fetch('/api/notices/' + n.id, { method: 'DELETE' });
     const j = await res.json().catch(() => ({}));
     if (!res.ok) return setMsg(j.message || '削除できませんでした。');
+    if (editingId === n.id) cancelEdit();
     await loadNotices();
   }
 
@@ -291,7 +308,10 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
                   </div>
                   {n.body && <div className="notice-body">{n.body}</div>}
                   {isAdmin && (
-                    <div style={{ textAlign: 'right', marginTop: 6 }}>
+                    <div style={{ textAlign: 'right', marginTop: 6, display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                      <button type="button" className="btn btn-sm" onClick={() => startEdit(n)}>
+                        ✏️ 編集
+                      </button>
                       <button type="button" className="btn btn-sm btn-danger" onClick={() => remove(n)}>
                         削除
                       </button>
@@ -327,7 +347,7 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
 
           {isAdmin && (
             <div className="notice-form">
-              <h3 className="card-title">✏️ 連絡事項を投稿（管理者）</h3>
+              <h3 className="card-title">{editingId ? '✏️ 連絡事項を直す（管理者）' : '✏️ 連絡事項を投稿（管理者）'}</h3>
               <div className="field">
                 <label>タイトル（60文字まで）</label>
                 <input value={form.title} maxLength={60} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="例：10/30 は社用車の一斉点検です" />
@@ -343,14 +363,21 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
                 <label className="checkbox-field">
                   <input type="checkbox" checked={form.pinned} onChange={(e) => setForm({ ...form, pinned: e.target.checked })} /> 上に固定
                 </label>
-                <label className="checkbox-field">
-                  <input type="checkbox" checked={form.push} onChange={(e) => setForm({ ...form, push: e.target.checked })} /> 通知も送る
-                </label>
+                {!editingId && (
+                  <label className="checkbox-field">
+                    <input type="checkbox" checked={form.push} onChange={(e) => setForm({ ...form, push: e.target.checked })} /> 通知も送る
+                  </label>
+                )}
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <button type="button" className="btn btn-primary" disabled={busy || !form.title.trim()} onClick={post}>
-                  投稿する
+                  {editingId ? '更新する' : '投稿する'}
                 </button>
+                {editingId && (
+                  <button type="button" className="btn" disabled={busy} onClick={cancelEdit}>
+                    やめる
+                  </button>
+                )}
                 {push !== 'unconfigured' && (
                   <button type="button" className="btn" disabled={busy} onClick={sendTest}>
                     テスト通知を送る
