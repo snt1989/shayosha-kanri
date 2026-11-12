@@ -142,7 +142,7 @@ export default function DashboardTab({
                       {r.maintRequestNote}　依頼: {r.date} {r.driver}
                       <PhotoThumbs ids={r.maintRequestPhotos} />
                       <div className="contact-row">
-                        <ContactRequester report={r} drivers={data.drivers} show={Boolean(mechanic) || isAdmin} />
+                        <ContactRequester report={r} mechanic={mechanic} show={Boolean(mechanic) || isAdmin} />
                       </div>
                     </div>
                   </div>

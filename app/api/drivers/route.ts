@@ -19,6 +19,8 @@ export async function POST(req: NextRequest) {
   const idx = data.drivers.findIndex((x) => x.id === d.id);
   if (idx >= 0) {
     if (!d.empId?.trim()) d.empId = data.drivers[idx].empId || '';
+    // 管理者以外の画面には電話番号が届かないので、管理者以外が保存しても、いまの電話番号を消さない
+    if (!isAdminReq) d.phone = data.drivers[idx].phone || '';
     assignMissingEmpIds(data, [d]);
     data.drivers[idx] = d;
   } else {

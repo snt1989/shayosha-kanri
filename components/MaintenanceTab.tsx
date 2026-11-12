@@ -307,7 +307,7 @@ export default function MaintenanceTab({
                       {!vehicleExists && '（車両は台帳から削除済み）'}
                       <PhotoThumbs ids={r.maintRequestPhotos} />
                       <div className="contact-row">
-                        <ContactRequester report={r} drivers={data.drivers} show={canEdit} />
+                        <ContactRequester report={r} mechanic={mechanic} show={canEdit} />
                       </div>
                     </div>
                   </div>
