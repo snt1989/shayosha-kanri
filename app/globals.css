@@ -2672,3 +2672,9 @@ table.bulk-grid {
 .contact-btns { display: inline-flex; gap: 6px; flex-wrap: wrap; }
 .contact-btns .btn { text-decoration: none; }
 .contact-none { font-size: 11px; color: var(--slate-500); }
+
+/* 整備依頼の緊急度の色分け：至急＝赤、早めに＝橙、通常＝青 */
+.alert-item.u-urgent { background: var(--red-50); border-color: var(--red-100); border-left: 5px solid var(--red-600); color: var(--red-600); }
+.alert-item.u-soon { background: #fff7ed; border-color: #fed7aa; border-left: 5px solid #ea580c; color: #c2410c; }
+.alert-item.u-normal { background: var(--sky-50); border-color: var(--sky-100); border-left: 5px solid var(--sky-600); color: var(--sky-700); }
+.alert-item.u-soon .pill-amber { background: #ffedd5; color: #c2410c; }

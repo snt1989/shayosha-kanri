@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useMobileLimit } from '@/lib/useLimit';
 import { AppData, Driver, MAINT_URGENCIES, Report, Reservation, cardKindIcon } from '@/lib/types';
-import { canEditMaintRequest, openMaintRequests, rentalReservations, reservationRange, todayStr } from '@/lib/utils';
+import { urgencyLevel, urgencyPill, canEditMaintRequest, openMaintRequests, rentalReservations, reservationRange, todayStr } from '@/lib/utils';
 import AlertsPanel, { MaintPrefill } from './AlertsPanel';
 import DashboardNotices from './DashboardNotices';
 import { fmtDateTime, isOverdue, useCards } from './useCards';
@@ -124,9 +124,8 @@ export default function DashboardTab({
         ) : (
           <div className="alert-list">
             {reqLim.shown.map((r) => {
-              const urgent = r.maintRequestUrgency === MAINT_URGENCIES[2];
               return (
-                <div key={r.id} className={`alert-item ${urgent ? 'danger' : 'warn'}`}>
+                <div key={r.id} className={`alert-item u-${urgencyLevel(r.maintRequestUrgency)}`}>
                   <span>🔧</span>
                   <div style={{ flex: 1 }}>
                     <strong>{r.vehicleName}</strong>
@@ -136,11 +135,9 @@ export default function DashboardTab({
                         👀 経過観察中
                       </span>
                     )}
-                    {r.maintRequestUrgency && r.maintRequestUrgency !== MAINT_URGENCIES[0] && (
-                      <span className={`pill ${urgent ? 'pill-red' : 'pill-amber'}`} style={{ marginLeft: 6 }}>
-                        {r.maintRequestUrgency}
+                    <span className={`pill ${urgencyPill(r.maintRequestUrgency)}`} style={{ marginLeft: 6 }}>
+                        {r.maintRequestUrgency || MAINT_URGENCIES[0]}
                       </span>
-                    )}
                     <div style={{ fontSize: 12, marginTop: 2 }}>
                       {r.maintRequestNote}　依頼: {r.date} {r.driver}
                       <PhotoThumbs ids={r.maintRequestPhotos} />

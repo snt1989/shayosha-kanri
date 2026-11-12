@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppData, Driver, MAINT_URGENCIES, Report, Vehicle } from '@/lib/types';
-import { isReportOwner, nowTimeStr, todayStr } from '@/lib/utils';
+import { urgencyPill, isReportOwner, nowTimeStr, todayStr } from '@/lib/utils';
 import { downloadCsv } from '@/lib/csv';
 import { extractOdometerReading, loadTesseract } from '@/lib/ocr';
 import Modal from './Modal';
@@ -416,7 +416,7 @@ export default function ReportsTab({
                       {r.postDone ? <span className="pill pill-green">帰着済</span> : <span className="pill pill-amber">出庫中</span>}
                       {r.maintRequest && (
                         <span
-                          className={`pill ${r.maintRequestDone ? 'pill-green' : 'pill-red'} cell-sub-pill`}
+                          className={`pill ${r.maintRequestDone ? 'pill-green' : urgencyPill(r.maintRequestUrgency)} cell-sub-pill`}
                           title={`${r.maintRequestType || ''} / ${r.maintRequestNote || ''}`}
                         >
                           🔧 整備依頼

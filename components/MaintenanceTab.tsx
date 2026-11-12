@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { AppData, MAINT_PROGRESS, MAINT_URGENCIES, MaintProgress, MaintRecord, Report, Vehicle } from '@/lib/types';
-import { canEditMaintRequest, openMaintRequests, todayStr } from '@/lib/utils';
+import { urgencyLevel, urgencyPill, canEditMaintRequest, openMaintRequests, todayStr } from '@/lib/utils';
 import MaintRequestModal, { MaintRequestInput } from './MaintRequestModal';
 import PhotoField, { PhotoThumbs } from './PhotoField';
 import ContactRequester from './ContactRequester';
@@ -287,10 +287,9 @@ export default function MaintenanceTab({
           </div>
           <div className="alert-list">
             {reqLim.shown.map((r) => {
-              const urgent = r.maintRequestUrgency === MAINT_URGENCIES[2];
               const vehicleExists = data.vehicles.some((v) => v.id === r.vehicleId);
               return (
-                <div key={r.id} className={`alert-item ${urgent ? 'danger' : 'warn'}`}>
+                <div key={r.id} className={`alert-item u-${urgencyLevel(r.maintRequestUrgency)}`}>
                   <span>🔧</span>
                   <div style={{ flex: 1 }}>
                     <strong>{r.vehicleName}</strong>
@@ -300,11 +299,9 @@ export default function MaintenanceTab({
                         👀 経過観察中{r.maintRequestWatchAt ? `（${r.maintRequestWatchAt}〜）` : ''}
                       </span>
                     )}
-                    {r.maintRequestUrgency && r.maintRequestUrgency !== MAINT_URGENCIES[0] && (
-                      <span className={`pill ${urgent ? 'pill-red' : 'pill-amber'}`} style={{ marginLeft: 6 }}>
-                        {r.maintRequestUrgency}
+                    <span className={`pill ${urgencyPill(r.maintRequestUrgency)}`} style={{ marginLeft: 6 }}>
+                        {r.maintRequestUrgency || MAINT_URGENCIES[0]}
                       </span>
-                    )}
                     <div style={{ fontSize: 12, marginTop: 2 }}>
                       {r.maintRequestNote}　依頼: {r.date} {r.driver}
                       {!vehicleExists && '（車両は台帳から削除済み）'}

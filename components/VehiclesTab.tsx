@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useMobileLimit } from '@/lib/useLimit';
 import { AppData, Vehicle } from '@/lib/types';
-import { daysUntil, genId, openMaintRequests, todayStr } from '@/lib/utils';
+import { urgencyLevel, urgencyPill, daysUntil, genId, openMaintRequests, todayStr } from '@/lib/utils';
 import { csvToVehicles, downloadCsv, vehiclesToCsv } from '@/lib/csv';
 import Modal from './Modal';
 import VehicleOcrModal from './VehicleOcrModal';
@@ -387,13 +387,11 @@ export default function VehiclesTab({
               </div>
               <div className="alert-list">
                 {maintRequests.map((r) => (
-                  <div key={r.id} className={`alert-item ${r.maintRequestUrgency === '至急（使用不可）' ? 'danger' : 'warn'}`}>
+                  <div key={r.id} className={`alert-item u-${urgencyLevel(r.maintRequestUrgency)}`}>
                     <span>🔧</span>
                     <div style={{ flex: 1 }}>
                       <strong>{r.maintRequestType || '整備'}</strong>
-                      {r.maintRequestUrgency && r.maintRequestUrgency !== '通常' && (
-                        <span className="pill pill-amber" style={{ marginLeft: 6 }}>{r.maintRequestUrgency}</span>
-                      )}
+                      <span className={`pill ${urgencyPill(r.maintRequestUrgency)}`} style={{ marginLeft: 6 }}>{r.maintRequestUrgency || '通常'}</span>
                       <div style={{ fontSize: 12, marginTop: 2 }}>
                         {r.maintRequestNote}　依頼: {r.date} {r.driver}
                       </div>

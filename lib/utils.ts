@@ -86,3 +86,9 @@ export function isReportOwner(r: Report, driver?: { id: string; lastName: string
   if (r.driverId) return r.driverId === driver.id;
   return r.driver.replace(/\s/g, '') === `${driver.lastName}${driver.firstName}`;
 }
+
+// 整備依頼の緊急度ごとの色分け（至急＝赤、早めに＝橙、通常＝青）
+export function urgencyLevel(u?: string): 'urgent' | 'soon' | 'normal' {
+  return u === '至急（使用不可）' ? 'urgent' : u === '早めに' ? 'soon' : 'normal';
+}
+export const urgencyPill = (u?: string) => ({ urgent: 'pill-red', soon: 'pill-amber', normal: 'pill-sky' })[urgencyLevel(u)];
