@@ -5,6 +5,7 @@ import { AppData, MAINT_PROGRESS, MAINT_URGENCIES, MaintProgress, MaintRecord, R
 import { canEditMaintRequest, openMaintRequests, todayStr } from '@/lib/utils';
 import MaintRequestModal, { MaintRequestInput } from './MaintRequestModal';
 import PhotoField, { PhotoThumbs } from './PhotoField';
+import ContactRequester from './ContactRequester';
 import { cleanPhotoIds } from '@/lib/photo-ids';
 import { downloadCsv, maintenanceToCsv } from '@/lib/csv';
 import Modal from './Modal';
@@ -308,6 +309,9 @@ export default function MaintenanceTab({
                       {r.maintRequestNote}　依頼: {r.date} {r.driver}
                       {!vehicleExists && '（車両は台帳から削除済み）'}
                       <PhotoThumbs ids={r.maintRequestPhotos} />
+                      <div className="contact-row">
+                        <ContactRequester report={r} drivers={data.drivers} show={canEdit} />
+                      </div>
                     </div>
                   </div>
                   <div className="alert-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>

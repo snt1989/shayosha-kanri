@@ -8,6 +8,7 @@ import AlertsPanel, { MaintPrefill } from './AlertsPanel';
 import DashboardNotices from './DashboardNotices';
 import { fmtDateTime, isOverdue, useCards } from './useCards';
 import MaintRequestModal, { MaintRequestInput } from './MaintRequestModal';
+import ContactRequester from './ContactRequester';
 import { PhotoThumbs } from './PhotoField';
 
 export default function DashboardTab({
@@ -143,6 +144,9 @@ export default function DashboardTab({
                     <div style={{ fontSize: 12, marginTop: 2 }}>
                       {r.maintRequestNote}　依頼: {r.date} {r.driver}
                       <PhotoThumbs ids={r.maintRequestPhotos} />
+                      <div className="contact-row">
+                        <ContactRequester report={r} drivers={data.drivers} show={Boolean(mechanic) || isAdmin} />
+                      </div>
                     </div>
                   </div>
                   <div className="alert-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>

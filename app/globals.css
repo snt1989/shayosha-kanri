@@ -2666,3 +2666,9 @@ table.bulk-grid {
 .assistant-form { display: flex; gap: 8px; align-items: flex-end; width: 100%; }
 .assistant-form textarea { flex: 1; min-width: 0; resize: none; font-size: 16px; font-family: inherit; border: 1px solid var(--slate-300); border-radius: 8px; padding: 8px 10px; background: #fff; }
 .assistant-form .btn { min-height: 44px; flex-shrink: 0; }
+
+/* 整備依頼者への連絡ボタン */
+.contact-row { margin-top: 6px; }
+.contact-btns { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.contact-btns .btn { text-decoration: none; }
+.contact-none { font-size: 11px; color: var(--slate-500); }
