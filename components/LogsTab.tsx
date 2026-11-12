@@ -53,7 +53,7 @@ export default function LogsTab({
   function exportFullBackup() {
     const { persistent, ...backup } = data;
     void persistent;
-    downloadJson(`社用車管理_全データバックアップ_${todayStr()}.json`, backup);
+    downloadJson(`運行管理_全データバックアップ_${todayStr()}.json`, backup);
   }
 
   async function handleClear() {

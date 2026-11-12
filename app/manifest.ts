@@ -4,8 +4,8 @@ import type { MetadataRoute } from 'next';
 // 色はアイコンの背景色に合わせている（起動時の画面とアイコンが続いて見える）。
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: '社用車管理クラウド',
-    short_name: '社用車管理',
+    name: '運行管理アプリ',
+    short_name: '運行管理',
     description: '運転日報・点呼記録・給油台帳・レンタカー・整備台帳をまとめて管理',
     start_url: '/',
     scope: '/',

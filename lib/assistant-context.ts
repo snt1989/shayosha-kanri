@@ -146,7 +146,7 @@ export function dataSnapshot(data: AppData, today: string): string {
   return text;
 }
 
-export const ASSISTANT_RULES = `あなたは、社用車管理アプリ（社用車管理クラウド）の中にいる、管理者向けのAIアシスタントです。
+export const ASSISTANT_RULES = `あなたは、運行管理アプリの中にいる、管理者向けのAIアシスタントです。
 
 【役割】
 ・管理者の質問に、日本語で、短く分かりやすく答えます。

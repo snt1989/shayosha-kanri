@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   const items = buildAutoNotices(data);
   const summary = summarizeAutoNotices(items);
   // 毎日必ず通知する。気になる点が無い日も「問題なし」を届ける。
-  const msg = summary ?? { title: '社用車管理：おはようございます', body: '今日、確認が必要なお知らせはありません。' };
+  const msg = summary ?? { title: '運行管理：おはようございます', body: '今日、確認が必要なお知らせはありません。' };
   const r = await sendPushToAll({ ...msg, url: '/?notices=1' });
   return NextResponse.json({ success: true, count: items.length, ...r });
 }

@@ -640,7 +640,7 @@ export default function FleetApp() {
       </main>
 
       <div className="footer-note">
-        社用車管理クラウド — Next.js / Vercel 上で稼働中
+        運行管理アプリ — Next.js / Vercel 上で稼働中
         {!data.persistent && '（Upstash Redis が未設定のため、再デプロイでデータが消える可能性があります）'}
       </div>
 

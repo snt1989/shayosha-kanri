@@ -4,11 +4,11 @@ import RegisterServiceWorker from '@/components/RegisterServiceWorker';
 import MobileTableLabels from '@/components/MobileTableLabels';
 
 export const metadata: Metadata = {
-  title: '社用車管理クラウド（白ナンバー法令対応）',
+  title: '運行管理アプリ（白ナンバー法令対応）',
   description: '運転日報・アルコール点呼・車両台帳・運転者台帳・マスタ設定',
-  applicationName: '社用車管理',
+  applicationName: '運行管理',
   // iPhone で「ホーム画面に追加」したときの名前と、全画面での表示
-  appleWebApp: { capable: true, title: '社用車管理', statusBarStyle: 'default' },
+  appleWebApp: { capable: true, title: '運行管理', statusBarStyle: 'default' },
 };
 
 export const viewport: Viewport = {

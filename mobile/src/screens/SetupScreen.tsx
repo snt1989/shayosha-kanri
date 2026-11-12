@@ -36,7 +36,7 @@ export default function SetupScreen({ initial, onDone }: { initial?: ServerConfi
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 32 }} keyboardShouldPersistTaps="handled">
           <View style={{ marginBottom: 20 }}>
-            <Text style={{ fontSize: 22, fontWeight: '800', color: C.navy }}>社用車管理</Text>
+            <Text style={{ fontSize: 22, fontWeight: '800', color: C.navy }}>運行管理</Text>
             <Text style={{ fontSize: 13, color: C.slate600, marginTop: 4 }}>はじめに、Web版のサーバーに接続します。</Text>
           </View>
           <Card>
