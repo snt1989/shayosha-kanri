@@ -39,6 +39,7 @@ export const INSURER_WEB_URL = 'https://www.ms-ins.com/contractor/emergency/';
 export const DEFAULT_INCIDENT_CONTACTS: IncidentContact[] = [
   { label: '三井住友海上 自動車保険 事故受付', phone: '0120-258-365' },
   { label: '三井住友海上 ロードサービス', phone: '0120-096-991' },
+  { label: '取扱代理店 保険ビルド岩手（金沢）', phone: '019-601-2320' },
 ];
 
 export const normalizePhone = (s: string) => s.replace(/[^\d+]/g, '');

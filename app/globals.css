@@ -2831,3 +2831,10 @@ body::before {
   z-index: 20;
   pointer-events: none;
 }
+
+.incident-ins { border: 1px solid var(--sky-100); background: var(--sky-50); border-radius: 10px; padding: 10px 12px; margin: 0 0 10px; font-size: 13px; }
+.incident-ins-title { font-weight: 800; font-size: 12px; margin-bottom: 6px; color: var(--sky-700); }
+.incident-ins dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; }
+.incident-ins dt { color: var(--slate-500); font-size: 12px; }
+.incident-ins dd { margin: 0; font-weight: 700; }
+.incident-ins-no { font-size: 15px; letter-spacing: 0.04em; }

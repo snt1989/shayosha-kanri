@@ -11,6 +11,7 @@ import CardsAdmin from './CardsAdmin';
 import MenuOrderSettings from './MenuOrderSettings';
 import AlertSettingsPanel from './AlertSettingsPanel';
 import IncidentContactsAdmin from './IncidentContactsAdmin';
+import InsuranceAdmin from './InsuranceAdmin';
 
 type Section = 'menu' | 'alerts' | 'incident' | 'cards' | 'drivers' | 'masters' | 'logs' | 'logo';
 
@@ -101,7 +102,12 @@ export default function SettingsTab({
         <>
           {section === 'menu' && <MenuOrderSettings order={menuOrder} onChange={onChangeMenuOrder} />}
           {section === 'alerts' && <AlertSettingsPanel current={data.alertSettings} onSaved={onRefresh} />}
-          {section === 'incident' && <IncidentContactsAdmin />}
+          {section === 'incident' && (
+            <>
+              <IncidentContactsAdmin />
+              <InsuranceAdmin />
+            </>
+          )}
           {section === 'cards' && <CardsAdmin departments={data.masters.departments} isAdmin={isAdmin} onRequestAdminLogin={onRequestLogin} />}
           {section === 'drivers' && <DriversTab data={data} onSave={onSaveDriver} onDelete={onDeleteDriver} onBulkSave={onBulkSaveDrivers} />}
           {section === 'masters' && (

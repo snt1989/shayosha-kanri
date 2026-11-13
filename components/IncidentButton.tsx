@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { AppData, Driver } from '@/lib/types';
 import { INCIDENT_INJURY, INCIDENT_KINDS, INSURER_NAME, INSURER_WEB_URL, IncidentContact, normalizePhone } from '@/lib/incidents';
 import { todayStr } from '@/lib/utils';
+import { Insurance } from '@/lib/insurance';
 import Modal from './Modal';
 import PhotoField from './PhotoField';
 
@@ -28,6 +29,7 @@ function TelButton({ label, phone, tone }: { label: string; phone: string; tone?
 export default function IncidentButton({ data, currentDriver }: { data: AppData; currentDriver?: Driver | null }) {
   const [open, setOpen] = useState(false);
   const [contacts, setContacts] = useState<IncidentContact[]>([]);
+  const [ins, setIns] = useState<Insurance | null>(null);
   const blank = () => ({
     kind: INCIDENT_KINDS[0] as string,
     driverId: currentDriver?.id || '',
@@ -55,6 +57,10 @@ export default function IncidentButton({ data, currentDriver }: { data: AppData;
     fetch('/api/incident-contacts', { cache: 'no-store' })
       .then((r) => r.json())
       .then((j) => setContacts(j.contacts || []))
+      .catch(() => undefined);
+    fetch('/api/insurance', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((j) => setIns(j.insurance || null))
       .catch(() => undefined);
   }, [open]);
 
@@ -119,6 +125,43 @@ export default function IncidentButton({ data, currentDriver }: { data: AppData;
     </div>
   );
 
+  const expired = ins?.periodTo ? ins.periodTo < todayStr() : false;
+  const insBox = ins && (ins.policyNo || ins.agencyName) && (
+    <div className="incident-ins">
+      <div className="incident-ins-title">🛡️ 加入の保険（事故の連絡のとき、証券番号を伝えます）</div>
+      <dl>
+        {ins.policyNo && (
+          <>
+            <dt>{ins.company} {ins.product}</dt>
+            <dd className="incident-ins-no">証券番号 {ins.policyNo}</dd>
+          </>
+        )}
+        {ins.holder && (
+          <>
+            <dt>保険契約者</dt>
+            <dd>{ins.holder}</dd>
+          </>
+        )}
+        {ins.periodTo && (
+          <>
+            <dt>満期日</dt>
+            <dd>
+              {ins.periodTo}
+              {expired && <span className="pill pill-amber" style={{ marginLeft: 6 }}>過ぎています（更新後の証券番号を確認）</span>}
+            </dd>
+          </>
+        )}
+        {ins.agencyName && (
+          <>
+            <dt>取扱代理店</dt>
+            <dd>{ins.agencyName}</dd>
+          </>
+        )}
+      </dl>
+      {ins.note && <div className="incident-hint">{ins.note}</div>}
+    </div>
+  );
+
   return (
     <>
       <button type="button" className="bell-btn incident-btn" onClick={openModal} title="事故・トラブルのとき" aria-label="事故・トラブルのとき">
@@ -151,6 +194,7 @@ export default function IncidentButton({ data, currentDriver }: { data: AppData;
                 ✅ 報告しました。管理者に通知を送りました。電話がつながっていないときは、下の連絡先へ電話してください。
               </div>
               {tels}
+              {insBox}
               <div className="incident-steps-title">このあとの流れ</div>
               <ol className="incident-steps">
                 {STEPS.slice(4).map((s) => (
@@ -168,6 +212,7 @@ export default function IncidentButton({ data, currentDriver }: { data: AppData;
                 ))}
               </ol>
               {tels}
+              {insBox}
               {contacts.length === 0 && <div className="incident-hint">会社の連絡先は、管理者が「設定」の「🚨 緊急連絡先」で登録できます。</div>}
 
               <div className="incident-form-title">会社への報告（わかる範囲で。あとから直せません）</div>
