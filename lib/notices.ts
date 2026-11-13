@@ -13,12 +13,19 @@ export type Notice = {
   createdAt: string;
   createdBy: string;
   pinned?: boolean;
+  // 表示期限（この日まで表示。YYYY-MM-DD、日本時間。空なら期限なし）
+  expiresAt?: string;
 };
 
 export const NOTICES_KEY = 'fleet:notices:v1';
 export const NOTICE_MAX = 100;
 export const NOTICE_TITLE_MAX = 60;
 export const NOTICE_BODY_MAX = 1000;
+
+// 日本時間の今日（YYYY-MM-DD）。サーバー（UTC）でも端末でも同じ日付になる
+export const todayJst = () => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+// 期限の日の終わりまでは表示し、その翌日から非表示にする
+export const isNoticeExpired = (n: Pick<Notice, 'expiresAt'>, today = todayJst()) => Boolean(n.expiresAt && n.expiresAt < today);
 
 // 新しい順。固定（ピン留め）したものを先頭に。
 export function sortNotices(list: Notice[]): Notice[] {

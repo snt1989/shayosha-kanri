@@ -4,14 +4,16 @@ import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
 import { kvGet, kvSet } from '@/lib/kv';
 import { pushConfig, sendPushToAll } from '@/lib/push';
-import { Notice, NOTICES_KEY, NOTICE_BODY_MAX, NOTICE_MAX, NOTICE_TITLE_MAX, sortNotices } from '@/lib/notices';
+import { Notice, NOTICES_KEY, NOTICE_BODY_MAX, NOTICE_MAX, NOTICE_TITLE_MAX, isNoticeExpired, sortNotices, todayJst } from '@/lib/notices';
 
 export const dynamic = 'force-dynamic';
 
-// 連絡事項の一覧（誰でも見られる）
-export async function GET() {
+// 連絡事項の一覧（誰でも見られる）。期限が過ぎたものは、管理者以外には返さない（管理者は直す・消すために全部見られる）
+export async function GET(req: NextRequest) {
   const list = await kvGet<Notice[]>(NOTICES_KEY, []);
-  return NextResponse.json({ notices: sortNotices(list), push: { enabled: pushConfig().enabled } });
+  const isAdmin = isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value);
+  const visible = isAdmin ? list : list.filter((n) => !isNoticeExpired(n));
+  return NextResponse.json({ notices: sortNotices(visible), push: { enabled: pushConfig().enabled } });
 }
 
 // 連絡事項の投稿・更新（管理者のみ）。push が true なら、登録済みの端末に通知も送る。
@@ -26,6 +28,16 @@ export async function POST(req: NextRequest) {
   if (title.length > NOTICE_TITLE_MAX) return NextResponse.json({ success: false, message: `タイトルは${NOTICE_TITLE_MAX}文字以内にしてください。` }, { status: 400 });
   if (body.length > NOTICE_BODY_MAX) return NextResponse.json({ success: false, message: `本文は${NOTICE_BODY_MAX}文字以内にしてください。` }, { status: 400 });
 
+  const expiresAt = String(b.expiresAt ?? '').trim();
+  if (expiresAt) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(expiresAt) || Number.isNaN(Date.parse(expiresAt))) {
+      return NextResponse.json({ success: false, message: '表示期限の日付が正しくありません。' }, { status: 400 });
+    }
+    if (expiresAt < todayJst()) {
+      return NextResponse.json({ success: false, message: '表示期限は、今日以降の日付にしてください。' }, { status: 400 });
+    }
+  }
+
   const list = await kvGet<Notice[]>(NOTICES_KEY, []);
   const idx = b.id ? list.findIndex((n) => n.id === b.id) : -1;
   const notice: Notice = {
@@ -34,6 +46,7 @@ export async function POST(req: NextRequest) {
     body,
     level: b.level === 'important' ? 'important' : 'info',
     pinned: Boolean(b.pinned),
+    ...(expiresAt ? { expiresAt } : {}),
     createdAt: idx >= 0 ? list[idx].createdAt : new Date().toISOString(),
     createdBy: idx >= 0 ? list[idx].createdBy : '管理者',
   };
@@ -42,7 +55,7 @@ export async function POST(req: NextRequest) {
   await kvSet(NOTICES_KEY, sortNotices(list).slice(0, NOTICE_MAX));
 
   const data = await loadData();
-  pushLog(data, { actor: 'admin', action: idx >= 0 ? 'お知らせ更新' : 'お知らせ投稿', target: title, detail: notice.level === 'important' ? '重要' : '' });
+  pushLog(data, { actor: 'admin', action: idx >= 0 ? 'お知らせ更新' : 'お知らせ投稿', target: title, detail: [notice.level === 'important' ? '重要' : '', expiresAt ? `${expiresAt}まで表示` : ''].filter(Boolean).join(' ') });
   await saveData({ reports: data.reports, vehicles: data.vehicles, drivers: data.drivers, masters: data.masters, logs: data.logs });
 
   // 新規の投稿のときだけ通知を送る（直しただけでは送らない）

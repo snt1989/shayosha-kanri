@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AppData } from '@/lib/types';
-import { AutoNotice, Notice, buildAutoNotices } from '@/lib/notices';
+import { AutoNotice, Notice, buildAutoNotices, isNoticeExpired, todayJst } from '@/lib/notices';
 import { UPDATES, isRecentUpdate, type Update } from '@/lib/changelog';
 import { todayStr } from '@/lib/utils';
 import Modal from './Modal';
@@ -39,7 +39,10 @@ const fmt = (iso: string) => {
 export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppData | null; isAdmin: boolean; onNavigate: (go: Go) => void }) {
   const [open, setOpen] = useState(false);
   const [section, setSection] = useState<'notices' | 'auto' | 'updates'>('notices');
-  const [notices, setNotices] = useState<Notice[]>([]);
+  const [allNotices, setNotices] = useState<Notice[]>([]);
+  // 期限が過ぎたものは、みんなの画面では出さない（管理者だけ、下にまとめて出して直せる）
+  const notices = useMemo(() => allNotices.filter((n) => !isNoticeExpired(n)), [allNotices]);
+  const expiredNotices = useMemo(() => (isAdmin ? allNotices.filter((n) => isNoticeExpired(n)) : []), [allNotices, isAdmin]);
   const [seen, setSeen] = useState('');
   const [seenUpdate, setSeenUpdate] = useState('');
   const [seenAuto, setSeenAuto] = useState<string[]>([]);
@@ -48,7 +51,7 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
   const [busy, setBusy] = useState(false);
   // 直しているお知らせのid（空なら新規投稿）
   const [editingId, setEditingId] = useState('');
-  const [form, setForm] = useState({ title: '', body: '', important: false, pinned: false, push: true });
+  const [form, setForm] = useState({ title: '', body: '', important: false, pinned: false, push: true, expiresAt: '' });
 
   const auto = useMemo(() => (data ? buildAutoNotices(data) : []), [data]);
 
@@ -166,13 +169,13 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
       const res = await fetch('/api/notices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: editingId || undefined, title: form.title, body: form.body, level: form.important ? 'important' : 'info', pinned: form.pinned, push: form.push }),
+        body: JSON.stringify({ id: editingId || undefined, title: form.title, body: form.body, level: form.important ? 'important' : 'info', pinned: form.pinned, push: form.push, expiresAt: form.expiresAt }),
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) return setMsg(j.message || '投稿できませんでした。');
       const wasEditing = Boolean(editingId);
       setEditingId('');
-      setForm({ title: '', body: '', important: false, pinned: false, push: form.push });
+      setForm({ title: '', body: '', important: false, pinned: false, push: form.push, expiresAt: '' });
       await loadNotices();
       setMsg(wasEditing ? '直しました。' : j.push?.enabled ? `投稿しました。${j.push.sent}台に通知を送りました。` : '投稿しました。');
     } catch {
@@ -182,16 +185,48 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
     }
   }
 
+  const noticeItem = (n: Notice, expired = false) => (
+                <div
+                  key={n.id}
+                  className={`notice-item ${n.level === 'important' ? 'important' : ''} ${isNoticeRead(n) || expired ? 'is-read' : ''} ${expired ? 'is-expired' : ''}`}
+                  onClick={() => markRead(['n:' + n.id])}
+                >
+                  <div className="notice-head">
+                    <strong>
+                      {readMark(isNoticeRead(n) || expired)}
+                      {n.pinned && '📌 '}
+                      {n.level === 'important' && <span className="pill pill-red" style={{ marginRight: 6 }}>重要</span>}
+                      {n.title}
+                    </strong>
+                    <span className="notice-date">{fmt(n.createdAt)}</span>
+                  </div>
+                  {n.body && <div className="notice-body">{n.body}</div>}
+                  {n.expiresAt && (
+                    <div className="notice-expire">{expired ? `⌛ ${n.expiresAt} で期限切れ（非表示）` : `⏳ ${n.expiresAt} まで表示`}</div>
+                  )}
+                  {isAdmin && (
+                    <div style={{ textAlign: 'right', marginTop: 6, display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                      <button type="button" className="btn btn-sm" onClick={() => startEdit(n)}>
+                        ✏️ 編集
+                      </button>
+                      <button type="button" className="btn btn-sm btn-danger" onClick={() => remove(n)}>
+                        削除
+                      </button>
+                    </div>
+                  )}
+                </div>
+  );
+
   function startEdit(n: Notice) {
     setEditingId(n.id);
-    setForm({ title: n.title, body: n.body, important: n.level === 'important', pinned: Boolean(n.pinned), push: false });
+    setForm({ title: n.title, body: n.body, important: n.level === 'important', pinned: Boolean(n.pinned), push: false, expiresAt: n.expiresAt || '' });
     setMsg('');
     setTimeout(() => document.querySelector('.notice-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
   }
 
   function cancelEdit() {
     setEditingId('');
-    setForm({ title: '', body: '', important: false, pinned: false, push: true });
+    setForm({ title: '', body: '', important: false, pinned: false, push: true, expiresAt: '' });
   }
 
   async function remove(n: Notice) {
@@ -291,34 +326,13 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
           ) : section === 'notices' ? (
             <div className="notice-list">
               {notices.length === 0 && <div className="empty-state">連絡事項はありません</div>}
-              {notices.map((n) => (
-                <div
-                  key={n.id}
-                  className={`notice-item ${n.level === 'important' ? 'important' : ''} ${isNoticeRead(n) ? 'is-read' : ''}`}
-                  onClick={() => markRead(['n:' + n.id])}
-                >
-                  <div className="notice-head">
-                    <strong>
-                      {readMark(isNoticeRead(n))}
-                      {n.pinned && '📌 '}
-                      {n.level === 'important' && <span className="pill pill-red" style={{ marginRight: 6 }}>重要</span>}
-                      {n.title}
-                    </strong>
-                    <span className="notice-date">{fmt(n.createdAt)}</span>
-                  </div>
-                  {n.body && <div className="notice-body">{n.body}</div>}
-                  {isAdmin && (
-                    <div style={{ textAlign: 'right', marginTop: 6, display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                      <button type="button" className="btn btn-sm" onClick={() => startEdit(n)}>
-                        ✏️ 編集
-                      </button>
-                      <button type="button" className="btn btn-sm btn-danger" onClick={() => remove(n)}>
-                        削除
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
+              {notices.map((n) => noticeItem(n))}
+              {expiredNotices.length > 0 && (
+                <>
+                  <div className="notice-expired-head">⌛ 期限が過ぎたお知らせ（管理者だけに表示。みんなには出ません）</div>
+                  {expiredNotices.map((n) => noticeItem(n, true))}
+                </>
+              )}
             </div>
           ) : (
             <div className="alert-list">
@@ -355,6 +369,17 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
               <div className="field">
                 <label>本文（任意）</label>
                 <textarea rows={3} value={form.body} maxLength={1000} onChange={(e) => setForm({ ...form, body: e.target.value })} />
+              </div>
+              <div className="field">
+                <label>表示期限（この日まで表示。空なら期限なし）</label>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input type="date" value={form.expiresAt} min={todayJst()} onChange={(e) => setForm({ ...form, expiresAt: e.target.value })} />
+                  {form.expiresAt && (
+                    <button type="button" className="btn btn-sm" onClick={() => setForm({ ...form, expiresAt: '' })}>
+                      期限なしにする
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="check-row">
                 <label className="checkbox-field">

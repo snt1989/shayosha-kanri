@@ -2696,3 +2696,9 @@ table.bulk-grid {
     box-shadow: none;
   }
 }
+
+/* お知らせの表示期限 */
+.notice-expire { margin-top: 4px; font-size: 11px; color: var(--slate-500); }
+.notice-item.is-expired { border-style: dashed; }
+.notice-item.is-expired .notice-head, .notice-item.is-expired .notice-body, .notice-item.is-expired .notice-expire { opacity: 0.6; }
+.notice-expired-head { margin: 14px 0 6px; font-size: 12px; font-weight: 700; color: var(--slate-500); }

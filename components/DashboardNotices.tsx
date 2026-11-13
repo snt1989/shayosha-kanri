@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Notice } from '@/lib/notices';
+import { Notice, isNoticeExpired } from '@/lib/notices';
 
 // ダッシュボードの先頭に出す「全体へのお知らせ」（管理者が書いた連絡事項。固定したものが先頭）。
 // 投稿・削除はベルのお知らせ（管理者）で行う。ここは、見るだけ。
@@ -22,7 +22,7 @@ export default function DashboardNotices({ isAdmin }: { isAdmin: boolean }) {
       const res = await fetch('/api/notices', { cache: 'no-store' });
       if (!res.ok) return;
       const j = (await res.json()) as { notices: Notice[] };
-      setNotices(j.notices || []);
+      setNotices((j.notices || []).filter((n) => !isNoticeExpired(n)));
     } catch {
       // 通信できないときは、前に取得した内容のまま
     }
