@@ -10,6 +10,7 @@ import { fmtDateTime, isOverdue, useCards } from './useCards';
 import IncidentsPanel from './IncidentsPanel';
 import MaintRequestModal, { MaintRequestInput } from './MaintRequestModal';
 import RequestSchedule from './RequestSchedule';
+import { jpDate } from '@/lib/schedule-text';
 import ContactRequester from './ContactRequester';
 import { PhotoThumbs } from './PhotoField';
 
@@ -60,6 +61,15 @@ export default function DashboardTab({
     .filter((r) => !r.postDone)
     .sort((a, b) => (a.date + a.preTime).localeCompare(b.date + b.preTime));
   const maintRequests = openMaintRequests(data.reports);
+  // スマホでは整備依頼を1件ずつ短く表示し、「詳細・操作」で開く
+  const [reqOpen, setReqOpen] = useState<Set<string>>(new Set());
+  const toggleReq = (id: string) =>
+    setReqOpen((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const openLim = useMobileLimit(openReports, 3);
   const reqLim = useMobileLimit(maintRequests, 3);
   // 利用中（返却前で期間が残っている）レンタカーと、そこに入っている予約
@@ -136,24 +146,31 @@ export default function DashboardTab({
           <div className="alert-list">
             {reqLim.shown.map((r) => {
               return (
-                <div key={r.id} className={`alert-item u-${urgencyLevel(r.maintRequestUrgency)}`}>
+                <div key={r.id} className={`alert-item req-item u-${urgencyLevel(r.maintRequestUrgency)} ${reqOpen.has(r.id) ? 'req-open' : ''}`}>
                   <span>🔧</span>
                   <div style={{ flex: 1 }}>
                     <strong>{r.vehicleName}</strong>
-                    {r.plate ? `（${r.plate}）` : ''}— {r.maintRequestType || '整備'}
+                    <span className="req-plate">{r.plate ? `（${r.plate}）` : ''}</span>— {r.maintRequestType || '整備'}
                     <span className={`pill ${urgencyPill(r.maintRequestUrgency)}`} style={{ marginLeft: 6 }}>
                         {r.maintRequestUrgency || MAINT_URGENCIES[0]}
                       </span>
                     <div style={{ fontSize: 12, marginTop: 2 }}>
-                      {r.maintRequestNote || '（内容の記入なし）'}　依頼: {r.date} {r.driver}
-                      <PhotoThumbs ids={r.maintRequestPhotos} />
-                      <RequestSchedule report={r} mechanic={mechanic} isAdmin={isAdmin} onChanged={onRefresh} />
-                      <div className="contact-row">
-                        <ContactRequester report={r} mechanic={mechanic} show={Boolean(mechanic) || isAdmin} />
+                      <span className="req-note">{r.maintRequestNote || '（内容の記入なし）'}</span>
+                      <span className="req-by">　依頼: {r.date} {r.driver}</span>
+                      {r.maintRequestScheduledDate && <span className="req-short-date">　📅 {jpDate(r.maintRequestScheduledDate)}</span>}
+                      <div className="req-more">
+                        <PhotoThumbs ids={r.maintRequestPhotos} />
+                        <RequestSchedule report={r} mechanic={mechanic} isAdmin={isAdmin} onChanged={onRefresh} />
+                        <div className="contact-row">
+                          <ContactRequester report={r} mechanic={mechanic} show={Boolean(mechanic) || isAdmin} />
+                        </div>
                       </div>
                     </div>
+                    <button type="button" className="req-toggle" onClick={() => toggleReq(r.id)}>
+                      {reqOpen.has(r.id) ? '▲ 閉じる' : '▼ 詳細・操作'}
+                    </button>
                   </div>
-                  <div className="alert-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <div className="alert-actions req-more" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {canEditMaintRequest(r, { driverId: currentDriver?.id, mechanic, isAdmin }) && (
                       <button className="btn btn-sm" onClick={() => setEditingReq(r)}>
                         ✏️ 編集

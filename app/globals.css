@@ -2964,3 +2964,22 @@ body::before {
 .req-schedule-edit input[type='date'] { width: auto; min-width: 0; padding: 4px 8px; font-size: 13px; }
 .req-schedule-msg { font-size: 12px; color: var(--slate-600); }
 .req-schedule-hint { flex-basis: 100%; font-size: 11px; color: var(--slate-500); }
+
+/* ダッシュボードの整備依頼：スマホでは1件を短く表示し、「▼ 詳細・操作」で開く */
+.req-toggle, .req-short-date { display: none; }
+@media (max-width: 640px) {
+  .alert-item.req-item { padding: 8px 10px; gap: 8px; align-items: flex-start; }
+  .req-item .req-plate, .req-item .req-by { display: none; }
+  .req-item .req-note { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .req-item .req-short-date { display: inline; font-weight: 700; }
+  .req-item .req-more { display: none !important; }
+  .req-item .req-toggle {
+    display: inline-block; margin-top: 4px; padding: 3px 0; border: 0; background: none;
+    color: inherit; font-size: 12px; font-weight: 700; text-decoration: underline; cursor: pointer;
+  }
+  .req-item.req-open .req-plate, .req-item.req-open .req-by { display: inline; }
+  .req-item.req-open .req-note { white-space: normal; overflow: visible; }
+  .req-item.req-open .req-short-date { display: none; }
+  .req-item.req-open .req-more { display: block !important; }
+  .req-item.req-open .alert-actions.req-more { display: flex !important; }
+}
