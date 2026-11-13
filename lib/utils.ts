@@ -1,4 +1,4 @@
-import { MAINT_URGENCIES, Report } from './types';
+import { MAINT_URGENCIES, Report, TireInfo, Vehicle } from './types';
 
 export function todayStr(): string {
   const d = new Date();
@@ -106,3 +106,23 @@ export const splitMaintTypes = (s?: string): string[] => (s || '').split('、').
 // 依頼の状態の表示用（対応待ち／経過観察／対応済）
 export const requestStateLabel = (r: { maintRequestDone?: boolean; maintRequestWatch?: boolean }) =>
   r.maintRequestWatch ? '経過観察' : r.maintRequestDone ? '対応済' : '対応待ち';
+
+// 夏タイヤ・冬タイヤそれぞれのメーカーと製造年。夏・冬に分ける前の項目（tireMaker / tireYear）が入っている車両は、
+// 今のタイヤ種別がスタッドレスなら冬、それ以外なら夏の分として読む
+export function tireSetsOf(v: Pick<Vehicle, 'tire' | 'tireSummer' | 'tireWinter' | 'tireMaker' | 'tireYear'>): { summer: TireInfo; winter: TireInfo } {
+  const legacy: TireInfo = { maker: v.tireMaker, year: v.tireYear };
+  const hasLegacy = Boolean(legacy.maker || legacy.year);
+  const winterNow = /スタッドレス|冬/.test(v.tire || '');
+  return {
+    summer: v.tireSummer ?? (hasLegacy && !winterNow ? legacy : {}),
+    winter: v.tireWinter ?? (hasLegacy && winterNow ? legacy : {}),
+  };
+}
+
+export const TIRE_YEAR_RE = /^(19|20)\d{2}(-(0[1-9]|1[0-2]))?$/;
+
+// 「ブリヂストン / 2024年05月製」のような表示
+export function tireInfoText(t: TireInfo): string {
+  const y = t.year ? `${t.year.replace('-', '年')}${t.year.includes('-') ? '月' : '年'}製` : '';
+  return [t.maker, y].filter(Boolean).join(' / ');
+}

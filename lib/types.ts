@@ -72,6 +72,9 @@ export type Report = {
 
 export const MAINT_URGENCIES = ['通常', '早めに', '至急（使用不可）'] as const;
 
+// タイヤ1セット分の情報。year は 2024 か 2024-05 の形
+export type TireInfo = { maker?: string; year?: string };
+
 export type Vehicle = {
   id: string;
   name: string;
@@ -82,8 +85,10 @@ export type Vehicle = {
   odometer: number;
   oilKm: number;
   tire: string;
-  tireMaker?: string; // タイヤのメーカー（ブリヂストン など）
-  tireYear?: string; // タイヤの製造年（年式）。2024、2024-05 のように入れる
+  tireSummer?: TireInfo; // 夏タイヤのメーカー・製造年
+  tireWinter?: TireInfo; // 冬タイヤ（スタッドレス）のメーカー・製造年
+  tireMaker?: string; // （旧）タイヤのメーカー。夏・冬に分ける前の項目。tireSetsOf で読む
+  tireYear?: string; // （旧）タイヤの製造年
   maintHistory: MaintRecord[];
   // 車検証から入れる任意の項目（既存の車両には無いので optional）
   maker?: string; // 車名（トヨタ など）

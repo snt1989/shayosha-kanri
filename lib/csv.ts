@@ -1,5 +1,5 @@
-import { Driver, LogEntry, MASTER_KEYS, MASTER_LABELS, MasterKey, FuelLog, Masters, Rental, RentalTrip, Vehicle } from './types';
-import { genId } from './utils';
+import { Driver, LogEntry, MASTER_KEYS, MASTER_LABELS, MasterKey, FuelLog, Masters, Rental, RentalTrip, TireInfo, Vehicle } from './types';
+import { TIRE_YEAR_RE, genId, tireSetsOf } from './utils';
 
 function csvEscape(v: unknown): string {
   const s = v === null || v === undefined ? '' : String(v);
@@ -56,12 +56,19 @@ export function parseCsv(text: string): string[][] {
 }
 
 /* ---------- vehicles ---------- */
-const VEHICLE_HEADERS = ['id', '車両呼称', 'ナンバー', '型式', '車検満了日', '12ヶ月点検日', '積算走行km', 'オイル交換目安km', 'タイヤ種別', 'タイヤメーカー', 'タイヤ製造年'];
+const VEHICLE_HEADERS = ['id', '車両呼称', 'ナンバー', '型式', '車検満了日', '12ヶ月点検日', '積算走行km', 'オイル交換目安km', 'タイヤ種別', '夏タイヤメーカー', '夏タイヤ製造年', '冬タイヤメーカー', '冬タイヤ製造年'];
+
+// CSV の列が無い（古い形式）ときは、いまの値を残す。年は正しい形のものだけ取り込む
+function tireFromCsv(maker: string | undefined, year: string | undefined, prev?: TireInfo): TireInfo {
+  if (maker === undefined && year === undefined) return prev ?? {};
+  const y = (year || '').trim();
+  return { maker: (maker || '').trim(), year: TIRE_YEAR_RE.test(y) ? y : '' };
+}
 
 export function vehiclesToCsv(vehicles: Vehicle[]): string {
   const rows: (string | number)[][] = [VEHICLE_HEADERS];
   vehicles.forEach((v) => {
-    rows.push([v.id, v.name, v.plate, v.modelType, v.shakenDate, v.checkDate, v.odometer, v.oilKm, v.tire, v.tireMaker || '', v.tireYear || '']);
+    rows.push([v.id, v.name, v.plate, v.modelType, v.shakenDate, v.checkDate, v.odometer, v.oilKm, v.tire, tireSetsOf(v).summer.maker || '', tireSetsOf(v).summer.year || '', tireSetsOf(v).winter.maker || '', tireSetsOf(v).winter.year || '']);
   });
   return toCsv(rows);
 }
@@ -86,8 +93,10 @@ export function csvToVehicles(text: string, existing: Vehicle[]): Vehicle[] {
       odometer: Number(r[6] || 0) || 0,
       oilKm: Number(r[7] || 0) || 0,
       tire: (r[8] || '').trim() || '夏タイヤ（ノーマル）',
-      tireMaker: (r[9] ?? prev?.tireMaker ?? '').trim(),
-      tireYear: (r[10] ?? prev?.tireYear ?? '').trim(),
+      tireMaker: undefined,
+      tireYear: undefined,
+      tireSummer: tireFromCsv(r[9], r[10], prev ? tireSetsOf(prev).summer : undefined),
+      tireWinter: tireFromCsv(r[11], r[12], prev ? tireSetsOf(prev).winter : undefined),
       maintHistory: prev ? prev.maintHistory : [],
     };
   });

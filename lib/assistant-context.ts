@@ -1,6 +1,14 @@
 import { AppData, MAINT_PROGRESS } from './types';
 import { HELP_SECTIONS, HelpBlock } from './help';
-import { openMaintRequests, tripReports } from './utils';
+import { openMaintRequests, tireInfoText, tireSetsOf, tripReports } from './utils';
+
+function tireText(v: AppData['vehicles'][number]): string {
+  const t = tireSetsOf(v);
+  const parts = [v.tire || '-'];
+  if (tireInfoText(t.summer)) parts.push(`夏:${tireInfoText(t.summer)}`);
+  if (tireInfoText(t.winter)) parts.push(`冬:${tireInfoText(t.winter)}`);
+  return parts.join(' ');
+}
 
 // AIアシスタントに渡す材料を作る。個人情報（電話番号・免許証番号・社員番号・写真・パスワード）は渡さない。
 
@@ -36,9 +44,9 @@ export function dataSnapshot(data: AppData, today: string): string {
   out.push(`今日: ${today}`);
 
   out.push(
-    '\n【車両】名称|ナンバー|型式|車検満了日|点検日|現在の走行km|次回オイル交換km|タイヤ（種別・メーカー・製造年）\n' +
+    '\n【車両】名称|ナンバー|型式|車検満了日|点検日|現在の走行km|次回オイル交換km|タイヤ（装着中の種別。夏・冬それぞれのメーカーと製造年）\n' +
       data.vehicles
-        .map((v) => [v.name, v.plate, v.modelType, v.shakenDate || '-', v.checkDate || '-', num(v.odometer), v.oilKm || '-', [v.tire || '-', v.tireMaker || '', v.tireYear ? `${v.tireYear}年製` : ''].filter(Boolean).join(' ')].join('|'))
+        .map((v) => [v.name, v.plate, v.modelType, v.shakenDate || '-', v.checkDate || '-', num(v.odometer), v.oilKm || '-', tireText(v)].join('|'))
         .join('\n')
   );
 
