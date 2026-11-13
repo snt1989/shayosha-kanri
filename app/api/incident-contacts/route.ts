@@ -3,13 +3,15 @@ import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { kvGet, kvSet } from '@/lib/kv';
 import { loadData, saveData } from '@/lib/store';
 import { pushLog } from '@/lib/log';
-import { INCIDENT_CONTACTS_KEY, IncidentContact, cleanContacts } from '@/lib/incidents';
+import { DEFAULT_INCIDENT_CONTACTS, INCIDENT_CONTACTS_KEY, IncidentContact, cleanContacts } from '@/lib/incidents';
 
 export const dynamic = 'force-dynamic';
 
 // 緊急連絡先（管理者・保険会社・ロードサービスなど）。事故のときに誰でも電話できるよう、誰でも見られる
 export async function GET() {
-  return NextResponse.json({ contacts: cleanContacts(await kvGet<IncidentContact[]>(INCIDENT_CONTACTS_KEY, [])) });
+  // 管理者が一度も保存していないときは、加入している保険（三井住友海上）の事故受付を初期値として返す
+  const saved = await kvGet<IncidentContact[] | null>(INCIDENT_CONTACTS_KEY, null);
+  return NextResponse.json({ contacts: saved === null ? DEFAULT_INCIDENT_CONTACTS : cleanContacts(saved) });
 }
 
 export async function POST(req: NextRequest) {

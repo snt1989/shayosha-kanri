@@ -20,6 +20,7 @@ export type Incident = {
   lng?: number;
   injury: string;
   police: boolean; // 警察に連絡した
+  insurer?: boolean; // 保険会社（三井住友海上）に連絡した
   otherParty: boolean; // 相手がいる
   canDrive: boolean; // そのまま走れる
   note: string;
@@ -30,6 +31,15 @@ export type Incident = {
 };
 
 export type IncidentContact = { label: string; phone: string };
+
+// 加入している保険（三井住友海上）の事故受付。管理者が緊急連絡先を一度も保存していないときの初期値として出す
+// （電話番号は三井住友海上の「事故のご連絡」ページ https://www.ms-ins.com/contractor/emergency/ による。変わったら設定画面で直せる）
+export const INSURER_NAME = '三井住友海上';
+export const INSURER_WEB_URL = 'https://www.ms-ins.com/contractor/emergency/';
+export const DEFAULT_INCIDENT_CONTACTS: IncidentContact[] = [
+  { label: '三井住友海上 自動車保険 事故受付', phone: '0120-258-365' },
+  { label: '三井住友海上 ロードサービス', phone: '0120-096-991' },
+];
 
 export const normalizePhone = (s: string) => s.replace(/[^\d+]/g, '');
 

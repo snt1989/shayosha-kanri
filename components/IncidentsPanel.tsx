@@ -57,6 +57,7 @@ export default function IncidentsPanel() {
           {i.injury}
         </span>
         {i.police && <span className="pill pill-sky" style={{ marginLeft: 4 }}>警察連絡済</span>}
+        {i.insurer && <span className="pill pill-sky" style={{ marginLeft: 4 }}>保険会社連絡済</span>}
         {i.otherParty && <span className="pill pill-amber" style={{ marginLeft: 4 }}>相手あり</span>}
         {!i.canDrive && <span className="pill pill-red" style={{ marginLeft: 4 }}>走行不可</span>}
         <div style={{ fontSize: 12, marginTop: 2 }}>

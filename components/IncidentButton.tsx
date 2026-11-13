@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AppData, Driver } from '@/lib/types';
-import { INCIDENT_INJURY, INCIDENT_KINDS, IncidentContact, normalizePhone } from '@/lib/incidents';
+import { INCIDENT_INJURY, INCIDENT_KINDS, INSURER_NAME, INSURER_WEB_URL, IncidentContact, normalizePhone } from '@/lib/incidents';
 import { todayStr } from '@/lib/utils';
 import Modal from './Modal';
 import PhotoField from './PhotoField';
@@ -11,7 +11,7 @@ const STEPS = [
   '安全な場所に車を止め、ハザードランプをつける（高速道路では、車の後ろに三角表示板を置き、ガードレールの外へ避難する）',
   'けが人がいたら、動かさずに 119 へ。救急車を呼ぶ',
   '事故のときは、小さなものでも必ず 110 へ。警察に連絡する（連絡は法律で決まっています）',
-  '会社（下の緊急連絡先）へ連絡し、このボタンから報告する',
+  `会社（下の緊急連絡先）と、加入している保険（${INSURER_NAME}）の事故受付へ連絡し、このボタンから報告する`,
   '現場・相手の車・ナンバー・傷を、写真に撮る。相手の名前・連絡先・保険会社を控える',
   '「自分が悪い」などの話は、その場でしない。示談の約束もしない',
 ];
@@ -38,6 +38,7 @@ export default function IncidentButton({ data, currentDriver }: { data: AppData;
     lng: undefined as number | undefined,
     injury: INCIDENT_INJURY[2] as string,
     police: false,
+    insurer: false,
     otherParty: false,
     canDrive: false,
     note: '',
@@ -112,6 +113,9 @@ export default function IncidentButton({ data, currentDriver }: { data: AppData;
       {contacts.map((c) => (
         <TelButton key={c.label + c.phone} label={c.label} phone={c.phone} />
       ))}
+      <a className="btn" href={INSURER_WEB_URL} target="_blank" rel="noreferrer">
+        🌐 {INSURER_NAME} Web・LINEで事故連絡
+      </a>
     </div>
   );
 
@@ -226,6 +230,9 @@ export default function IncidentButton({ data, currentDriver }: { data: AppData;
               <div className="check-row">
                 <label className="checkbox-field">
                   <input type="checkbox" checked={f.police} onChange={(e) => setF({ ...f, police: e.target.checked })} /> 警察に連絡した
+                </label>
+                <label className="checkbox-field">
+                  <input type="checkbox" checked={f.insurer} onChange={(e) => setF({ ...f, insurer: e.target.checked })} /> 保険会社に連絡した
                 </label>
                 <label className="checkbox-field">
                   <input type="checkbox" checked={f.otherParty} onChange={(e) => setF({ ...f, otherParty: e.target.checked })} /> 相手がいる

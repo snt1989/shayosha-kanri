@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
     ...(hasPos ? { lat, lng } : {}),
     injury: INCIDENT_INJURY.includes(b.injury) ? b.injury : INCIDENT_INJURY[2],
     police: Boolean(b.police),
+    insurer: Boolean(b.insurer),
     otherParty: Boolean(b.otherParty),
     canDrive: Boolean(b.canDrive),
     note: s(b.note, 1000),
