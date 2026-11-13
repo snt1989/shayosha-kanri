@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Report } from '@/lib/types';
 import { todayStr } from '@/lib/utils';
-import { jpDate } from '@/lib/maint-schedule';
+import { jpDate } from '@/lib/schedule-text';
 
 // 整備依頼の「修理予定日」。決まっていれば日にちを表示し、整備士・管理者は決める・変える・取り消すができる。
 // 決める（変える）と、全員向けのお知らせと、登録済みの端末への通知が出る。

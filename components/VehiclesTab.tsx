@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useMobileLimit } from '@/lib/useLimit';
 import { AppData, Vehicle } from '@/lib/types';
-import { jpDate } from '@/lib/maint-schedule';
+import { jpDate } from '@/lib/schedule-text';
 import { urgencyLevel, urgencyPill, daysUntil, genId, openMaintRequests, todayStr, tireSetsOf, tireInfoText, TIRE_YEAR_RE, mechanicHeaders, mechanicQuery } from '@/lib/utils';
 import { csvToVehicles, downloadCsv, vehiclesToCsv } from '@/lib/csv';
 import { normalizeAlertSettings } from '@/lib/alert-settings';

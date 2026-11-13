@@ -5,7 +5,8 @@ import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { isRequestOpen } from '@/lib/utils';
 import { todayJst } from '@/lib/notices';
 import { pushConfig, sendPushToAll } from '@/lib/push';
-import { jpDate, removeScheduleNotice, scheduleText, upsertScheduleNotice } from '@/lib/maint-schedule';
+import { removeScheduleNotice, upsertScheduleNotice } from '@/lib/maint-schedule';
+import { jpDate, scheduleText } from '@/lib/schedule-text';
 
 export const dynamic = 'force-dynamic';
 
