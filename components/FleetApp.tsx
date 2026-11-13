@@ -527,6 +527,7 @@ export default function FleetApp() {
             onSubmitMaintRequest={submitMaintRequest}
             onEditMaintRequest={editMaintRequest}
             onDeleteMaintRequest={deleteMaintRequest}
+            onRefresh={refreshData}
             mechanic={activeMechanic}
           />
         )}
@@ -557,6 +558,7 @@ export default function FleetApp() {
             currentDriverId={currentDriver?.id || null}
             onEditRequest={editMaintRequest}
             onDeleteRequest={deleteMaintRequest}
+            onRefresh={refreshData}
             onReopenRequest={reopenMaintRequest}
             onRequestMechanicLogin={() => setShowMechanicLogin(true)}
           />}

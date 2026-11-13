@@ -9,6 +9,7 @@ import DashboardNotices from './DashboardNotices';
 import { fmtDateTime, isOverdue, useCards } from './useCards';
 import IncidentsPanel from './IncidentsPanel';
 import MaintRequestModal, { MaintRequestInput } from './MaintRequestModal';
+import RequestSchedule from './RequestSchedule';
 import ContactRequester from './ContactRequester';
 import { PhotoThumbs } from './PhotoField';
 
@@ -25,6 +26,7 @@ export default function DashboardTab({
   onSubmitMaintRequest,
   onEditMaintRequest,
   onDeleteMaintRequest,
+  onRefresh,
   mechanic,
 }: {
   data: AppData;
@@ -39,6 +41,7 @@ export default function DashboardTab({
   onSubmitMaintRequest: (r: MaintRequestInput) => Promise<unknown>;
   onEditMaintRequest: (id: string, r: MaintRequestInput) => Promise<unknown>;
   onDeleteMaintRequest: (id: string) => Promise<unknown>;
+  onRefresh?: () => void;
   mechanic: string | null;
 }) {
   const [editingReq, setEditingReq] = useState<Report | null>(null);
@@ -139,6 +142,7 @@ export default function DashboardTab({
                     <div style={{ fontSize: 12, marginTop: 2 }}>
                       {r.maintRequestNote || '（内容の記入なし）'}　依頼: {r.date} {r.driver}
                       <PhotoThumbs ids={r.maintRequestPhotos} />
+                      <RequestSchedule report={r} mechanic={mechanic} isAdmin={isAdmin} onChanged={onRefresh} />
                       <div className="contact-row">
                         <ContactRequester report={r} mechanic={mechanic} show={Boolean(mechanic) || isAdmin} />
                       </div>

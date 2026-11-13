@@ -33,9 +33,11 @@ export default function DashboardNotices({ isAdmin }: { isAdmin: boolean }) {
     const t = setInterval(load, 60000);
     const onVis = () => document.visibilityState === 'visible' && load();
     document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('fleet:notices-changed', load);
     return () => {
       clearInterval(t);
       document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('fleet:notices-changed', load);
     };
   }, [load]);
 

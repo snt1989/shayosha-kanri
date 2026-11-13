@@ -4,6 +4,7 @@ import { MAINT_URGENCIES } from '@/lib/types';
 import { pushLog } from '@/lib/log';
 import { cleanPhotoIds } from '@/lib/photo-ids';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
+import { upsertScheduleNotice } from '@/lib/maint-schedule';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,6 +42,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   r.maintRequestType = String(b.type ?? r.maintRequestType ?? '').trim().slice(0, 80);
   r.maintRequestUrgency = (MAINT_URGENCIES as readonly string[]).includes(String(b.urgency)) ? String(b.urgency) : r.maintRequestUrgency || MAINT_URGENCIES[0];
   r.maintRequestNote = note;
+  // 修理予定日が決まっているときは、お知らせの内容（種類など）も合わせて直す
+  if (r.maintRequestScheduledDate && r.maintRequestScheduledDate >= new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10)) await upsertScheduleNotice(r, r.maintRequestScheduledDate, isAdminReq ? '管理者' : String(b.mechanic || r.driver));
   if (Array.isArray(b.photos)) r.maintRequestPhotos = cleanPhotoIds(b.photos);
   if (r.maintOnly && b.vehicleId && b.vehicleId !== r.vehicleId) {
     const v = data.vehicles.find((x) => x.id === b.vehicleId);

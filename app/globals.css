@@ -2957,3 +2957,10 @@ body::before {
     color: var(--slate-500);
   }
 }
+
+/* 整備依頼の修理予定日 */
+.req-schedule { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
+.req-schedule-edit { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.req-schedule-edit input[type='date'] { width: auto; min-width: 0; padding: 4px 8px; font-size: 13px; }
+.req-schedule-msg { font-size: 12px; color: var(--slate-600); }
+.req-schedule-hint { flex-basis: 100%; font-size: 11px; color: var(--slate-500); }

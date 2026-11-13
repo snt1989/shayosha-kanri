@@ -86,9 +86,11 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
     const t = setInterval(loadNotices, 60000);
     const onVis = () => document.visibilityState === 'visible' && loadNotices();
     document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('fleet:notices-changed', loadNotices);
     return () => {
       clearInterval(t);
       document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('fleet:notices-changed', loadNotices);
     };
   }, [loadNotices]);
 

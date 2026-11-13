@@ -5,6 +5,7 @@ import { AppData, MAINT_PROGRESS, MAINT_URGENCIES, MaintProgress, MaintRecord, R
 import { isRequestOpen, splitMaintTypes, maintTypesOf, urgencyLevel, urgencyPill, canEditMaintRequest, openMaintRequests, todayStr } from '@/lib/utils';
 import MaintRequestModal, { MaintRequestInput } from './MaintRequestModal';
 import PhotoField, { PhotoThumbs } from './PhotoField';
+import RequestSchedule from './RequestSchedule';
 import ContactRequester from './ContactRequester';
 import { cleanPhotoIds } from '@/lib/photo-ids';
 import { downloadCsv, maintenanceToCsv } from '@/lib/csv';
@@ -58,6 +59,7 @@ export default function MaintenanceTab({
   currentDriverId,
   onEditRequest,
   onDeleteRequest,
+  onRefresh,
   onReopenRequest,
   onRequestMechanicLogin,
 }: {
@@ -73,6 +75,7 @@ export default function MaintenanceTab({
   currentDriverId: string | null;
   onEditRequest: (id: string, r: MaintRequestInput) => Promise<unknown>;
   onDeleteRequest: (id: string) => Promise<unknown>;
+  onRefresh?: () => void;
   // 依頼と結びついていない記録を「整備中／経過観察」にしたとき、記録の内容で依頼を作り直す（作った依頼のidを返す）
   onReopenRequest: (r: { vehicleId: string; type: string; note: string; watch: boolean; photos?: string[] }) => Promise<{ id?: string } | unknown>;
   onRequestMechanicLogin: () => void;
@@ -329,6 +332,7 @@ export default function MaintenanceTab({
                       {r.maintRequestNote || '（内容の記入なし）'}　依頼: {r.date} {r.driver}
                       {!vehicleExists && '（車両は台帳から削除済み）'}
                       <PhotoThumbs ids={r.maintRequestPhotos} />
+                      <RequestSchedule report={r} mechanic={mechanic} isAdmin={canEdit && !mechanic} onChanged={onRefresh} />
                       <div className="contact-row">
                         <ContactRequester report={r} mechanic={mechanic} show={canEdit} />
                       </div>

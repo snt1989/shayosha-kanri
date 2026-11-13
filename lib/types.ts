@@ -63,6 +63,7 @@ export type Report = {
   // 整備台帳で対応を記録すると true（対応待ち → 対応済）
   maintRequestDone?: boolean;
   maintRequestDoneAt?: string;
+  maintRequestScheduledDate?: string; // 修理予定日（YYYY-MM-DD）。整備士・管理者が決めると、お知らせと通知が出る
   // 経過観察中（依頼は残したまま、様子を見ている状態）
   maintRequestWatch?: boolean;
   maintRequestWatchAt?: string;

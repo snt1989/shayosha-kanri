@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { loadData, saveData } from '@/lib/store';
 import { pushLog } from '@/lib/log';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
+import { removeScheduleNotice } from '@/lib/maint-schedule';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,6 +43,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     r.maintRequestWatchAt = '';
     action = isDone ? '整備依頼を対応済にした' : '整備依頼を対応待ちに戻した';
   }
+
+  // 対応済・経過観察になったら、修理予定日のお知らせは出さない（予定日は記録に残す）
+  if (r.maintRequestDone) await removeScheduleNotice(r.id);
 
   pushLog(data, {
     actor: isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value) ? 'admin' : 'user',

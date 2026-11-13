@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useMobileLimit } from '@/lib/useLimit';
 import { AppData, Vehicle } from '@/lib/types';
+import { jpDate } from '@/lib/maint-schedule';
 import { urgencyLevel, urgencyPill, daysUntil, genId, openMaintRequests, todayStr, tireSetsOf, tireInfoText, TIRE_YEAR_RE } from '@/lib/utils';
 import { csvToVehicles, downloadCsv, vehiclesToCsv } from '@/lib/csv';
 import { normalizeAlertSettings } from '@/lib/alert-settings';
@@ -425,6 +426,7 @@ export default function VehiclesTab({
                       <span className={`pill ${urgencyPill(r.maintRequestUrgency)}`} style={{ marginLeft: 6 }}>{r.maintRequestUrgency || '通常'}</span>
                       <div style={{ fontSize: 12, marginTop: 2 }}>
                         {r.maintRequestNote || '（内容の記入なし）'}　依頼: {r.date} {r.driver}
+                        {r.maintRequestScheduledDate && <span className="pill pill-sky" style={{ marginLeft: 6 }}>📅 修理予定 {jpDate(r.maintRequestScheduledDate)}</span>}
                       </div>
                     </div>
                   </div>

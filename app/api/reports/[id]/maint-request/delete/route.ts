@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { loadData, saveData } from '@/lib/store';
 import { pushLog } from '@/lib/log';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
+import { removeScheduleNotice } from '@/lib/maint-schedule';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ success: false, message: '依頼を出した本人・整備士・管理者だけが削除できます。' }, { status: 403 });
   }
 
+  await removeScheduleNotice(r.id);
   pushLog(data, {
     actor: isAdminReq ? 'admin' : 'user',
     action: '整備依頼を削除',
@@ -42,6 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     r.maintRequestPhotos = [];
     r.maintRequestDone = false;
     r.maintRequestDoneAt = '';
+    r.maintRequestScheduledDate = '';
     r.maintRequestWatch = false;
     r.maintRequestWatchAt = '';
   }
