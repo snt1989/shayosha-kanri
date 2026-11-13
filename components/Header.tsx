@@ -164,15 +164,6 @@ export default function Header({
                 ×
               </button>
             </div>
-            <div className="drawer-user">
-              <div className="drawer-avatar">{(currentDriverName || mechanicName || (isAdmin ? '管' : '？')).charAt(0)}</div>
-              <div style={{ minWidth: 0 }}>
-                <div className="drawer-user-name">{currentDriverName ? `${currentDriverName} さん` : mechanicName ? `${mechanicName}（整備士）` : isAdmin ? '管理者' : '未ログイン'}</div>
-                <div className="drawer-user-sub">
-                  {[currentDriverName ? '🪪 運転者' : '', mechanicName ? '🔧 整備士' : '', isAdmin ? '🔓 管理者' : ''].filter(Boolean).join('　') || '下の「ログイン」から選べます'}
-                </div>
-              </div>
-            </div>
             <nav className="drawer-nav">
             <div className="menu-sheet-section">画面</div>
             {TABS.map((t) => (
