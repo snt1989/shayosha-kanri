@@ -1,5 +1,5 @@
 import { Driver, LogEntry, MASTER_KEYS, MASTER_LABELS, MasterKey, FuelLog, Masters, Rental, RentalTrip, TireInfo, Vehicle } from './types';
-import { TIRE_YEAR_RE, genId, tireSetsOf } from './utils';
+import { TIRE_DOT_RE, TIRE_YEAR_RE, genId, normalizeDot, tireSetsOf } from './utils';
 
 function csvEscape(v: unknown): string {
   const s = v === null || v === undefined ? '' : String(v);
@@ -56,19 +56,22 @@ export function parseCsv(text: string): string[][] {
 }
 
 /* ---------- vehicles ---------- */
-const VEHICLE_HEADERS = ['id', '車両呼称', 'ナンバー', '型式', '車検満了日', '12ヶ月点検日', '積算走行km', 'オイル交換目安km', 'タイヤ種別', '夏タイヤメーカー', '夏タイヤ製造年', '冬タイヤメーカー', '冬タイヤ製造年'];
+const VEHICLE_HEADERS = ['id', '車両呼称', 'ナンバー', '型式', '車検満了日', '12ヶ月点検日', '積算走行km', 'オイル交換目安km', 'タイヤ種別', '夏タイヤメーカー', '夏タイヤDOT', '冬タイヤメーカー', '冬タイヤDOT'];
 
 // CSV の列が無い（古い形式）ときは、いまの値を残す。年は正しい形のものだけ取り込む
 function tireFromCsv(maker: string | undefined, year: string | undefined, prev?: TireInfo): TireInfo {
   if (maker === undefined && year === undefined) return prev ?? {};
-  const y = (year || '').trim();
-  return { maker: (maker || '').trim(), year: TIRE_YEAR_RE.test(y) ? y : '' };
+  // DOT（4桁。例 2324）を取り込む。4桁の数字はDOTとして読む。旧形式の「2024-05」だけは製造年として受け付ける
+  const raw = (year || '').trim();
+  if (raw.includes('-') && TIRE_YEAR_RE.test(raw)) return { maker: (maker || '').trim(), dot: '', year: raw };
+  const dot = normalizeDot(raw);
+  return { maker: (maker || '').trim(), dot: TIRE_DOT_RE.test(dot) ? dot : '', year: '' };
 }
 
 export function vehiclesToCsv(vehicles: Vehicle[]): string {
   const rows: (string | number)[][] = [VEHICLE_HEADERS];
   vehicles.forEach((v) => {
-    rows.push([v.id, v.name, v.plate, v.modelType, v.shakenDate, v.checkDate, v.odometer, v.oilKm, v.tire, tireSetsOf(v).summer.maker || '', tireSetsOf(v).summer.year || '', tireSetsOf(v).winter.maker || '', tireSetsOf(v).winter.year || '']);
+    rows.push([v.id, v.name, v.plate, v.modelType, v.shakenDate, v.checkDate, v.odometer, v.oilKm, v.tire, tireSetsOf(v).summer.maker || '', tireSetsOf(v).summer.dot || tireSetsOf(v).summer.year || '', tireSetsOf(v).winter.maker || '', tireSetsOf(v).winter.dot || tireSetsOf(v).winter.year || '']);
   });
   return toCsv(rows);
 }

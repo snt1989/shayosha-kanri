@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useMobileLimit } from '@/lib/useLimit';
 import { AppData, Vehicle } from '@/lib/types';
 import { jpDate } from '@/lib/schedule-text';
-import { urgencyLevel, urgencyPill, daysUntil, genId, openMaintRequests, todayStr, tireSetsOf, tireInfoText, TIRE_YEAR_RE, mechanicHeaders, mechanicQuery } from '@/lib/utils';
+import { urgencyLevel, urgencyPill, daysUntil, genId, openMaintRequests, todayStr, tireSetsOf, tireInfoText, dotText, TIRE_DOT_RE, normalizeDot, mechanicHeaders, mechanicQuery } from '@/lib/utils';
 import { csvToVehicles, downloadCsv, vehiclesToCsv } from '@/lib/csv';
 import { normalizeAlertSettings } from '@/lib/alert-settings';
 import Modal from './Modal';
@@ -90,11 +90,15 @@ export default function VehiclesTab({
       return;
     }
     const sets = tireSetsOf(editing);
-    const clean = (t: { maker?: string; year?: string }) => ({ maker: (t.maker || '').trim(), year: (t.year || '').trim() });
+    // DOT を入れたら、旧の「製造年」は消す（DOT のほうが正確）
+    const clean = (t: { maker?: string; dot?: string; year?: string }) => {
+      const dot = normalizeDot(t.dot);
+      return { maker: (t.maker || '').trim(), dot, year: dot ? '' : (t.year || '').trim() };
+    };
     const sm = clean(sets.summer);
     const wn = clean(sets.winter);
-    if ((sm.year && !TIRE_YEAR_RE.test(sm.year)) || (wn.year && !TIRE_YEAR_RE.test(wn.year))) {
-      alert('タイヤの製造年は、「2024」か「2024-05」の形で入れてください。');
+    if ((sm.dot && !TIRE_DOT_RE.test(sm.dot)) || (wn.dot && !TIRE_DOT_RE.test(wn.dot))) {
+      alert('タイヤのDOTは、タイヤ側面の「DOT」の最後の4桁（週2桁＋年2桁。例：2324）で入れてください。週は01〜53です。');
       return;
     }
     setSaving(true);
@@ -678,7 +682,7 @@ export default function VehiclesTab({
           {(['summer', 'winter'] as const).map((k) => {
             const key = k === 'summer' ? 'tireSummer' : 'tireWinter';
             const cur = tireSetsOf(editing)[k];
-            const set = (patch: { maker?: string; year?: string }) => setEditing({ ...editing, tireMaker: undefined, tireYear: undefined, tireSummer: tireSetsOf(editing).summer, tireWinter: tireSetsOf(editing).winter, [key]: { ...cur, ...patch } });
+            const set = (patch: { maker?: string; dot?: string; year?: string }) => setEditing({ ...editing, tireMaker: undefined, tireYear: undefined, tireSummer: tireSetsOf(editing).summer, tireWinter: tireSetsOf(editing).winter, [key]: { ...cur, ...patch } });
             return (
               <div className="field-row" key={k}>
                 <div className="field">
@@ -686,15 +690,17 @@ export default function VehiclesTab({
                   <input list="tire-makers" value={cur.maker || ''} maxLength={30} placeholder="例：ブリヂストン" onChange={(e) => set({ maker: e.target.value })} />
                 </div>
                 <div className="field">
-                  <label>{k === 'summer' ? '☀️ 夏タイヤ' : '❄️ 冬タイヤ'}の製造年（年式・任意）</label>
+                  <label>{k === 'summer' ? '☀️ 夏タイヤ' : '❄️ 冬タイヤ'}のDOT（製造年週・任意）</label>
                   <input
-                    value={cur.year || ''}
-                    maxLength={7}
+                    value={cur.dot || ''}
+                    maxLength={8}
                     inputMode="numeric"
-                    placeholder="例：2024 または 2024-05"
-                    onChange={(e) => set({ year: e.target.value.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0)).replace(/[^0-9-]/g, '') })}
+                    placeholder="例：2324（タイヤ側面のDOTの最後の4桁）"
+                    onChange={(e) => set({ dot: e.target.value.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0)).replace(/[^0-9]/g, '') })}
                   />
-                  {cur.year && !TIRE_YEAR_RE.test(cur.year) && <div style={{ fontSize: 11, color: 'var(--amber-600)', marginTop: 2 }}>「2024」か「2024-05」の形で入れてください。</div>}
+                  {cur.dot && TIRE_DOT_RE.test(normalizeDot(cur.dot)) && <div style={{ fontSize: 11, color: 'var(--slate-500)', marginTop: 2 }}>→ {dotText(normalizeDot(cur.dot))}</div>}
+                  {cur.dot && !TIRE_DOT_RE.test(normalizeDot(cur.dot)) && <div style={{ fontSize: 11, color: 'var(--amber-600)', marginTop: 2 }}>4桁（週2桁＋年2桁。例：2324）で入れてください。</div>}
+                  {!cur.dot && cur.year && <div style={{ fontSize: 11, color: 'var(--slate-500)', marginTop: 2 }}>いまの記録：{cur.year.replace('-', '年')}{cur.year.includes('-') ? '月' : '年'}製（DOTを入れると置き換わります）</div>}
                 </div>
               </div>
             );
@@ -705,7 +711,7 @@ export default function VehiclesTab({
             ))}
           </datalist>
           <div style={{ fontSize: 11, color: 'var(--slate-500)', margin: '-6px 0 12px' }}>
-            夏と冬のタイヤを、別々に記録できます（「タイヤ種別」は、いま付けているほうです）。製造年は、タイヤ側面の「DOT」の最後の4桁（例：2324 は 2024年の23週）で分かります。
+            夏と冬のタイヤを、別々に記録できます（「タイヤ種別」は、いま付けているほうです）。DOT は、タイヤ側面の「DOT」で始まる刻印の最後の4桁（週2桁＋年2桁。例：2324 は 2024年の23週）です。
           </div>
 
           <div className="section-heading" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>

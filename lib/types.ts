@@ -73,8 +73,9 @@ export type Report = {
 
 export const MAINT_URGENCIES = ['通常', '早めに', '至急（使用不可）'] as const;
 
-// タイヤ1セット分の情報。year は 2024 か 2024-05 の形
-export type TireInfo = { maker?: string; year?: string };
+// タイヤ1セット分の情報。dot はタイヤ側面の DOT の最後の4桁（週2桁＋年2桁。例 2324 = 2024年の23週）。
+// year は（旧）製造年（2024 か 2024-05 の形）。DOT を入れていないものだけ、表示に使う
+export type TireInfo = { maker?: string; dot?: string; year?: string };
 
 export type Vehicle = {
   id: string;

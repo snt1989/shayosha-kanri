@@ -139,9 +139,23 @@ export function tireSetsOf(v: Pick<Vehicle, 'tire' | 'tireSummer' | 'tireWinter'
 
 export const TIRE_YEAR_RE = /^(19|20)\d{2}(-(0[1-9]|1[0-2]))?$/;
 
-// 「ブリヂストン / 2024年05月製」のような表示
+// DOT（タイヤ側面の製造年週）：最後の4桁＝週2桁(01〜53)＋年2桁。例 2324 = 2024年の23週
+export const TIRE_DOT_RE = /^(0[1-9]|[1-4]\d|5[0-3])\d{2}$/;
+// 全角・「DOT」・空白などを取り除いて、数字だけにする（5桁以上のときは最後の4桁）
+export function normalizeDot(s: string | undefined): string {
+  const d = (s || '').replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0)).replace(/\D/g, '');
+  return d.length > 4 ? d.slice(-4) : d;
+}
+// 「DOT 2324（2024年 第23週製）」のような表示。DOT が正しくないときは null
+export function dotText(dot: string | undefined): string | null {
+  if (!dot || !TIRE_DOT_RE.test(dot)) return null;
+  return `DOT ${dot}（20${dot.slice(2)}年 第${Number(dot.slice(0, 2))}週製）`;
+}
+
+// 「ブリヂストン / DOT 2324（2024年 第23週製）」のような表示（DOT が無い旧データは「2024年製」）
 export function tireInfoText(t: TireInfo): string {
-  const y = t.year ? `${t.year.replace('-', '年')}${t.year.includes('-') ? '月' : '年'}製` : '';
+  const d = dotText(t.dot);
+  const y = d || (t.year ? `${t.year.replace('-', '年')}${t.year.includes('-') ? '月' : '年'}製` : '');
   return [t.maker, y].filter(Boolean).join(' / ');
 }
 
