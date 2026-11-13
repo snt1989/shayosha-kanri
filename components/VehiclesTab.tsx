@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useMobileLimit } from '@/lib/useLimit';
 import { AppData, Vehicle } from '@/lib/types';
 import { jpDate } from '@/lib/schedule-text';
@@ -635,7 +635,7 @@ export default function VehiclesTab({
           }
         >
           <div className="section-heading">基本情報</div>
-          <div className="field-row">
+          <div className="field-row row2">
             <div className="field">
               <label>車両呼称</label>
               <input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
@@ -651,7 +651,7 @@ export default function VehiclesTab({
           </div>
 
           <div className="section-heading">点検・車検</div>
-          <div className="field-row">
+          <div className="field-row row2">
             <div className="field">
               <label>車検満了日</label>
               <input type="date" value={editing.shakenDate} onChange={(e) => setEditing({ ...editing, shakenDate: e.target.value })} />
@@ -661,7 +661,7 @@ export default function VehiclesTab({
               <input type="date" value={editing.checkDate} onChange={(e) => setEditing({ ...editing, checkDate: e.target.value })} />
             </div>
           </div>
-          <div className="field-row">
+          <div className="field-row row2">
             <div className="field">
               <label>現在積算走行（km）</label>
               <input type="number" value={editing.odometer} onChange={(e) => setEditing({ ...editing, odometer: Number(e.target.value) })} />
@@ -685,34 +685,40 @@ export default function VehiclesTab({
             const key = k === 'summer' ? 'tireSummer' : 'tireWinter';
             const cur = tireSetsOf(editing)[k];
             const set = (patch: { maker?: string; size?: string; dot?: string; year?: string }) => setEditing({ ...editing, tireMaker: undefined, tireYear: undefined, tireSummer: tireSetsOf(editing).summer, tireWinter: tireSetsOf(editing).winter, [key]: { ...cur, ...patch } });
+            const dotOk = cur.dot ? TIRE_DOT_RE.test(normalizeDot(cur.dot)) : true;
             return (
-              <Fragment key={k}>
-              <div className="field-row">
-                <div className="field">
-                  <label>{k === 'summer' ? '☀️ 夏タイヤのメーカー' : '❄️ 冬タイヤ（スタッドレス）のメーカー'}（任意）</label>
-                  <input list="tire-makers" value={cur.maker || ''} maxLength={30} placeholder="例：ブリヂストン" onChange={(e) => set({ maker: e.target.value })} />
-                </div>
-                <div className="field">
-                  <label>{k === 'summer' ? '☀️ 夏タイヤ' : '❄️ 冬タイヤ'}のサイズ（任意）</label>
-                  <input list="tire-sizes" value={cur.size || ''} maxLength={24} placeholder="例：195/65R15 91H" onChange={(e) => set({ size: e.target.value })} />
+              <div className={`tire-set ${k}`} key={k}>
+                <div className="tire-set-title">{k === 'summer' ? '☀️ 夏タイヤ' : '❄️ 冬タイヤ（スタッドレス）'}<span>（すべて任意）</span></div>
+                <div className="tire-grid">
+                  <div className="field">
+                    <label>メーカー</label>
+                    <input list="tire-makers" value={cur.maker || ''} maxLength={30} placeholder="ブリヂストン" onChange={(e) => set({ maker: e.target.value })} />
+                  </div>
+                  <div className="field">
+                    <label>サイズ</label>
+                    <input list="tire-sizes" value={cur.size || ''} maxLength={24} placeholder="195/65R15 91H" onChange={(e) => set({ size: e.target.value })} />
+                  </div>
+                  <div className="field">
+                    <label>DOT（製造年週・4桁）</label>
+                    <input
+                      value={cur.dot || ''}
+                      maxLength={8}
+                      inputMode="numeric"
+                      placeholder="2324"
+                      onChange={(e) => set({ dot: e.target.value.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0)).replace(/[^0-9]/g, '') })}
+                    />
+                  </div>
+                  <div className="tire-dot-note" style={dotOk ? undefined : { color: 'var(--amber-600)' }}>
+                    {cur.dot
+                      ? dotOk
+                        ? `→ ${dotText(normalizeDot(cur.dot))}`
+                        : '週2桁＋年2桁で入れてください（例：2324）'
+                      : cur.year
+                        ? `いまの記録：${cur.year.replace('-', '年')}${cur.year.includes('-') ? '月' : '年'}製（DOTを入れると置き換わります）`
+                        : '例：2324 ＝ 2024年の23週'}
+                  </div>
                 </div>
               </div>
-              <div className="field-row">
-                <div className="field">
-                  <label>{k === 'summer' ? '☀️ 夏タイヤ' : '❄️ 冬タイヤ'}のDOT（製造年週・任意）</label>
-                  <input
-                    value={cur.dot || ''}
-                    maxLength={8}
-                    inputMode="numeric"
-                    placeholder="例：2324（タイヤ側面のDOTの最後の4桁）"
-                    onChange={(e) => set({ dot: e.target.value.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0)).replace(/[^0-9]/g, '') })}
-                  />
-                  {cur.dot && TIRE_DOT_RE.test(normalizeDot(cur.dot)) && <div style={{ fontSize: 11, color: 'var(--slate-500)', marginTop: 2 }}>→ {dotText(normalizeDot(cur.dot))}</div>}
-                  {cur.dot && !TIRE_DOT_RE.test(normalizeDot(cur.dot)) && <div style={{ fontSize: 11, color: 'var(--amber-600)', marginTop: 2 }}>4桁（週2桁＋年2桁。例：2324）で入れてください。</div>}
-                  {!cur.dot && cur.year && <div style={{ fontSize: 11, color: 'var(--slate-500)', marginTop: 2 }}>いまの記録：{cur.year.replace('-', '年')}{cur.year.includes('-') ? '月' : '年'}製（DOTを入れると置き換わります）</div>}
-                </div>
-              </div>
-              </Fragment>
             );
           })}
           <datalist id="tire-sizes">
@@ -725,9 +731,7 @@ export default function VehiclesTab({
               <option key={m} value={m} />
             ))}
           </datalist>
-          <div style={{ fontSize: 11, color: 'var(--slate-500)', margin: '-6px 0 12px' }}>
-            夏と冬のタイヤを、別々に記録できます（「タイヤ種別」は、いま付けているほうです）。DOT は、タイヤ側面の「DOT」で始まる刻印の最後の4桁（週2桁＋年2桁。例：2324 は 2024年の23週）です。
-          </div>
+          <div style={{ fontSize: 11, color: 'var(--slate-500)', margin: '-4px 0 12px' }}>「タイヤ種別」は、いま付けているほうです。DOTは、タイヤ側面の「DOT」刻印の最後の4桁です。</div>
 
           <div className="section-heading" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             車検証の情報

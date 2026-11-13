@@ -3001,3 +3001,21 @@ body::before {
 .update-what li { margin-bottom: 3px; }
 .update-btn { width: 100%; min-height: 46px; font-size: 15px; }
 .update-later { margin-top: 10px; border: 0; background: none; color: var(--slate-500); font-size: 12px; text-decoration: underline; cursor: pointer; padding: 6px; }
+
+/* 車両編集：夏・冬タイヤの入力を、1セットずつのカードにまとめて短くする */
+.tire-set { border: 1px solid var(--slate-200); border-radius: 12px; padding: 8px 10px 4px; margin-bottom: 10px; background: var(--slate-50, #f8fafc); }
+.tire-set.winter { background: #f0f9ff; border-color: #bae6fd; }
+.tire-set-title { font-size: 13px; font-weight: 700; color: var(--slate-800); margin-bottom: 6px; }
+.tire-set-title span { font-weight: 400; font-size: 11px; color: var(--slate-500); margin-left: 4px; }
+.tire-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 8px; }
+.tire-grid .field { margin-bottom: 8px; min-width: 0; }
+.tire-grid .field label { font-size: 11px; margin-bottom: 2px; }
+.tire-grid .field input { min-width: 0; width: 100%; }
+.tire-dot-note { align-self: end; font-size: 11px; color: var(--slate-500); margin-bottom: 12px; line-height: 1.3; }
+
+/* 車両編集：短い項目は、スマホでも2列に並べる */
+@media (max-width: 640px) {
+  .field-row.row2 { flex-direction: row; gap: 8px; }
+  .field-row.row2 > .field { flex: 1 1 0; min-width: 0; }
+  .field-row.row2 .field label { font-size: 12px; }
+}
