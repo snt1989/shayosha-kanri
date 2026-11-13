@@ -152,11 +152,22 @@ export function dotText(dot: string | undefined): string | null {
   return `DOT ${dot}（20${dot.slice(2)}年 第${Number(dot.slice(0, 2))}週製）`;
 }
 
-// 「ブリヂストン / DOT 2324（2024年 第23週製）」のような表示（DOT が無い旧データは「2024年製」）
+// タイヤサイズ：全角を半角にし、英字は大文字、空白は詰める（例 ｂ195/65r15 → 195/65R15）
+export function normalizeTireSize(s: string | undefined): string {
+  return (s || '')
+    .replace(/[！-～]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+    .replace(/[／]/g, '/')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase()
+    .slice(0, 24);
+}
+
+// 「ブリヂストン / 195/65R15 / DOT 2324（2024年 第23週製）」のような表示（DOT が無い旧データは「2024年製」）
 export function tireInfoText(t: TireInfo): string {
   const d = dotText(t.dot);
   const y = d || (t.year ? `${t.year.replace('-', '年')}${t.year.includes('-') ? '月' : '年'}製` : '');
-  return [t.maker, y].filter(Boolean).join(' / ');
+  return [t.maker, t.size, y].filter(Boolean).join(' / ');
 }
 
 // 整備士としてログイン中の名前（車検証の画像・AI読み取りの権限確認に使う）

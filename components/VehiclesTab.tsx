@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { Fragment, useMemo, useRef, useState } from 'react';
 import { useMobileLimit } from '@/lib/useLimit';
 import { AppData, Vehicle } from '@/lib/types';
 import { jpDate } from '@/lib/schedule-text';
-import { urgencyLevel, urgencyPill, daysUntil, genId, openMaintRequests, todayStr, tireSetsOf, tireInfoText, dotText, TIRE_DOT_RE, normalizeDot, mechanicHeaders, mechanicQuery } from '@/lib/utils';
+import { urgencyLevel, urgencyPill, daysUntil, genId, openMaintRequests, todayStr, tireSetsOf, tireInfoText, dotText, TIRE_DOT_RE, normalizeDot, mechanicHeaders, mechanicQuery, normalizeTireSize } from '@/lib/utils';
 import { csvToVehicles, downloadCsv, vehiclesToCsv } from '@/lib/csv';
 import { normalizeAlertSettings } from '@/lib/alert-settings';
 import Modal from './Modal';
@@ -24,6 +24,8 @@ const emptyVehicle = (data: AppData): Vehicle => ({
 });
 
 // タイヤのメーカーの入力候補（これ以外も入力できる）
+// よくあるサイズ（候補。ほかのサイズも自由に入力できる）
+const TIRE_SIZES = ['145/80R12 80/78N', '155/65R14', '165/65R14', '165/70R14', '175/65R15', '185/65R15', '195/65R15', '195/60R16', '205/60R16', '195/80R15 107/105N', '195/70R15 106/104N', '215/60R17', '225/65R17', '205/55R16'];
 const TIRE_MAKERS = ['ブリヂストン', 'ヨコハマ', 'ダンロップ', 'トーヨー', 'ミシュラン', 'グッドイヤー', 'ピレリ', 'ファルケン', 'コンチネンタル', 'ハンコック', 'クムホ', 'ナンカン'];
 
 export default function VehiclesTab({
@@ -91,9 +93,9 @@ export default function VehiclesTab({
     }
     const sets = tireSetsOf(editing);
     // DOT を入れたら、旧の「製造年」は消す（DOT のほうが正確）
-    const clean = (t: { maker?: string; dot?: string; year?: string }) => {
+    const clean = (t: { maker?: string; size?: string; dot?: string; year?: string }) => {
       const dot = normalizeDot(t.dot);
-      return { maker: (t.maker || '').trim(), dot, year: dot ? '' : (t.year || '').trim() };
+      return { maker: (t.maker || '').trim(), size: normalizeTireSize(t.size), dot, year: dot ? '' : (t.year || '').trim() };
     };
     const sm = clean(sets.summer);
     const wn = clean(sets.winter);
@@ -682,13 +684,20 @@ export default function VehiclesTab({
           {(['summer', 'winter'] as const).map((k) => {
             const key = k === 'summer' ? 'tireSummer' : 'tireWinter';
             const cur = tireSetsOf(editing)[k];
-            const set = (patch: { maker?: string; dot?: string; year?: string }) => setEditing({ ...editing, tireMaker: undefined, tireYear: undefined, tireSummer: tireSetsOf(editing).summer, tireWinter: tireSetsOf(editing).winter, [key]: { ...cur, ...patch } });
+            const set = (patch: { maker?: string; size?: string; dot?: string; year?: string }) => setEditing({ ...editing, tireMaker: undefined, tireYear: undefined, tireSummer: tireSetsOf(editing).summer, tireWinter: tireSetsOf(editing).winter, [key]: { ...cur, ...patch } });
             return (
-              <div className="field-row" key={k}>
+              <Fragment key={k}>
+              <div className="field-row">
                 <div className="field">
                   <label>{k === 'summer' ? '☀️ 夏タイヤのメーカー' : '❄️ 冬タイヤ（スタッドレス）のメーカー'}（任意）</label>
                   <input list="tire-makers" value={cur.maker || ''} maxLength={30} placeholder="例：ブリヂストン" onChange={(e) => set({ maker: e.target.value })} />
                 </div>
+                <div className="field">
+                  <label>{k === 'summer' ? '☀️ 夏タイヤ' : '❄️ 冬タイヤ'}のサイズ（任意）</label>
+                  <input list="tire-sizes" value={cur.size || ''} maxLength={24} placeholder="例：195/65R15 91H" onChange={(e) => set({ size: e.target.value })} />
+                </div>
+              </div>
+              <div className="field-row">
                 <div className="field">
                   <label>{k === 'summer' ? '☀️ 夏タイヤ' : '❄️ 冬タイヤ'}のDOT（製造年週・任意）</label>
                   <input
@@ -703,8 +712,14 @@ export default function VehiclesTab({
                   {!cur.dot && cur.year && <div style={{ fontSize: 11, color: 'var(--slate-500)', marginTop: 2 }}>いまの記録：{cur.year.replace('-', '年')}{cur.year.includes('-') ? '月' : '年'}製（DOTを入れると置き換わります）</div>}
                 </div>
               </div>
+              </Fragment>
             );
           })}
+          <datalist id="tire-sizes">
+            {TIRE_SIZES.map((m) => (
+              <option key={m} value={m} />
+            ))}
+          </datalist>
           <datalist id="tire-makers">
             {TIRE_MAKERS.map((m) => (
               <option key={m} value={m} />
