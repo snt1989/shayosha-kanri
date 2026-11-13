@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { AppData, Driver, MAINT_URGENCIES, Report } from '@/lib/types';
+import { splitMaintTypes } from '@/lib/utils';
 import Modal from './Modal';
 import PhotoField from './PhotoField';
 
@@ -29,10 +30,17 @@ export default function MaintRequestModal({
   onSubmit: (r: MaintRequestInput) => Promise<unknown>;
 }) {
   const [vehicleId, setVehicleId] = useState(editing?.vehicleId || initialVehicleId || data.vehicles[0]?.id || '');
-  const [type, setType] = useState(
-    editing ? editing.maintRequestType || '' : initialType && data.masters.maintTypes.includes(initialType) ? initialType : data.masters.maintTypes[0] || ''
+  // 整備の種類は複数選べる（保存は「、」でつないだ文字列）
+  const [types, setTypes] = useState<string[]>(
+    editing
+      ? splitMaintTypes(editing.maintRequestType)
+      : initialType && data.masters.maintTypes.includes(initialType)
+        ? [initialType]
+        : data.masters.maintTypes[0]
+          ? [data.masters.maintTypes[0]]
+          : []
   );
-  const typeOptions = type && !data.masters.maintTypes.includes(type) ? [type, ...data.masters.maintTypes] : data.masters.maintTypes;
+  const typeOptions = [...types.filter((t) => !data.masters.maintTypes.includes(t)), ...data.masters.maintTypes];
   const [urgency, setUrgency] = useState<string>(editing?.maintRequestUrgency || MAINT_URGENCIES[0]);
   const [note, setNote] = useState(editing?.maintRequestNote ?? initialNote ?? '');
   const [photos, setPhotos] = useState<string[]>(editing?.maintRequestPhotos || []);
@@ -41,11 +49,12 @@ export default function MaintRequestModal({
 
   async function submit() {
     if (!vehicleId) return setError('車両を選んでください。');
+    if (!types.length) return setError('整備の種類を1つ以上選んでください。');
     if (!note.trim()) return setError('依頼の内容（どこがどう悪いか）を入れてください。');
     setSaving(true);
     setError('');
     try {
-      await onSubmit({ vehicleId, type, urgency, note: note.trim(), driverId: driver?.id || '', photos });
+      await onSubmit({ vehicleId, type: types.join('、'), urgency, note: note.trim(), driverId: driver?.id || '', photos });
       onClose();
     } catch {
       setError('送信できませんでした。通信を確認して、もう一度お試しください。');
@@ -86,14 +95,18 @@ export default function MaintRequestModal({
       </div>
       <div className="field-row">
         <div className="field">
-          <label>整備の種類</label>
-          <select value={type} onChange={(e) => setType(e.target.value)}>
-            {typeOptions.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
+          <label>整備の種類（複数選べます）</label>
+          <div className="type-chips">
+            {typeOptions.map((t) => {
+              const on = types.includes(t);
+              return (
+                <button key={t} type="button" className={`btn btn-sm ${on ? 'btn-primary' : ''}`} aria-pressed={on} onClick={() => setTypes(on ? types.filter((x) => x !== t) : [...types, t])}>
+                  {on ? '✓ ' : ''}
+                  {t}
+                </button>
+              );
+            })}
+          </div>
         </div>
         <div className="field">
           <label>緊急度</label>

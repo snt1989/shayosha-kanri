@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     notes: '',
     maintOnly: true,
     maintRequest: true,
-    maintRequestType: String(b.type || '').trim().slice(0, 40),
+    maintRequestType: String(b.type || '').trim().slice(0, 80),
     maintRequestUrgency: urgency,
     maintRequestNote: note,
     maintRequestPhotos: cleanPhotoIds(b.photos),

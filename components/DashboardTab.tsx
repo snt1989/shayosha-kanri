@@ -130,11 +130,6 @@ export default function DashboardTab({
                   <div style={{ flex: 1 }}>
                     <strong>{r.vehicleName}</strong>
                     {r.plate ? `（${r.plate}）` : ''}— {r.maintRequestType || '整備'}
-                    {r.maintRequestWatch && (
-                      <span className="pill pill-sky" style={{ marginLeft: 6 }}>
-                        👀 経過観察中
-                      </span>
-                    )}
                     <span className={`pill ${urgencyPill(r.maintRequestUrgency)}`} style={{ marginLeft: 6 }}>
                         {r.maintRequestUrgency || MAINT_URGENCIES[0]}
                       </span>

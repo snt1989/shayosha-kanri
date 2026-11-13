@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { loadData } from '@/lib/store';
+import { isRequestOpen } from '@/lib/utils';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 
 export const dynamic = 'force-dynamic';
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!isAdmin && !isMechanic) {
     return NextResponse.json({ success: false, message: '連絡先を見るには、整備士か管理者のログインが必要です。' }, { status: 401 });
   }
-  const hasOpen = data.reports.some((r) => r.driverId === id && r.maintRequest && !r.maintRequestDone);
+  const hasOpen = data.reports.some((r) => r.driverId === id && isRequestOpen(r));
   if (!isAdmin && !hasOpen) {
     return NextResponse.json({ success: false, message: '対応待ちの整備依頼がありません。' }, { status: 403 });
   }

@@ -88,7 +88,7 @@ export function dataSnapshot(data: AppData, today: string): string {
       (reqs.length
         ? reqs
             .map((r) =>
-              [r.date, r.vehicleName, r.maintRequestType || '-', r.maintRequestUrgency || '-', oneLine(r.maintRequestNote, 80), r.driver, r.maintRequestWatch ? '経過観察中' : '整備待ち'].join('|')
+              [r.date, r.vehicleName, r.maintRequestType || '-', r.maintRequestUrgency || '-', oneLine(r.maintRequestNote, 80), r.driver, '整備待ち'].join('|')
             )
             .join('\n')
         : 'なし')

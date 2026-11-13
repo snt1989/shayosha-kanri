@@ -83,7 +83,7 @@ function ReportRow({ r, onReturn }: { r: Report; onReturn: () => void }) {
         <Pill tone={preNg ? 'red' : 'slate'}>{r.alcoholSkipped ? '出発前ALC 免除' : `出発前ALC ${r.preAlcohol}`}</Pill>
         {r.postDone ? <Pill tone={postNg ? 'red' : 'slate'}>{`帰着後ALC ${r.postAlcohol}`}</Pill> : null}
         <Pill tone="slate">{r.postDone ? `${comma(r.startKm)} → ${comma(r.endKm)}km（${comma(r.tripKm)}km）` : `出発 ${comma(r.startKm)}km`}</Pill>
-        {r.maintRequest ? <Pill tone={r.maintRequestDone ? 'green' : 'red'}>{r.maintRequestDone ? '整備依頼 対応済' : '整備依頼 対応待ち'}</Pill> : null}
+        {r.maintRequest ? <Pill tone={r.maintRequestWatch ? 'slate' : r.maintRequestDone ? 'green' : 'red'}>{r.maintRequestWatch ? '整備依頼 経過観察' : r.maintRequestDone ? '整備依頼 対応済' : '整備依頼 対応待ち'}</Pill> : null}
       </View>
       {!r.postDone ? <Text style={{ color: C.sky700, fontSize: 12, fontWeight: '700', marginTop: 8 }}>押すと帰着登録ができます</Text> : null}
     </Card>

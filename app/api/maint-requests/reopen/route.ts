@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   }
   const v = data.vehicles.find((x) => x.id === b.vehicleId);
   if (!v) return NextResponse.json({ success: false, message: '車両が見つかりません。' }, { status: 404 });
-  const type = String(b.type || '').trim().slice(0, 40);
+  const type = String(b.type || '').trim().slice(0, 80);
   const note = String(b.note || '').trim().slice(0, 500) || `${type || '整備'}（整備台帳から、整備依頼に戻しました）`;
   const who = mechanic || '管理者';
 
@@ -64,7 +64,8 @@ export async function POST(req: NextRequest) {
     maintRequestUrgency: MAINT_URGENCIES[0],
     maintRequestNote: note,
     maintRequestPhotos: cleanPhotoIds(b.photos),
-    maintRequestDone: false,
+    maintRequestDone: Boolean(b.watch),
+    maintRequestDoneAt: b.watch ? todayJst() : '',
     maintRequestWatch: Boolean(b.watch),
     maintRequestWatchAt: b.watch ? todayJst() : '',
   };

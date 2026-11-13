@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppData, Driver, MAINT_URGENCIES, Report, Vehicle } from '@/lib/types';
-import { urgencyPill, isReportOwner, nowTimeStr, todayStr } from '@/lib/utils';
+import { splitMaintTypes, requestStateLabel, urgencyPill, isReportOwner, nowTimeStr, todayStr } from '@/lib/utils';
 import { downloadCsv } from '@/lib/csv';
 import { extractOdometerReading, loadTesseract } from '@/lib/ocr';
 import Modal from './Modal';
@@ -79,7 +79,7 @@ function reportsToCsv(reports: Report[]): string {
       r.postDone ? r.tripKm : '',
       r.postDone ? '帰着済' : '出庫中',
       r.maintRequest
-        ? `${r.maintRequestDone ? '対応済 ' : '対応待ち '}${r.maintRequestType || ''}（${r.maintRequestUrgency || '通常'}）${r.maintRequestNote ? ' ' + r.maintRequestNote : ''}`.trim()
+        ? `${requestStateLabel(r)} ${r.maintRequestType || ''}（${r.maintRequestUrgency || '通常'}）${r.maintRequestNote ? ' ' + r.maintRequestNote : ''}`.trim()
         : '',
       r.notes,
     ]
@@ -416,11 +416,13 @@ export default function ReportsTab({
                       {r.postDone ? <span className="pill pill-green">帰着済</span> : <span className="pill pill-amber">出庫中</span>}
                       {r.maintRequest && (
                         <span
-                          className={`pill ${r.maintRequestDone ? 'pill-green' : urgencyPill(r.maintRequestUrgency)} cell-sub-pill`}
+                          className={`pill ${r.maintRequestWatch ? 'pill-sky' : r.maintRequestDone ? 'pill-green' : urgencyPill(r.maintRequestUrgency)} cell-sub-pill`}
                           title={`${r.maintRequestType || ''} / ${r.maintRequestNote || ''}`}
                         >
                           🔧 整備依頼
-                          {r.maintRequestDone
+                          {r.maintRequestWatch
+                            ? '（経過観察）'
+                            : r.maintRequestDone
                             ? '（対応済）'
                             : r.maintRequestUrgency && r.maintRequestUrgency !== '通常'
                             ? `（${r.maintRequestUrgency}）`
@@ -694,14 +696,25 @@ export default function ReportsTab({
                 <>
                   <div className="field-row-4">
                     <div className="field">
-                      <label>整備種別</label>
-                      <select value={editing.maintRequestType || ''} onChange={(e) => setEditing({ ...editing, maintRequestType: e.target.value })}>
-                        {data.masters.maintTypes.map((t) => (
-                          <option key={t} value={t}>
-                            {t}
-                          </option>
-                        ))}
-                      </select>
+                      <label>整備種別（複数選べます）</label>
+                      <div className="type-chips">
+                        {data.masters.maintTypes.map((t) => {
+                          const cur = splitMaintTypes(editing.maintRequestType);
+                          const on = cur.includes(t);
+                          return (
+                            <button
+                              key={t}
+                              type="button"
+                              className={`btn btn-sm ${on ? 'btn-primary' : ''}`}
+                              aria-pressed={on}
+                              onClick={() => setEditing({ ...editing, maintRequestType: (on ? cur.filter((x) => x !== t) : [...cur, t]).join('、') })}
+                            >
+                              {on ? '✓ ' : ''}
+                              {t}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                     <div className="field">
                       <label>緊急度</label>

@@ -22,13 +22,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
   let action: string;
   if (typeof body.watch === 'boolean' && done === undefined) {
-    // 経過観察にする／解除する（依頼は対応待ちのまま残る）
-    if (r.maintRequestDone) {
-      return NextResponse.json({ success: false, message: 'この依頼は、すでに対応済です。' }, { status: 409 });
+    // 経過観察は完了と同じ扱い：対応待ちから外れる（経過観察の印は残す）。解除は印を外すだけ
+    if (body.watch) {
+      r.maintRequestDone = true;
+      r.maintRequestDoneAt = r.maintRequestDoneAt || today;
+      r.maintRequestWatch = true;
+      r.maintRequestWatchAt = today;
+    } else {
+      r.maintRequestWatch = false;
+      r.maintRequestWatchAt = '';
     }
-    r.maintRequestWatch = body.watch;
-    r.maintRequestWatchAt = body.watch ? today : '';
-    action = body.watch ? '整備依頼を経過観察にした' : '整備依頼の経過観察を解除した';
+    action = body.watch ? '整備依頼を経過観察（対応済）にした' : '整備依頼の経過観察の印を外した';
   } else {
     const isDone = Boolean(done);
     r.maintRequestDone = isDone;

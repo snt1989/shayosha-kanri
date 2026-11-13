@@ -47,7 +47,7 @@ export function tripReports(reports: Report[]): Report[] {
 // 対応待ちの整備依頼（緊急度の高い順、同じなら古い順）
 export function openMaintRequests(reports: Report[]): Report[] {
   return reports
-    .filter((r) => r.maintRequest && !r.maintRequestDone)
+    .filter(isRequestOpen)
     .sort(
       (a, b) =>
         maintUrgencyRank(b.maintRequestUrgency) - maintUrgencyRank(a.maintRequestUrgency) ||
@@ -76,7 +76,7 @@ export function reservationRange(v: { startDate: string; endDate: string; startT
 
 // 整備依頼を編集できる人：依頼を出した本人（運転者ログイン）、整備士、管理者。対応済になった依頼は編集できない。
 export function canEditMaintRequest(r: Report, who: { driverId?: string | null; mechanic?: string | null; isAdmin?: boolean }): boolean {
-  if (!r.maintRequest || r.maintRequestDone) return false;
+  if (!isRequestOpen(r)) return false;
   return Boolean(who.isAdmin || who.mechanic || (who.driverId && r.driverId && who.driverId === r.driverId));
 }
 
@@ -95,3 +95,14 @@ export const urgencyPill = (u?: string) => ({ urgent: 'pill-red', soon: 'pill-am
 
 // 整備記録の種別（複数選べる。以前の記録は type ひとつだけ）
 export const maintTypesOf = (m: { type: string; types?: string[] }): string[] => (m.types && m.types.length ? m.types : m.type ? [m.type] : []);
+
+// 対応待ちの整備依頼か。経過観察は完了と同じ扱いなので、対応待ちには数えない
+export const isRequestOpen = (r: { maintRequest?: boolean; maintRequestDone?: boolean; maintRequestWatch?: boolean }) =>
+  Boolean(r.maintRequest && !r.maintRequestDone && !r.maintRequestWatch);
+
+// 依頼・記録の整備種別は、複数選んだとき「、」でつないだ文字列で持っている
+export const splitMaintTypes = (s?: string): string[] => (s || '').split('、').map((x) => x.trim()).filter(Boolean);
+
+// 依頼の状態の表示用（対応待ち／経過観察／対応済）
+export const requestStateLabel = (r: { maintRequestDone?: boolean; maintRequestWatch?: boolean }) =>
+  r.maintRequestWatch ? '経過観察' : r.maintRequestDone ? '対応済' : '対応待ち';

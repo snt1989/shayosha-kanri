@@ -39,7 +39,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!note) return NextResponse.json({ success: false, message: '依頼の内容は必須です。' }, { status: 400 });
 
   const before = `${r.maintRequestType || ''}/${r.maintRequestUrgency || ''}/${r.maintRequestNote || ''}/${r.vehicleName}`;
-  r.maintRequestType = String(b.type ?? r.maintRequestType ?? '').trim().slice(0, 40);
+  r.maintRequestType = String(b.type ?? r.maintRequestType ?? '').trim().slice(0, 80);
   r.maintRequestUrgency = (MAINT_URGENCIES as readonly string[]).includes(String(b.urgency)) ? String(b.urgency) : r.maintRequestUrgency || MAINT_URGENCIES[0];
   r.maintRequestNote = note;
   if (Array.isArray(b.photos)) r.maintRequestPhotos = cleanPhotoIds(b.photos);

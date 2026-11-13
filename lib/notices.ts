@@ -1,6 +1,6 @@
 import { AppData } from './types';
 import { computeAlerts } from './alerts';
-import { todayStr } from './utils';
+import { isRequestOpen, todayStr } from './utils';
 
 // --- 管理者が書く「連絡事項」 ---
 export type NoticeLevel = 'info' | 'important';
@@ -62,7 +62,7 @@ export function buildAutoNotices(data: Pick<AppData, 'vehicles' | 'drivers' | 'r
   for (const r of data.reports.filter((x) => !x.postDone)) {
     out.push({ id: `open:${r.id}`, icon: '📝', level: 'info', go: 'reports', text: `${r.driver}さん（${r.vehicleName}）の帰着登録がまだです（${r.date} 出発）` });
   }
-  for (const r of data.reports.filter((x) => x.maintRequest && !x.maintRequestDone)) {
+  for (const r of data.reports.filter(isRequestOpen)) {
     out.push({ id: `maint:${r.id}`, icon: '🔧', level: (r.maintRequestUrgency || '').startsWith('至急') ? 'danger' : 'warn', go: 'maintenance', text: `${r.vehicleName} の整備依頼が対応待ちです（${r.maintRequestUrgency || '通常'}）` });
   }
 

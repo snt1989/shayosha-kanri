@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { AppData, MAINT_PROGRESS, MAINT_URGENCIES, MaintProgress, MaintRecord, Report, Vehicle } from '@/lib/types';
-import { maintTypesOf, urgencyLevel, urgencyPill, canEditMaintRequest, openMaintRequests, todayStr } from '@/lib/utils';
+import { isRequestOpen, splitMaintTypes, maintTypesOf, urgencyLevel, urgencyPill, canEditMaintRequest, openMaintRequests, todayStr } from '@/lib/utils';
 import MaintRequestModal, { MaintRequestInput } from './MaintRequestModal';
 import PhotoField, { PhotoThumbs } from './PhotoField';
 import ContactRequester from './ContactRequester';
@@ -41,7 +41,8 @@ function progressLogText(log: NonNullable<MaintRecord['progressLog']>): string {
 // 進捗。依頼に結びついた記録は依頼の状態に合わせ、そうでない記録は記録に持たせた値（無ければ完了）
 function progressOf(m: MaintRecord, reports: Report[]): MaintProgress {
   const r = m.requestId ? reports.find((x) => x.id === m.requestId) : undefined;
-  if (r) return r.maintRequestDone ? 'done' : r.maintRequestWatch ? 'watch' : 'pending';
+  // 経過観察は完了と同じ扱い（対応待ちには数えない）。依頼が済んでいても、経過観察で記録したものは経過観察のまま表示する
+  if (r) return r.maintRequestWatch ? 'watch' : r.maintRequestDone ? 'done' : 'pending';
   return m.progress || 'done';
 }
 
@@ -152,8 +153,8 @@ export default function MaintenanceTab({
       requestId: r.id,
       rec: {
         date: todayStr(),
-        type: typeOptions.includes(r.maintRequestType || '') ? (r.maintRequestType as string) : '',
-        types: typeOptions.includes(r.maintRequestType || '') ? [r.maintRequestType as string] : [],
+        type: splitMaintTypes(r.maintRequestType).filter((t) => typeOptions.includes(t)).join('、'),
+        types: splitMaintTypes(r.maintRequestType).filter((t) => typeOptions.includes(t)),
         km: r.endKm || v.odometer || 0,
         request: `${r.maintRequestNote || ''}（${r.driver} ${r.date}）`,
         note: '',
@@ -245,7 +246,8 @@ export default function MaintenanceTab({
       // オイル交換の次回交換距離は、その車両のいちばん新しいオイル交換の記録のときだけ、車両台帳に反映する
       // 依頼と結びついていない（または依頼がもう無い）記録を「整備中／経過観察」にしたら、整備依頼に戻す
       let reopened = false;
-      if (progress !== 'done' && !(linkId && data.reports.some((x) => x.id === linkId && x.maintRequest))) {
+      // 「整備中」だけを対応待ちの依頼にする（経過観察は完了と同じ扱いで、依頼には戻さない）
+      if (progress === 'pending' && !(linkId && data.reports.some((x) => x.id === linkId && x.maintRequest))) {
         const res = (await onReopenRequest({
           vehicleId: v.id,
           type: rec.type,
@@ -266,10 +268,10 @@ export default function MaintenanceTab({
       const linked = linkId && !reopened ? data.reports.find((x) => x.id === linkId) : undefined;
       if (linked) {
         if (progress === 'done') {
-          if (!linked.maintRequestDone) await onResolveRequest(linked.id, true);
+          if (!linked.maintRequestDone || linked.maintRequestWatch) await onResolveRequest(linked.id, true);
         } else if (progress === 'watch') {
-          if (linked.maintRequestDone) await onResolveRequest(linked.id, false);
-          await onWatchRequest(linked.id, true);
+          // 経過観察も対応済として閉じる（経過観察の印は残る）
+          if (!linked.maintRequestDone || !linked.maintRequestWatch) await onWatchRequest(linked.id, true);
         } else if (linked.maintRequestDone || linked.maintRequestWatch) {
           await onResolveRequest(linked.id, false);
         }
@@ -309,7 +311,7 @@ export default function MaintenanceTab({
             🛠 整備依頼（対応待ち）<span className="pill pill-red" style={{ marginLeft: 8 }}>{requests.length}件</span>
           </h3>
           <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 8 }}>
-            帰着登録やダッシュボードで受け付けた依頼です。「整備記録として登録」から、完了・経過観察を選べます。
+            帰着登録やダッシュボードで受け付けた依頼です。「整備記録として登録」から、整備中・経過観察・完了を選べます（経過観察は完了と同じ扱いで、対応待ちから外れます）。
           </div>
           <div className="alert-list">
             {reqLim.shown.map((r) => {
@@ -320,11 +322,6 @@ export default function MaintenanceTab({
                   <div style={{ flex: 1 }}>
                     <strong>{r.vehicleName}</strong>
                     {r.plate ? `（${r.plate}）` : ''}— {r.maintRequestType || '整備'}
-                    {r.maintRequestWatch && (
-                      <span className="pill pill-sky" style={{ marginLeft: 6 }}>
-                        👀 経過観察中{r.maintRequestWatchAt ? `（${r.maintRequestWatchAt}〜）` : ''}
-                      </span>
-                    )}
                     <span className={`pill ${urgencyPill(r.maintRequestUrgency)}`} style={{ marginLeft: 6 }}>
                         {r.maintRequestUrgency || MAINT_URGENCIES[0]}
                       </span>

@@ -494,8 +494,8 @@ export default function VehiclesTab({
                       <td>
                         {r.postDone ? <span className="pill pill-green">帰着済</span> : <span className="pill pill-amber">出庫中</span>}
                         {r.maintRequest && (
-                          <span className={`pill ${r.maintRequestDone ? 'pill-green' : 'pill-red'} cell-sub-pill`}>
-                            🔧 整備依頼{r.maintRequestDone ? '（対応済）' : ''}
+                          <span className={`pill ${r.maintRequestWatch ? 'pill-sky' : r.maintRequestDone ? 'pill-green' : 'pill-red'} cell-sub-pill`}>
+                            🔧 整備依頼{r.maintRequestWatch ? '（経過観察）' : r.maintRequestDone ? '（対応済）' : ''}
                           </span>
                         )}
                       </td>
