@@ -56,12 +56,12 @@ export function parseCsv(text: string): string[][] {
 }
 
 /* ---------- vehicles ---------- */
-const VEHICLE_HEADERS = ['id', '車両呼称', 'ナンバー', '型式', '車検満了日', '12ヶ月点検日', '積算走行km', 'オイル交換目安km', 'タイヤ種別'];
+const VEHICLE_HEADERS = ['id', '車両呼称', 'ナンバー', '型式', '車検満了日', '12ヶ月点検日', '積算走行km', 'オイル交換目安km', 'タイヤ種別', 'タイヤメーカー', 'タイヤ製造年'];
 
 export function vehiclesToCsv(vehicles: Vehicle[]): string {
   const rows: (string | number)[][] = [VEHICLE_HEADERS];
   vehicles.forEach((v) => {
-    rows.push([v.id, v.name, v.plate, v.modelType, v.shakenDate, v.checkDate, v.odometer, v.oilKm, v.tire]);
+    rows.push([v.id, v.name, v.plate, v.modelType, v.shakenDate, v.checkDate, v.odometer, v.oilKm, v.tire, v.tireMaker || '', v.tireYear || '']);
   });
   return toCsv(rows);
 }
@@ -76,6 +76,7 @@ export function csvToVehicles(text: string, existing: Vehicle[]): Vehicle[] {
     const id = (r[0] || '').trim() || genId('v');
     const prev = existingById.get(id);
     return {
+      ...(prev || {}), // 車検証の項目など、CSVにない項目は消さない
       id,
       name: (r[1] || '').trim(),
       plate: (r[2] || '').trim(),
@@ -85,6 +86,8 @@ export function csvToVehicles(text: string, existing: Vehicle[]): Vehicle[] {
       odometer: Number(r[6] || 0) || 0,
       oilKm: Number(r[7] || 0) || 0,
       tire: (r[8] || '').trim() || '夏タイヤ（ノーマル）',
+      tireMaker: (r[9] ?? prev?.tireMaker ?? '').trim(),
+      tireYear: (r[10] ?? prev?.tireYear ?? '').trim(),
       maintHistory: prev ? prev.maintHistory : [],
     };
   });

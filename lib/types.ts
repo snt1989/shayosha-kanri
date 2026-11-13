@@ -82,6 +82,8 @@ export type Vehicle = {
   odometer: number;
   oilKm: number;
   tire: string;
+  tireMaker?: string; // タイヤのメーカー（ブリヂストン など）
+  tireYear?: string; // タイヤの製造年（年式）。2024、2024-05 のように入れる
   maintHistory: MaintRecord[];
   // 車検証から入れる任意の項目（既存の車両には無いので optional）
   maker?: string; // 車名（トヨタ など）

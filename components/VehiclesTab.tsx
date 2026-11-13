@@ -22,6 +22,9 @@ const emptyVehicle = (data: AppData): Vehicle => ({
   maintHistory: [],
 });
 
+// タイヤのメーカーの入力候補（これ以外も入力できる）
+const TIRE_MAKERS = ['ブリヂストン', 'ヨコハマ', 'ダンロップ', 'トーヨー', 'ミシュラン', 'グッドイヤー', 'ピレリ', 'ファルケン', 'コンチネンタル', 'ハンコック', 'クムホ', 'ナンカン'];
+
 export default function VehiclesTab({
   data,
   onSave,
@@ -85,9 +88,14 @@ export default function VehiclesTab({
       alert('車両呼称とナンバープレートは必須です。');
       return;
     }
+    const ty = (editing.tireYear || '').trim();
+    if (ty && !/^(19|20)\d{2}(-(0[1-9]|1[0-2]))?$/.test(ty)) {
+      alert('タイヤの製造年は、「2024」か「2024-05」の形で入れてください。');
+      return;
+    }
     setSaving(true);
     try {
-      await onSave(editing);
+      await onSave({ ...editing, tireMaker: (editing.tireMaker || '').trim(), tireYear: ty });
       setEditing(null);
     } finally {
       setSaving(false);
@@ -283,6 +291,11 @@ export default function VehiclesTab({
                     </div>
                     <span className="pill pill-slate">{v.tire}</span>
                   </div>
+                  {(v.tireMaker || v.tireYear) && (
+                    <div className="esub" style={{ marginBottom: 6 }}>
+                      🛞 タイヤ: {[v.tireMaker, v.tireYear ? `${v.tireYear.replace('-', '年')}${v.tireYear.includes('-') ? '月' : '年'}製` : ''].filter(Boolean).join(' / ')}
+                    </div>
+                  )}
                   <div className="emeta">
                     <div>
                       <span className="k">残存整備距離</span>
@@ -643,6 +656,37 @@ export default function VehiclesTab({
                 </option>
               ))}
             </select>
+          </div>
+          <div className="field-row">
+            <div className="field">
+              <label>タイヤのメーカー（任意）</label>
+              <input
+                list="tire-makers"
+                value={editing.tireMaker || ''}
+                maxLength={30}
+                placeholder="例：ブリヂストン"
+                onChange={(e) => setEditing({ ...editing, tireMaker: e.target.value })}
+              />
+              <datalist id="tire-makers">
+                {TIRE_MAKERS.map((m) => (
+                  <option key={m} value={m} />
+                ))}
+              </datalist>
+            </div>
+            <div className="field">
+              <label>タイヤの製造年（年式・任意）</label>
+              <input
+                value={editing.tireYear || ''}
+                maxLength={7}
+                inputMode="numeric"
+                placeholder="例：2024 または 2024-05"
+                onChange={(e) => setEditing({ ...editing, tireYear: e.target.value.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0)).replace(/[^0-9-]/g, '') })}
+              />
+              {editing.tireYear && !/^(19|20)\d{2}(-(0[1-9]|1[0-2]))?$/.test(editing.tireYear) && (
+                <div style={{ fontSize: 11, color: 'var(--amber-600)', marginTop: 2 }}>「2024」か「2024-05」の形で入れてください。</div>
+              )}
+              <div style={{ fontSize: 11, color: 'var(--slate-500)', marginTop: 2 }}>タイヤ側面の「DOT」の最後の4桁（例：2324 は 2024年の23週）で分かります。</div>
+            </div>
           </div>
 
           <div className="section-heading" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>

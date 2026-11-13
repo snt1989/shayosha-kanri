@@ -36,9 +36,9 @@ export function dataSnapshot(data: AppData, today: string): string {
   out.push(`今日: ${today}`);
 
   out.push(
-    '\n【車両】名称|ナンバー|型式|車検満了日|点検日|現在の走行km|次回オイル交換km|タイヤ\n' +
+    '\n【車両】名称|ナンバー|型式|車検満了日|点検日|現在の走行km|次回オイル交換km|タイヤ（種別・メーカー・製造年）\n' +
       data.vehicles
-        .map((v) => [v.name, v.plate, v.modelType, v.shakenDate || '-', v.checkDate || '-', num(v.odometer), v.oilKm || '-', v.tire || '-'].join('|'))
+        .map((v) => [v.name, v.plate, v.modelType, v.shakenDate || '-', v.checkDate || '-', num(v.odometer), v.oilKm || '-', [v.tire || '-', v.tireMaker || '', v.tireYear ? `${v.tireYear}年製` : ''].filter(Boolean).join(' ')].join('|'))
         .join('\n')
   );
 
