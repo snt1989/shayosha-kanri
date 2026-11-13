@@ -49,6 +49,7 @@ export default function Header({
   ];
   const MAIN_TABS: Tab[] = order.slice(0, BAR_COUNT);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
   const inMenu = !MAIN_TABS.includes(tab);
   const goTab = (t: Tab) => {
     setMenuOpen(false);
@@ -56,6 +57,7 @@ export default function Header({
   };
   const closeThen = (fn: () => void) => () => {
     setMenuOpen(false);
+    setLoginOpen(false);
     fn();
   };
 
@@ -100,7 +102,7 @@ export default function Header({
             <span className="dot" />
             {syncLabel}
           </span>
-          <button className="btn btn-sm mobile-status-btn" onClick={() => setMenuOpen(true)}>
+          <button className="btn btn-sm mobile-status-btn" onClick={() => setLoginOpen(true)}>
             🪪 {currentDriverName ? `${currentDriverName} さん` : '未ログイン'}
             {mechanicName ? ` ／ 🔧 ${mechanicName}` : ''}
             {isAdmin ? ' ／ 🔓 管理者' : ''} ▾
@@ -154,27 +156,15 @@ export default function Header({
         </div>
       </div>
 
-      {menuOpen && (
-        <div className="menu-sheet-wrap" onMouseDown={(e) => e.target === e.currentTarget && setMenuOpen(false)}>
-          <aside className="menu-sheet" role="dialog" aria-label="メニュー">
-            <div className="drawer-brand">
-              <div className="logo2">🚙</div>
-              <div className="drawer-name">運行管理アプリ</div>
-              <button className="drawer-x" onClick={() => setMenuOpen(false)} aria-label="閉じる">
+      {loginOpen && (
+        <div className="menu-sheet-wrap login-wrap" onMouseDown={(e) => e.target === e.currentTarget && setLoginOpen(false)}>
+          <div className="login-sheet" role="dialog" aria-label="ログイン">
+            <div className="login-sheet-head">
+              <strong>ログイン</strong>
+              <button className="modal-close" onClick={() => setLoginOpen(false)} aria-label="閉じる">
                 ×
               </button>
             </div>
-            <nav className="drawer-nav">
-            <div className="menu-sheet-section">画面</div>
-            {TABS.map((t) => (
-              <button key={t.key} className={`menu-row ${tab === t.key ? 'active' : ''}`} onClick={() => goTab(t.key)}>
-                <span className="menu-row-ic">{t.icon}</span>
-                <span className="menu-row-label">{t.label}</span>
-                {t.admin && <span className="adminbadge">ADMIN</span>}
-                <span className="menu-row-go">{tab === t.key ? '表示中' : '›'}</span>
-              </button>
-            ))}
-            <div className="menu-sheet-section">ログイン</div>
             <button
               className="menu-row"
               onClick={closeThen(() => {
@@ -202,6 +192,30 @@ export default function Header({
               <span className="menu-row-label">{isAdmin ? '管理者ログアウト' : '管理者ログイン'}</span>
               <span className="menu-row-go">{isAdmin ? '解除' : '›'}</span>
             </button>
+          </div>
+        </div>
+      )}
+
+      {menuOpen && (
+        <div className="menu-sheet-wrap" onMouseDown={(e) => e.target === e.currentTarget && setMenuOpen(false)}>
+          <aside className="menu-sheet" role="dialog" aria-label="メニュー">
+            <div className="drawer-brand">
+              <div className="logo2">🚙</div>
+              <div className="drawer-name">運行管理アプリ</div>
+              <button className="drawer-x" onClick={() => setMenuOpen(false)} aria-label="閉じる">
+                ×
+              </button>
+            </div>
+            <nav className="drawer-nav">
+            <div className="menu-sheet-section">画面</div>
+            {TABS.map((t) => (
+              <button key={t.key} className={`menu-row ${tab === t.key ? 'active' : ''}`} onClick={() => goTab(t.key)}>
+                <span className="menu-row-ic">{t.icon}</span>
+                <span className="menu-row-label">{t.label}</span>
+                {t.admin && <span className="adminbadge">ADMIN</span>}
+                <span className="menu-row-go">{tab === t.key ? '表示中' : '›'}</span>
+              </button>
+            ))}
             </nav>
             <div className="drawer-foot">
               <button className="drawer-close" onClick={() => setMenuOpen(false)}>

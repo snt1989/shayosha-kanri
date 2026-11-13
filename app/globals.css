@@ -2924,3 +2924,36 @@ body::before {
   .ai-fab .ai-tag { display: none; }
   .ai-fab.is-open { display: none; }
 }
+
+/* スマホ：ログインは、画面の上の「🪪 …さん ▾」から開く（メニューには入れない） */
+@media (max-width: 640px) {
+  .menu-sheet-wrap.login-wrap {
+    align-items: flex-end;
+    justify-content: stretch;
+  }
+  .login-sheet {
+    width: 100%;
+    background: #fff;
+    border-radius: 16px 16px 0 0;
+    padding: 12px 14px calc(16px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -8px 30px rgba(15, 23, 42, 0.25);
+  }
+  .login-sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+  .login-sheet .menu-row {
+    background: var(--slate-50);
+    border: 1px solid var(--slate-200);
+    color: var(--slate-800);
+    margin-bottom: 6px;
+    min-height: 52px;
+    font-weight: 700;
+  }
+  .login-sheet .menu-row-go {
+    color: var(--slate-500);
+  }
+}
