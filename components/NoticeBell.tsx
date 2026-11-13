@@ -338,12 +338,15 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
             </div>
           ) : (
             <div className="alert-list">
-              {auto.length === 0 && <div className="empty-state">🎉 いま対応が必要なお知らせはありません</div>}
-              {auto.map((a) => (
+              {/* 既読にした状況のお知らせは、一覧から消す（新しい項目が出たときだけ、また出る） */}
+              {unseenAuto === 0 && (
+                <div className="empty-state">{auto.length === 0 ? '🎉 いま対応が必要なお知らせはありません' : '✓ 未読の状況のお知らせはありません（既読にしたものは消えます）'}</div>
+              )}
+              {auto.filter((a) => !isAutoRead(a.id)).map((a) => (
                 <button
                   key={a.id}
                   type="button"
-                  className={`alert-item ${a.level === 'danger' ? 'danger' : a.level === 'warn' ? 'warn' : ''} auto-notice ${isAutoRead(a.id) ? 'is-read' : ''}`}
+                  className={`alert-item ${a.level === 'danger' ? 'danger' : a.level === 'warn' ? 'warn' : ''} auto-notice`}
                   onClick={() => {
                     markRead(['a:' + a.id]);
                     setOpen(false);
@@ -357,7 +360,7 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
                   </div>
                 </button>
               ))}
-              <div style={{ fontSize: 11, color: 'var(--slate-500)' }}>車検・免許・オイル交換・アルコール検知・帰着未登録・整備依頼から、いまのデータで自動で表示しています。押すと既読になり、該当の画面を開きます。</div>
+              <div style={{ fontSize: 11, color: 'var(--slate-500)' }}>車検・免許・オイル交換・アルコール検知・帰着未登録・整備依頼から、いまのデータで自動で表示しています。押すと既読になって一覧から消え、該当の画面を開きます（「すべて既読にする」でまとめて消せます）。</div>
             </div>
           )}
 
