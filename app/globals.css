@@ -2838,3 +2838,32 @@ body::before {
 .incident-ins dt { color: var(--slate-500); font-size: 12px; }
 .incident-ins dd { margin: 0; font-weight: 700; }
 .incident-ins-no { font-size: 15px; letter-spacing: 0.04em; }
+
+/* スマホ：ヘッダーのボタン（🚨・🤖・🔔）が画面の外にはみ出して消えないよう、タイトル側を縮める。バッジは出さない */
+@media (max-width: 640px) {
+  .brandrow {
+    gap: 8px;
+  }
+  .brandrow .brand2 {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .brandrow .brand2 .titles2 {
+    min-width: 0;
+  }
+  .brandrow .brand2 .titles2 h1 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .brandrow .brand2 .badge2 {
+    display: none;
+  }
+  .header-actions {
+    gap: 6px;
+  }
+  .header-actions .bell-btn {
+    width: 34px;
+    height: 34px;
+  }
+}
