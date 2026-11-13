@@ -26,6 +26,7 @@ export default function DashboardTab({
   onSubmitMaintRequest,
   onEditMaintRequest,
   onDeleteMaintRequest,
+  hideOpenReports = false,
   onRefresh,
   mechanic,
 }: {
@@ -41,6 +42,8 @@ export default function DashboardTab({
   onSubmitMaintRequest: (r: MaintRequestInput) => Promise<unknown>;
   onEditMaintRequest: (id: string, r: MaintRequestInput) => Promise<unknown>;
   onDeleteMaintRequest: (id: string) => Promise<unknown>;
+  // 整備士だけのときは、帰着登録が済んでいない日報の欄を出さない
+  hideOpenReports?: boolean;
   onRefresh?: () => void;
   mechanic: string | null;
 }) {
@@ -79,6 +82,7 @@ export default function DashboardTab({
 
       {isAdmin && <IncidentsPanel />}
 
+      {!hideOpenReports && (
       <div className="card" style={{ marginBottom: 14 }}>
         <h3 className="card-title">
           🚙 帰着登録が済んでいない日報
@@ -111,6 +115,7 @@ export default function DashboardTab({
           </div>
         )}
       </div>
+      )}
 
       <div className="card" style={{ marginBottom: 14 }}>
         <h3 className="card-title">

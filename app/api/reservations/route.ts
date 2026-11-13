@@ -3,6 +3,8 @@ import { loadData, saveData } from '@/lib/store';
 import { Reservation } from '@/lib/types';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
+import { maintBlockIn, maintBlocks } from '@/lib/utils';
+import { jpDate } from '@/lib/schedule-text';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,6 +49,14 @@ export async function POST(req: NextRequest) {
     r.vehicleId = rental.id;
     r.vehicleName = `🚗 ${[rental.company, rental.carModel].filter(Boolean).join(' ')}`;
     r.plate = rental.plate;
+  }
+  // 修理予定日が決まっている車両は、その日は使えない
+  const blocked = r.rentalId ? undefined : maintBlockIn(maintBlocks(data.reports), r.vehicleId, r.startDate, r.endDate);
+  if (blocked) {
+    return NextResponse.json(
+      { success: false, message: `${blocked.vehicleName} は ${jpDate(blocked.date)} に整備（${blocked.type}）の予定が入っているため、その日は予約できません。日をずらすか、別の車両を選んでください。` },
+      { status: 409 }
+    );
   }
   const clash = data.reservations.find((x) => x.id !== r.id && x.vehicleId === r.vehicleId && startKey(x) < endKey(r) && startKey(r) < endKey(x));
   if (clash) {

@@ -481,6 +481,8 @@ export default function FleetApp() {
   const currentDriver = data.drivers.find((d) => d.id === currentDriverId) || null;
   // 整備士だけでログインしている（運転者も管理者もいない）ときは、整備に関係のあるページだけにする
   const mechanicOnly = Boolean(activeMechanic) && !currentDriver && !isAdmin;
+  // 整備士だけのときは、帰着登録が済んでいない日報（運転中・出発のみ）は出さない
+  const viewData: AppData = mechanicOnly ? { ...data, reports: data.reports.filter((r) => r.postDone || r.maintOnly) } : data;
   const visibleTab: Tab = mechanicOnly && tab !== 'dashboard' && !MECHANIC_TABS.includes(tab as TabKey) ? 'dashboard' : tab;
 
   return (
@@ -503,9 +505,9 @@ export default function FleetApp() {
         onMechanicLogout={handleMechanicLogout}
         bell={
           <div className="header-actions">
-            <IncidentButton data={data} currentDriver={currentDriver} />
+            <IncidentButton data={viewData} currentDriver={currentDriver} />
             {isAdmin && <AssistantButton />}
-            <NoticeBell data={data} isAdmin={isAdmin} onNavigate={(t) => { setTab(t); if (typeof window !== 'undefined') window.scrollTo({ top: 0 }); }} />
+            <NoticeBell data={viewData} isAdmin={isAdmin} onNavigate={(t) => { setTab(t); if (typeof window !== 'undefined') window.scrollTo({ top: 0 }); }} />
           </div>
         }
       />
@@ -513,13 +515,14 @@ export default function FleetApp() {
       <SetupNudge />
 
       <div className={`statbar ${visibleTab === 'dashboard' ? '' : 'statbar-dash-only'}`}>
-        <StatBar data={data} />
+        <StatBar data={viewData} />
       </div>
 
       <main className="main">
         {visibleTab === 'dashboard' && (
           <DashboardTab
-            data={data}
+            data={viewData}
+            hideOpenReports={mechanicOnly}
             onReturnCheckin={handleReturnCheckin}
             onOpenMaintenance={() => setTab('maintenance')}
             onOpenCalendar={() => { setTab('calendar'); if (typeof window !== 'undefined') window.scrollTo({ top: 0 }); }}
@@ -537,7 +540,7 @@ export default function FleetApp() {
         )}
         {visibleTab === 'reports' && (
           <ReportsTab
-            data={data}
+            data={viewData}
             onSave={saveReport}
             onDelete={deleteReport}
             openTrigger={quickReportTrigger}
@@ -553,7 +556,7 @@ export default function FleetApp() {
           />
         )}
         {visibleTab === 'maintenance' && <MaintenanceTab
-            data={data}
+            data={viewData}
             onSave={saveVehicle}
             onResolveRequest={resolveMaintRequest}
             onWatchRequest={watchMaintRequest}
@@ -568,7 +571,7 @@ export default function FleetApp() {
           />}
         {visibleTab === 'fuel' && (
           <FuelTab
-            data={data}
+            data={viewData}
             currentDriver={currentDriver}
             onRequestDriverLogin={() => requireDriverLogin()}
             isAdmin={isAdmin}
@@ -579,7 +582,7 @@ export default function FleetApp() {
         )}
         {visibleTab === 'rental' && (
           <RentalTab
-            data={data}
+            data={viewData}
             currentDriver={currentDriver}
             onRequestDriverLogin={() => requireDriverLogin()}
             onSave={saveRental}
@@ -602,7 +605,7 @@ export default function FleetApp() {
         )}
         {visibleTab === 'calendar' && (
           <CalendarTab
-            data={data}
+            data={viewData}
             currentDriver={currentDriver}
             onRequestDriverLogin={() => requireDriverLogin()}
             onSaveReservation={saveReservation}
@@ -611,7 +614,7 @@ export default function FleetApp() {
         )}
         {visibleTab === 'cards' && (
           <CardsTab
-            data={data}
+            data={viewData}
             currentDriver={currentDriver}
             isAdmin={isAdmin}
             onRequestDriverLogin={() => requireDriverLogin()}
@@ -619,7 +622,7 @@ export default function FleetApp() {
         )}
         {visibleTab === 'vehicles' && (
           <VehicleLedgerTab
-            data={data}
+            data={viewData}
             isAdmin={isAdmin}
             isMechanic={Boolean(activeMechanic)}
             onSave={saveVehicle}
@@ -631,7 +634,7 @@ export default function FleetApp() {
         )}
         {visibleTab === 'settings' && (
           <SettingsTab
-            data={data}
+            data={viewData}
             isAdmin={isAdmin}
             adminConfigured={adminConfigured}
             menuOrder={menuOrder}
@@ -665,7 +668,7 @@ export default function FleetApp() {
       {showAdminLogin && <AdminLoginModal onClose={() => setShowAdminLogin(false)} onLogin={handleAdminLogin} />}
       {showDriverLogin && (
         <DriverLoginModal
-          data={data}
+          data={viewData}
           notice={driverLoginNotice}
           onClose={closeDriverLogin}
           onSelect={handleSelectDriver}

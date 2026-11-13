@@ -3,6 +3,8 @@ import { loadData, saveData } from '@/lib/store';
 import { Report } from '@/lib/types';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
+import { maintBlockIn, maintBlocks } from '@/lib/utils';
+import { jpDate } from '@/lib/schedule-text';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +45,17 @@ export async function POST(req: NextRequest) {
     r.driverLast = existing.driverLast;
     r.driverFirst = existing.driverFirst;
     r.driver = existing.driver;
+  }
+
+  // 修理予定日が決まっている車両は、その日は使えない（新しい出庫の登録だけ止める。登録済みの日報の編集・帰着登録は止めない）
+  if (idx < 0 && !r.maintOnly && r.vehicleId) {
+    const blocked = maintBlockIn(maintBlocks(data.reports), r.vehicleId, r.date, r.date);
+    if (blocked) {
+      return NextResponse.json(
+        { success: false, message: `${blocked.vehicleName} は ${jpDate(blocked.date)} に整備（${blocked.type}）の予定が入っているため、その日は使えません。別の車両を選んでください。` },
+        { status: 409 }
+      );
+    }
   }
 
   if (idx >= 0) {

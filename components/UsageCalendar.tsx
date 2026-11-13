@@ -1,8 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import type { MaintBlock } from '@/lib/utils';
 import { AppData, Driver, Rental, Report, Reservation } from '@/lib/types';
-import { rentalReservations, reservationRange, todayStr } from '@/lib/utils';
+import { maintBlocks, rentalReservations, reservationRange, todayStr } from '@/lib/utils';
+import { jpDate } from '@/lib/schedule-text';
 import Modal from './Modal';
 
 // 車両ごとの色（背景 / 文字）。台帳の並び順で割り当てる。
@@ -32,7 +34,8 @@ const rangeLabel = (v: Reservation) =>
 // 日ごとの表示項目: 日報（使用実績）と予約
 type Entry =
   | { kind: 'report'; time: string; r: Report }
-  | { kind: 'reservation'; time: string; v: Reservation };
+  | { kind: 'reservation'; time: string; v: Reservation }
+  | { kind: 'maint'; time: string; b: MaintBlock };
 
 // レンタカーは車両ではないので専用の色にする
 const RENTAL_COLOR = { bg: '#ffedd5', fg: '#c2410c' };
@@ -106,6 +109,13 @@ export default function UsageCalendar({
         d = addDays(d, 1);
       }
     });
+    // 修理予定日：その車両は1日使えない
+    if (vehicleId !== RENTAL_FILTER) {
+      maintBlocks(data.reports).forEach((b) => {
+        if (vehicleId && b.vehicleId !== vehicleId) return;
+        push(b.date, { kind: 'maint', time: '00:00', b });
+      });
+    }
     map.forEach((list) => list.sort((a, b) => a.time.localeCompare(b.time)));
     return map;
   }, [data.reports, data.reservations, vehicleId]);
@@ -131,6 +141,7 @@ export default function UsageCalendar({
       if (!d.startsWith(month)) return;
       list.forEach((e) => {
         if (e.kind === 'report') use++;
+        else if (e.kind === 'maint') return;
         else if (e.v.rentalId) rented.add(e.v.id);
         else reserved.add(e.v.id);
       });
@@ -293,7 +304,7 @@ export default function UsageCalendar({
         <span className="cal-chip" style={{ background: RENTAL_COLOR.bg, color: RENTAL_COLOR.fg }}>
           🚗 レンタカー
         </span>
-        <span className="cal-legend-note">実線＝使用実績（日報）／破線の「予」＝予約</span>
+        <span className="cal-legend-note">実線＝使用実績（日報）／破線の「予」＝予約／赤の「🔧」＝整備予定（その日は使用不可）</span>
       </div>
 
       <div className="cal-scroll">
@@ -329,6 +340,18 @@ export default function UsageCalendar({
                         title={`${r.preTime} ${r.vehicleName} / ${r.driver} / ${r.destination}`}
                       >
                         {shortName(r.vehicleName)} {r.driverLast}
+                      </span>
+                    );
+                  }
+                  if (e.kind === 'maint') {
+                    return (
+                      <span
+                        key={`m-${e.b.reportId}`}
+                        className="cal-chip"
+                        style={{ background: '#fee2e2', color: '#b91c1c' }}
+                        title={`【整備予定・使用不可】${e.b.vehicleName} / ${e.b.type}`}
+                      >
+                        🔧 {shortName(e.b.vehicleName)}
                       </span>
                     );
                   }
@@ -387,6 +410,22 @@ export default function UsageCalendar({
                       </div>
                     </div>
                     {r.postDone ? <span className="pill pill-green">帰着済</span> : <span className="pill pill-amber">出庫中</span>}
+                  </div>
+                );
+              }
+              if (e.kind === 'maint') {
+                return (
+                  <div key={`m-${e.b.reportId}`} className="alert-item" style={{ background: '#fef2f2', borderColor: '#fecaca', color: 'var(--slate-800)' }}>
+                    <span className="cal-chip" style={{ background: '#fee2e2', color: '#b91c1c' }}>
+                      🔧 {shortName(e.b.vehicleName)}
+                    </span>
+                    <div style={{ flex: 1 }}>
+                      <strong>整備予定（{e.b.type}）</strong>
+                      <div style={{ fontSize: 12, color: 'var(--slate-500)' }}>
+                        {jpDate(e.b.date)}は終日、この車両は使えません{e.b.plate ? `　${e.b.plate}` : ''}
+                      </div>
+                    </div>
+                    <span className="pill pill-red">使用不可</span>
                   </div>
                 );
               }

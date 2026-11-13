@@ -100,6 +100,24 @@ export const maintTypesOf = (m: { type: string; types?: string[] }): string[] =>
 export const isRequestOpen = (r: { maintRequest?: boolean; maintRequestDone?: boolean; maintRequestWatch?: boolean }) =>
   Boolean(r.maintRequest && !r.maintRequestDone && !r.maintRequestWatch);
 
+// 修理予定日が決まっている、対応待ちの整備依頼。その日、その車両は使えない（カレンダーに出し、予約・出庫を止める）
+export type MaintBlock = { reportId: string; vehicleId: string; vehicleName: string; plate: string; date: string; type: string };
+export function maintBlocks(reports: Report[]): MaintBlock[] {
+  return reports
+    .filter((r) => isRequestOpen(r) && r.maintRequestScheduledDate && r.vehicleId)
+    .map((r) => ({
+      reportId: r.id,
+      vehicleId: r.vehicleId,
+      vehicleName: r.vehicleName,
+      plate: r.plate,
+      date: r.maintRequestScheduledDate as string,
+      type: r.maintRequestType || '整備',
+    }));
+}
+// 車両が [from, to]（YYYY-MM-DD）の間に整備予定日とぶつかるか
+export const maintBlockIn = (blocks: MaintBlock[], vehicleId: string, from: string, to: string): MaintBlock | undefined =>
+  blocks.find((b) => b.vehicleId === vehicleId && b.date >= from && b.date <= (to || from));
+
 // 依頼・記録の整備種別は、複数選んだとき「、」でつないだ文字列で持っている
 export const splitMaintTypes = (s?: string): string[] => (s || '').split('、').map((x) => x.trim()).filter(Boolean);
 

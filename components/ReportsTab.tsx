@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppData, Driver, MAINT_URGENCIES, Report, Vehicle } from '@/lib/types';
-import { splitMaintTypes, requestStateLabel, urgencyPill, isReportOwner, nowTimeStr, todayStr } from '@/lib/utils';
+import { jpDate } from '@/lib/schedule-text';
+import { maintBlockIn, maintBlocks, splitMaintTypes, requestStateLabel, urgencyPill, isReportOwner, nowTimeStr, todayStr } from '@/lib/utils';
 import { downloadCsv } from '@/lib/csv';
 import { extractOdometerReading, loadTesseract } from '@/lib/ocr';
 import Modal from './Modal';
@@ -273,6 +274,14 @@ export default function ReportsTab({
       alert('運転者（姓・名）・車両は必須です。');
       return;
     }
+    // 修理予定日の車両は、その日は新しく出発できない
+    if (!editing.id) {
+      const b = maintBlockIn(maintBlocks(data.reports), editing.vehicleId, editing.date, editing.date);
+      if (b) {
+        alert(`${b.vehicleName} は ${jpDate(b.date)} に整備（${b.type}）の予定が入っているため、その日は使えません。別の車両を選んでください。`);
+        return;
+      }
+    }
     const tripKm = editing.postDone ? Math.max(0, (editing.endKm || 0) - (editing.startKm || 0)) : 0;
     const driver = `${editing.driverLast} ${editing.driverFirst}`.trim();
     setSaving(true);
@@ -475,6 +484,10 @@ export default function ReportsTab({
                   </option>
                 ))}
               </select>
+              {!editing.id && editing.vehicleId && (() => {
+                const b = maintBlockIn(maintBlocks(data.reports), editing.vehicleId, editing.date, editing.date);
+                return b ? <div className="notice-box" style={{ marginTop: 6 }}>🔧 この車両は {jpDate(b.date)} に整備（{b.type}）の予定が入っているため、その日は使えません。</div> : null;
+              })()}
             </div>
           </div>
 
