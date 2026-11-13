@@ -5,6 +5,7 @@ import { AppData, Driver, EmpIdRule, FuelLog, Masters, Rental, RentalTrip, Repor
 import Header from './Header';
 import AssistantButton from './AssistantButton';
 import NoticeBell from './NoticeBell';
+import IncidentButton from './IncidentButton';
 import SetupNudge from './SetupNudge';
 import StatBar from './StatBar';
 import DashboardTab from './DashboardTab';
@@ -498,6 +499,7 @@ export default function FleetApp() {
         onMechanicLogout={handleMechanicLogout}
         bell={
           <div className="header-actions">
+            <IncidentButton data={data} currentDriver={currentDriver} />
             {isAdmin && <AssistantButton />}
             <NoticeBell data={data} isAdmin={isAdmin} onNavigate={(t) => { setTab(t); if (typeof window !== 'undefined') window.scrollTo({ top: 0 }); }} />
           </div>

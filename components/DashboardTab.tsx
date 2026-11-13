@@ -7,6 +7,7 @@ import { urgencyLevel, urgencyPill, canEditMaintRequest, openMaintRequests, rent
 import AlertsPanel, { MaintPrefill } from './AlertsPanel';
 import DashboardNotices from './DashboardNotices';
 import { fmtDateTime, isOverdue, useCards } from './useCards';
+import IncidentsPanel from './IncidentsPanel';
 import MaintRequestModal, { MaintRequestInput } from './MaintRequestModal';
 import ContactRequester from './ContactRequester';
 import { PhotoThumbs } from './PhotoField';
@@ -72,6 +73,8 @@ export default function DashboardTab({
       </div>
 
       <DashboardNotices isAdmin={isAdmin} />
+
+      {isAdmin && <IncidentsPanel />}
 
       <div className="card" style={{ marginBottom: 14 }}>
         <h3 className="card-title">
