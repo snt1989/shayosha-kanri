@@ -3,7 +3,7 @@
 import { AppData, Vehicle } from '@/lib/types';
 import { computeAlerts } from '@/lib/alerts';
 import { DEFAULT_ALERT_SETTINGS, normalizeAlertSettings } from '@/lib/alert-settings';
-import { openMaintRequests } from '@/lib/utils';
+import { openMaintRequests, splitMaintTypes } from '@/lib/utils';
 import { useMobileLimit } from '@/lib/useLimit';
 
 export type MaintPrefill = { vehicleId: string; type: string; note: string };
@@ -21,20 +21,23 @@ export default function AlertsPanel({
   onRequestMaint?: (p: MaintPrefill) => void;
 }) {
   // 条件は lib/alerts.ts（モバイルアプリと共通）
-  const { shaken: shakenAlerts, oil: oilAlerts, license: licenseAlerts, ngAlcohol, total } = computeAlerts(data);
+  const all = computeAlerts(data);
+  const { license: licenseAlerts, ngAlcohol } = all;
   const st = data.alertSettings ? normalizeAlertSettings(data.alertSettings) : DEFAULT_ALERT_SETTINGS;
 
+  const pending = openMaintRequests(data.reports);
+  // 同じ車両で、その種類（車検・オイル交換）の依頼がすでに対応待ちなら、そのアラートは出さない（依頼の種別は複数のこともある）
+  const requested = (vehicleId: string, keyword: string) =>
+    pending.some((r) => r.vehicleId === vehicleId && splitMaintTypes(r.maintRequestType).some((t) => t.includes(keyword)));
+  const shakenAlerts = all.shaken.filter(({ v }) => !requested(v.id, '車検'));
+  const oilAlerts = all.oil.filter((v) => !requested(v.id, 'オイル'));
+  const total = shakenAlerts.length + oilAlerts.length + licenseAlerts.length + ngAlcohol.length;
   const shakenLim = useMobileLimit(shakenAlerts, 3);
   const oilLim = useMobileLimit(oilAlerts, 3);
   const licenseLim = useMobileLimit(licenseAlerts, 3);
-  const pending = openMaintRequests(data.reports);
-  // 同じ車両・同じ種類の依頼が対応待ちなら、「依頼済み」と表示して二重に出さない
-  const requested = (vehicleId: string, type: string) =>
-    pending.some((r) => r.vehicleId === vehicleId && (r.maintRequestType || '') === type);
   const requestUi = (v: Vehicle, keyword: string, note: string) => {
     if (!onRequestMaint) return null;
     const type = findType(data.masters.maintTypes, keyword);
-    if (type && requested(v.id, type)) return <span className="pill pill-green">依頼済み</span>;
     return (
       <button className="btn btn-sm btn-primary" onClick={() => onRequestMaint({ vehicleId: v.id, type, note })}>
         🔧 整備を依頼
