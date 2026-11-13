@@ -7,7 +7,8 @@ export const MAINT_PROGRESS: { key: MaintProgress; label: string; pill: string }
 
 export type MaintRecord = {
   date: string;
-  type: string;
+  type: string; // 整備種別。複数選んだときは「、」でつないだ文字列（一覧・検索・CSV はこれを使う）
+  types?: string[]; // 選んだ整備種別（複数可）。無い記録は type ひとつだけ
   km: number;
   note: string;
   // 整備台帳で記録する任意項目（既存データには無いので optional）
@@ -20,6 +21,7 @@ export type MaintRecord = {
   requestId?: string; // 整備依頼への対応として記録したとき、その依頼（日報）のid。進捗は依頼の状態と連動する
   progress?: MaintProgress; // 進捗。無いときは完了として扱う（以前の記録）
   photos?: string[]; // 添付した写真のid（最大3枚。本体は /api/photos/{id}）
+  progressLog?: { at: string; progress: MaintProgress; by?: string }[]; // 進捗が変わるたびに残す経過（整備中→完了など）
 };
 
 export type Report = {

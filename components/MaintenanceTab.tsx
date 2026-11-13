@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { AppData, MAINT_PROGRESS, MAINT_URGENCIES, MaintProgress, MaintRecord, Report, Vehicle } from '@/lib/types';
-import { urgencyLevel, urgencyPill, canEditMaintRequest, openMaintRequests, todayStr } from '@/lib/utils';
+import { maintTypesOf, urgencyLevel, urgencyPill, canEditMaintRequest, openMaintRequests, todayStr } from '@/lib/utils';
 import MaintRequestModal, { MaintRequestInput } from './MaintRequestModal';
 import PhotoField, { PhotoThumbs } from './PhotoField';
 import ContactRequester from './ContactRequester';
@@ -26,6 +26,17 @@ type Editing = {
   rec: MaintRecord;
   requestId?: string; // 整備依頼への対応として登録するとき、その日報のid
 };
+
+// 経過の表示用（例：11/10 整備中 → 11/13 完了）
+function progressLogText(log: NonNullable<MaintRecord['progressLog']>): string {
+  return log
+    .map((l) => {
+      const d = new Date(l.at);
+      const md = Number.isNaN(d.getTime()) ? '' : `${d.getMonth() + 1}/${d.getDate()} `;
+      return `${md}${(MAINT_PROGRESS.find((p) => p.key === l.progress)?.label || '').replace(/^[👀✓]\s*/u, '')}${l.by ? `（${l.by}）` : ''}`;
+    })
+    .join(' → ');
+}
 
 // 進捗。依頼に結びついた記録は依頼の状態に合わせ、そうでない記録は記録に持たせた値（無ければ完了）
 function progressOf(m: MaintRecord, reports: Report[]): MaintProgress {
@@ -98,7 +109,7 @@ export default function MaintenanceTab({
   // 既存記録で使われている種別も、マスタから外れていれば選択肢に残す
   const typeOptions = useMemo(() => {
     const set = new Set<string>(data.masters.maintTypes);
-    allRows.forEach((r) => r.type && set.add(r.type));
+    allRows.forEach((r) => maintTypesOf(r).forEach((t) => set.add(t)));
     return Array.from(set);
   }, [data.masters.maintTypes, allRows]);
 
@@ -106,7 +117,7 @@ export default function MaintenanceTab({
     const q = query.trim();
     return allRows.filter((r) => {
       if (vehicleFilter && r.vehicleId !== vehicleFilter) return false;
-      if (typeFilter && r.type !== typeFilter) return false;
+      if (typeFilter && !maintTypesOf(r).includes(typeFilter)) return false;
       if (progressFilter && r.progress !== progressFilter) return false;
       if (q && !(r.note.includes(q) || (r.work || '').includes(q) || (r.request || '').includes(q) || (r.shop || '').includes(q) || r.type.includes(q) || r.vehicleName.includes(q) || r.plate.includes(q))) {
         return false;
@@ -127,7 +138,7 @@ export default function MaintenanceTab({
     setEditing({
       vehicleId: v?.id || '',
       index: null,
-      rec: { date: todayStr(), type: '', km: v?.odometer || 0, note: '', cost: undefined, shop: '', progress: 'done' },
+      rec: { date: todayStr(), type: '', types: [], km: v?.odometer || 0, note: '', cost: undefined, shop: '', progress: 'done' },
     });
   }
   // 整備依頼を請けて、依頼の内容を引き継いだ整備記録の登録画面を開く
@@ -142,6 +153,7 @@ export default function MaintenanceTab({
       rec: {
         date: todayStr(),
         type: typeOptions.includes(r.maintRequestType || '') ? (r.maintRequestType as string) : '',
+        types: typeOptions.includes(r.maintRequestType || '') ? [r.maintRequestType as string] : [],
         km: r.endKm || v.odometer || 0,
         request: `${r.maintRequestNote || ''}（${r.driver} ${r.date}）`,
         note: '',
@@ -158,7 +170,7 @@ export default function MaintenanceTab({
     setEditing({
       vehicleId: r.vehicleId,
       index: r.index,
-      rec: { date: r.date, type: r.type, km: r.km, note: r.note, cost: r.cost, shop: r.shop || '', by: r.by, request: r.request, work: r.work, nextOilKm: r.nextOilKm, requestId: r.requestId, progress: r.progress, photos: r.photos },
+      rec: { date: r.date, type: r.type, types: maintTypesOf(r), km: r.km, note: r.note, cost: r.cost, shop: r.shop || '', by: r.by, request: r.request, work: r.work, nextOilKm: r.nextOilKm, requestId: r.requestId, progress: r.progress, photos: r.photos, progressLog: r.progressLog },
     });
   }
 
@@ -175,8 +187,9 @@ export default function MaintenanceTab({
       alert('車両を選択してください。');
       return;
     }
-    if (!editing.rec.type) {
-      alert('整備種別を選択してください。');
+    const chosenTypes = maintTypesOf(editing.rec);
+    if (!chosenTypes.length) {
+      alert('整備種別を1つ以上選んでください。');
       return;
     }
     if (!editing.rec.date) {
@@ -185,17 +198,18 @@ export default function MaintenanceTab({
     }
     const rec: MaintRecord = {
       date: editing.rec.date,
-      type: editing.rec.type,
+      type: chosenTypes.join('、'),
       km: Number(editing.rec.km) || v.odometer,
       note: editing.rec.note || '',
     };
+    if (chosenTypes.length > 1) rec.types = chosenTypes;
     if (editing.rec.cost !== undefined && !Number.isNaN(editing.rec.cost)) rec.cost = editing.rec.cost;
     if (editing.rec.shop) rec.shop = editing.rec.shop;
     if (editing.rec.request?.trim()) rec.request = editing.rec.request.trim();
     if (editing.rec.work?.trim()) rec.work = editing.rec.work.trim();
     const photos = cleanPhotoIds(editing.rec.photos);
     if (photos.length) rec.photos = photos;
-    const isOil = editing.rec.type.includes('オイル');
+    const isOil = chosenTypes.some((t) => t.includes('オイル'));
     const nextOil = Number(editing.rec.nextOilKm) || 0;
     if (isOil && nextOil > 0 && nextOil <= rec.km) {
       alert('次回交換の走行距離は、今回の走行kmより大きい値を入力してください。');
@@ -209,6 +223,18 @@ export default function MaintenanceTab({
     // 記録した整備士。整備士としてログイン中ならその名前、編集のときは元の記録の名前を引き継ぐ
     const by = mechanic || editing.rec.by || (canEdit ? '管理者' : '');
     if (by) rec.by = by;
+
+    // 進捗の経過を残す：新しく記録したとき、進捗が変わったときに1行ずつ足す（整備中→完了、でも「整備中だった」記録が残る）
+    const prev = editing.index === null ? undefined : v.maintHistory[editing.index];
+    const log = [...(prev?.progressLog || [])];
+    const nowIso = new Date().toISOString();
+    if (!prev) {
+      log.push({ at: nowIso, progress, ...(by ? { by } : {}) });
+    } else if (progressOf(prev, data.reports) !== progress) {
+      if (!log.length) log.push({ at: `${prev.date}T00:00:00.000Z`, progress: progressOf(prev, data.reports), ...(prev.by ? { by: prev.by } : {}) });
+      log.push({ at: nowIso, progress, ...(by ? { by } : {}) });
+    }
+    if (log.length) rec.progressLog = log.slice(-20);
 
     const list = [...v.maintHistory];
     if (editing.index === null) list.unshift(rec);
@@ -452,7 +478,13 @@ export default function MaintenanceTab({
                       <div className="ledger-sub">{r.plate}</div>
                     </td>
                     <td>
-                      <span className="pill pill-slate">{r.type}</span>
+                      <span className="type-pills">
+                        {maintTypesOf(r).map((t) => (
+                          <span key={t} className="pill pill-slate">
+                            {t}
+                          </span>
+                        ))}
+                      </span>
                     </td>
                     <td>
                       {(() => {
@@ -477,7 +509,12 @@ export default function MaintenanceTab({
                           <b>備考</b> {r.note}
                         </div>
                       )}
-                      {!r.work && !r.request && !r.note && !r.photos?.length && '-'}
+                      {r.progressLog && r.progressLog.length > 1 && (
+                        <div className="ledger-sub clamp-2">
+                          <b>経過</b> {progressLogText(r.progressLog)}
+                        </div>
+                      )}
+                      {!r.work && !r.request && !r.note && !r.photos?.length && !(r.progressLog && r.progressLog.length > 1) && '-'}
                       <PhotoThumbs ids={r.photos} />
                     </td>
                     <td style={{ whiteSpace: 'nowrap' }}>
@@ -535,6 +572,11 @@ export default function MaintenanceTab({
                 </button>
               ))}
             </div>
+            {editing.rec.progressLog && editing.rec.progressLog.length > 0 && (
+              <div className="ledger-sub" style={{ marginTop: 6 }}>
+                <b>経過</b> {progressLogText(editing.rec.progressLog)}
+              </div>
+            )}
           </div>
           <div className="field-row">
             <div className="field">
@@ -552,18 +594,31 @@ export default function MaintenanceTab({
               <input type="date" value={editing.rec.date} onChange={(e) => setEditing({ ...editing, rec: { ...editing.rec, date: e.target.value } })} />
             </div>
           </div>
-          <div className="field-row">
             <div className="field">
-              <label>整備種別 *</label>
-              <select value={editing.rec.type} onChange={(e) => setEditing({ ...editing, rec: { ...editing.rec, type: e.target.value } })}>
-                <option value="">選択</option>
-                {typeOptions.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
+              <label>整備種別 *（複数選べます）</label>
+              <div className="type-chips">
+                {typeOptions.map((t) => {
+                  const on = maintTypesOf(editing.rec).includes(t);
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      className={`btn btn-sm ${on ? 'btn-primary' : ''}`}
+                      aria-pressed={on}
+                      onClick={() => {
+                        const cur = maintTypesOf(editing.rec);
+                        const next = on ? cur.filter((x) => x !== t) : [...cur, t];
+                        setEditing({ ...editing, rec: { ...editing.rec, types: next, type: next.join('、') } });
+                      }}
+                    >
+                      {on ? '✓ ' : ''}
+                      {t}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+          <div className="field-row">
             <div className="field">
               <label>走行km</label>
               <input
@@ -594,7 +649,7 @@ export default function MaintenanceTab({
               />
             </div>
           </div>
-          {editing.rec.type.includes('オイル') && (
+          {maintTypesOf(editing.rec).some((t) => t.includes('オイル')) && (
             <div className="field">
               <label>次回オイル交換の走行距離（km）</label>
               <input

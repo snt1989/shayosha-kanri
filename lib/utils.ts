@@ -92,3 +92,6 @@ export function urgencyLevel(u?: string): 'urgent' | 'soon' | 'normal' {
   return u === '至急（使用不可）' ? 'urgent' : u === '早めに' ? 'soon' : 'normal';
 }
 export const urgencyPill = (u?: string) => ({ urgent: 'pill-red', soon: 'pill-amber', normal: 'pill-sky' })[urgencyLevel(u)];
+
+// 整備記録の種別（複数選べる。以前の記録は type ひとつだけ）
+export const maintTypesOf = (m: { type: string; types?: string[] }): string[] => (m.types && m.types.length ? m.types : m.type ? [m.type] : []);

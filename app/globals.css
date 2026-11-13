@@ -2702,3 +2702,7 @@ table.bulk-grid {
 .notice-item.is-expired { border-style: dashed; }
 .notice-item.is-expired .notice-head, .notice-item.is-expired .notice-body, .notice-item.is-expired .notice-expire { opacity: 0.6; }
 .notice-expired-head { margin: 14px 0 6px; font-size: 12px; font-weight: 700; color: var(--slate-500); }
+
+/* 整備種別（複数選択）とその表示 */
+.type-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.type-pills { display: inline-flex; flex-wrap: wrap; gap: 4px; }
