@@ -2983,3 +2983,21 @@ body::before {
   .req-item.req-open .req-more { display: block !important; }
   .req-item.req-open .alert-actions.req-more { display: flex !important; }
 }
+
+/* アプリの更新のお知らせ（新しい版が出たときに、全画面で出す） */
+.update-overlay {
+  position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center; justify-content: center;
+  padding: 16px; background: rgba(15, 23, 42, 0.55);
+}
+.update-box {
+  width: 100%; max-width: 380px; background: #fff; border-radius: 18px; padding: 24px 20px 18px;
+  text-align: center; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+.update-icon { font-size: 40px; line-height: 1; }
+.update-box h2 { margin: 10px 0 4px; font-size: 18px; color: var(--slate-800); }
+.update-lead { margin: 0 0 12px; font-size: 13px; color: var(--slate-500); }
+.update-what { text-align: left; background: var(--sky-50); border: 1px solid var(--sky-100); border-radius: 10px; padding: 10px 12px; margin-bottom: 14px; font-size: 12px; color: var(--slate-700); }
+.update-what ul { margin: 6px 0 0; padding-left: 18px; }
+.update-what li { margin-bottom: 3px; }
+.update-btn { width: 100%; min-height: 46px; font-size: 15px; }
+.update-later { margin-top: 10px; border: 0; background: none; color: var(--slate-500); font-size: 12px; text-decoration: underline; cursor: pointer; padding: 6px; }

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import UpdatePrompt from '@/components/UpdatePrompt';
 import RegisterServiceWorker from '@/components/RegisterServiceWorker';
 import MobileTableLabels from '@/components/MobileTableLabels';
 
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {children}
         <RegisterServiceWorker />
+        <UpdatePrompt />
         <MobileTableLabels />
       </body>
     </html>
