@@ -2725,3 +2725,16 @@ table.bulk-grid {
 .incident-hint { font-size: 11.5px; color: var(--slate-500); margin: 6px 0 10px; }
 .incident-done { border-color: var(--green-600, #16a34a); }
 .incident-memo { width: 100%; margin-top: 6px; }
+
+/* iPhone：画面の最上端に、白の固定の帯を置く。Safari は上端にある固定の要素の色をもとに上端の色を決めるため、ぼやけを減らす試み */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: max(env(safe-area-inset-top, 0px), 1px);
+  background: #fff;
+  z-index: 20;
+  pointer-events: none;
+}
