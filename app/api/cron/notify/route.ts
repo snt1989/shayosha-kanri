@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { loadData } from '@/lib/store';
+import { kvGet } from '@/lib/kv';
+import { ALERT_SETTINGS_KEY, normalizeAlertSettings } from '@/lib/alert-settings';
 import { buildAutoNotices, summarizeAutoNotices } from '@/lib/notices';
 import { pushConfig, sendPushToAll } from '@/lib/push';
 
@@ -15,7 +17,7 @@ export async function GET(req: NextRequest) {
   }
   if (!pushConfig().enabled) return NextResponse.json({ success: true, skipped: '通知の設定（VAPID鍵）が未設定です。' });
   const data = await loadData();
-  const items = buildAutoNotices(data);
+  const items = buildAutoNotices({ ...data, alertSettings: normalizeAlertSettings(await kvGet(ALERT_SETTINGS_KEY, null)) });
   const summary = summarizeAutoNotices(items);
   // 毎日必ず通知する。気になる点が無い日も「問題なし」を届ける。
   const msg = summary ?? { title: '運行管理：おはようございます', body: '今日、確認が必要なお知らせはありません。' };

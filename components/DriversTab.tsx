@@ -5,6 +5,7 @@ import { AppData, Driver } from '@/lib/types';
 import { previewEmpId } from '@/lib/empId';
 import { daysUntil, todayStr } from '@/lib/utils';
 import { csvToDrivers, downloadCsv, driversToCsv } from '@/lib/csv';
+import { normalizeAlertSettings } from '@/lib/alert-settings';
 import Modal from './Modal';
 
 const emptyDriver = (data: AppData): Driver => ({
@@ -31,6 +32,7 @@ export default function DriversTab({
   onDelete: (id: string) => Promise<unknown>;
   onBulkSave: (list: Driver[]) => Promise<unknown>;
 }) {
+  const alertDays = normalizeAlertSettings(data.alertSettings);
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<Driver | null>(null);
   const [saving, setSaving] = useState(false);
@@ -93,7 +95,7 @@ export default function DriversTab({
     const days = daysUntil(d.licenseExpiry);
     if (days === null) return <span className="pill pill-slate">未設定</span>;
     if (days < 0) return <span className="pill pill-red">期限切れ</span>;
-    if (days <= 30) return <span className="pill pill-amber">あと{days}日</span>;
+    if (days <= alertDays.licenseDays) return <span className="pill pill-amber">あと{days}日</span>;
     return <span className="pill pill-green">正常</span>;
   }
 

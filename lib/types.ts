@@ -240,6 +240,7 @@ export type AppData = {
   masters: Masters;
   logs: LogEntry[];
   persistent: boolean;
+  alertSettings?: import('./alert-settings').AlertSettings; // アラートを出す時期（/api/data が付ける。無ければ初期値）
 };
 
 export const DEFAULT_MASTERS: Masters = {

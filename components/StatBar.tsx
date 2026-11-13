@@ -2,8 +2,10 @@
 
 import { AppData } from '@/lib/types';
 import { daysUntil, todayStr } from '@/lib/utils';
+import { DEFAULT_ALERT_SETTINGS, normalizeAlertSettings } from '@/lib/alert-settings';
 
 export default function StatBar({ data }: { data: AppData }) {
+  const st = data.alertSettings ? normalizeAlertSettings(data.alertSettings) : DEFAULT_ALERT_SETTINGS;
   const today = todayStr();
   const todayReports = data.reports.filter((r) => !r.maintOnly && r.date === today);
   const doneCount = todayReports.filter((r) => r.postDone).length;
@@ -11,12 +13,12 @@ export default function StatBar({ data }: { data: AppData }) {
 
   const shakenSoon = data.vehicles.filter((v) => {
     const d = daysUntil(v.shakenDate);
-    return d !== null && d <= 30;
+    return d !== null && d <= st.shakenDays;
   }).length;
 
   const licenseSoon = data.drivers.filter((d) => {
     const days = daysUntil(d.licenseExpiry);
-    return days !== null && days <= 30;
+    return days !== null && days <= st.licenseDays;
   }).length;
 
   return (
@@ -42,7 +44,7 @@ export default function StatBar({ data }: { data: AppData }) {
       <div className={`stat-tile ${shakenSoon > 0 ? 'warn' : ''}`}>
         <div className="label">車検・点検アラート</div>
         <div className="value">
-          {shakenSoon} <small>台が30日以内</small>
+          {shakenSoon} <small>台が{st.shakenDays}日以内</small>
         </div>
         <div style={{ fontSize: 11, color: shakenSoon > 0 ? 'var(--amber-600)' : 'var(--slate-500)', marginTop: 4 }}>
           {shakenSoon > 0 ? '期日接近あり' : '期日接近なし'}

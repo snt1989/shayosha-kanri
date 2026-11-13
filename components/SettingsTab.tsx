@@ -9,12 +9,14 @@ import DriversTab from './DriversTab';
 import LogoTab from './LogoTab';
 import CardsAdmin from './CardsAdmin';
 import MenuOrderSettings from './MenuOrderSettings';
+import AlertSettingsPanel from './AlertSettingsPanel';
 
-type Section = 'menu' | 'cards' | 'drivers' | 'masters' | 'logs' | 'logo';
+type Section = 'menu' | 'alerts' | 'cards' | 'drivers' | 'masters' | 'logs' | 'logo';
 
 // 管理者だけが使えるもの（メニューの並び替えだけは誰でも使える）
 const SECTIONS: { key: Section; icon: string; label: string; admin: boolean }[] = [
   { key: 'menu', icon: '↕️', label: 'メニューの並び替え', admin: false },
+  { key: 'alerts', icon: '⏰', label: 'アラートの出す時期', admin: true },
   { key: 'cards', icon: '💳', label: 'カードの登録', admin: true },
   { key: 'drivers', icon: '🪪', label: '運転者台帳', admin: true },
   { key: 'masters', icon: '⚙️', label: '各種マスタ設定', admin: true },
@@ -37,6 +39,7 @@ export default function SettingsTab({
   onSaveEmpIdRule,
   onRequestLogin,
   onClearLogs,
+  onRefresh,
 }: {
   data: AppData;
   isAdmin: boolean;
@@ -51,6 +54,7 @@ export default function SettingsTab({
   onSaveEmpIdRule: (r: EmpIdRule & { assignMissing?: boolean }) => Promise<unknown>;
   onRequestLogin: () => void;
   onClearLogs: () => Promise<unknown>;
+  onRefresh: () => Promise<unknown>;
 }) {
   const [section, setSection] = useState<Section>('menu');
   const current = SECTIONS.find((s) => s.key === section)!;
@@ -63,7 +67,7 @@ export default function SettingsTab({
           ⚙️ 設定
         </h3>
         <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 12 }}>
-          メニューの並び替え（この端末だけ）と、カードの登録・運転者台帳・各種マスタ設定・操作ログ／バックアップ・ロゴ／アイコン（管理者のみ）をまとめて管理します。車両の管理は「車両台帳」のページです。
+          メニューの並び替え（この端末だけ）と、アラートの出す時期・カードの登録・運転者台帳・各種マスタ設定・操作ログ／バックアップ・ロゴ／アイコン（管理者のみ）をまとめて管理します。車両の管理は「車両台帳」のページです。
         </div>
         <div className="subtabbar">
           {SECTIONS.map((s) => (
@@ -94,6 +98,7 @@ export default function SettingsTab({
       ) : (
         <>
           {section === 'menu' && <MenuOrderSettings order={menuOrder} onChange={onChangeMenuOrder} />}
+          {section === 'alerts' && <AlertSettingsPanel current={data.alertSettings} onSaved={onRefresh} />}
           {section === 'cards' && <CardsAdmin departments={data.masters.departments} isAdmin={isAdmin} onRequestAdminLogin={onRequestLogin} />}
           {section === 'drivers' && <DriversTab data={data} onSave={onSaveDriver} onDelete={onDeleteDriver} onBulkSave={onBulkSaveDrivers} />}
           {section === 'masters' && (

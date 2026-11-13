@@ -2,6 +2,7 @@
 
 import { AppData, Vehicle } from '@/lib/types';
 import { computeAlerts } from '@/lib/alerts';
+import { DEFAULT_ALERT_SETTINGS, normalizeAlertSettings } from '@/lib/alert-settings';
 import { openMaintRequests } from '@/lib/utils';
 import { useMobileLimit } from '@/lib/useLimit';
 
@@ -21,6 +22,7 @@ export default function AlertsPanel({
 }) {
   // 条件は lib/alerts.ts（モバイルアプリと共通）
   const { shaken: shakenAlerts, oil: oilAlerts, license: licenseAlerts, ngAlcohol, total } = computeAlerts(data);
+  const st = data.alertSettings ? normalizeAlertSettings(data.alertSettings) : DEFAULT_ALERT_SETTINGS;
 
   const shakenLim = useMobileLimit(shakenAlerts, 3);
   const oilLim = useMobileLimit(oilAlerts, 3);
@@ -52,7 +54,7 @@ export default function AlertsPanel({
   return (
     <div className="grid grid-2">
       <div className="card">
-        <h3 className="card-title">⚠️ 車検・点検アラート（30日以内）</h3>
+        <h3 className="card-title">⚠️ 車検・点検アラート（{st.shakenDays}日以内）</h3>
         {shakenAlerts.length === 0 ? (
           <div className="empty-state">直近の車検予定はありません</div>
         ) : (
@@ -74,7 +76,7 @@ export default function AlertsPanel({
         {oilAlerts.length > 0 && (
           <>
             <h3 className="card-title" style={{ marginTop: 18 }}>
-              🛢️ オイル交換アラート（残り1,000km以内）
+              🛢️ オイル交換アラート（残り{st.oilKm.toLocaleString()}km以内）
             </h3>
             <div className="alert-list">
               {oilLim.shown.map((v) => (
@@ -94,7 +96,7 @@ export default function AlertsPanel({
       </div>
 
       <div className="card">
-        <h3 className="card-title">🪪 免許更新アラート（30日以内）</h3>
+        <h3 className="card-title">🪪 免許更新アラート（{st.licenseDays}日以内）</h3>
         {licenseAlerts.length === 0 ? (
           <div className="empty-state">直近の免許更新予定はありません</div>
         ) : (

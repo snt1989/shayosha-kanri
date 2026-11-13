@@ -5,6 +5,7 @@ import { useMobileLimit } from '@/lib/useLimit';
 import { AppData, Vehicle } from '@/lib/types';
 import { urgencyLevel, urgencyPill, daysUntil, genId, openMaintRequests, todayStr } from '@/lib/utils';
 import { csvToVehicles, downloadCsv, vehiclesToCsv } from '@/lib/csv';
+import { normalizeAlertSettings } from '@/lib/alert-settings';
 import Modal from './Modal';
 import VehicleOcrModal from './VehicleOcrModal';
 
@@ -38,6 +39,7 @@ export default function VehiclesTab({
   // 車検証の画像を保存・削除したあとに、一覧を最新にする
   onRefresh?: () => unknown;
 }) {
+  const alertDays = normalizeAlertSettings(data.alertSettings);
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<Vehicle | null>(null);
   const [saving, setSaving] = useState(false);
@@ -116,7 +118,7 @@ export default function VehiclesTab({
     const days = daysUntil(v.shakenDate);
     if (days === null) return <span className="pill pill-slate">未設定</span>;
     if (days < 0) return <span className="pill pill-red">期限切れ</span>;
-    if (days <= 30) return <span className="pill pill-amber">あと{days}日</span>;
+    if (days <= alertDays.shakenDays) return <span className="pill pill-amber">あと{days}日</span>;
     return <span className="pill pill-green">正常</span>;
   }
 

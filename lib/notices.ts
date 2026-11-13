@@ -43,7 +43,7 @@ export type AutoNotice = {
 
 const dayText = (days: number) => (days < 0 ? `${-days}日超過` : days === 0 ? '本日' : `あと${days}日`);
 
-export function buildAutoNotices(data: Pick<AppData, 'vehicles' | 'drivers' | 'reports'>): AutoNotice[] {
+export function buildAutoNotices(data: Pick<AppData, 'vehicles' | 'drivers' | 'reports'> & { alertSettings?: AppData['alertSettings'] }): AutoNotice[] {
   const a = computeAlerts(data);
   const out: AutoNotice[] = [];
 

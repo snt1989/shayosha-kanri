@@ -635,6 +635,7 @@ export default function FleetApp() {
             onSaveEmpIdRule={saveEmpIdRule}
             onRequestLogin={() => setShowAdminLogin(true)}
             onClearLogs={clearLogs}
+            onRefresh={refreshData}
           />
         )}
       </main>

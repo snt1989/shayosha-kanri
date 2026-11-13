@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { AppData, Driver, RentalTrip } from '@/lib/types';
 import { daysUntil, todayStr } from '@/lib/utils';
 import { downloadCsv, rentalTripsToCsv } from '@/lib/csv';
+import { normalizeAlertSettings } from '@/lib/alert-settings';
 import Modal from './Modal';
 
 const OTHER = '__other__';
@@ -11,7 +12,7 @@ const OTHER = '__other__';
 type Draft = { rec: RentalTrip; pick: string };
 
 // 運転日・運転者・備考の入力欄（入力画面と編集モーダルで共通）
-function TripFields({ draft, onChange, drivers, departments }: { draft: Draft; onChange: (d: Draft) => void; drivers: Driver[]; departments: string[] }) {
+function TripFields({ draft, onChange, drivers, departments, licenseDays }: { draft: Draft; onChange: (d: Draft) => void; drivers: Driver[]; departments: string[]; licenseDays: number }) {
   const { rec, pick } = draft;
   const picked = drivers.find((d) => d.id === pick);
   const days = picked ? daysUntil(picked.licenseExpiry) : null;
@@ -21,7 +22,7 @@ function TripFields({ draft, onChange, drivers, departments }: { draft: Draft; o
       ? '免許の有効期限が未設定です。'
       : days < 0
         ? '免許の有効期限が切れています。'
-        : days <= 30
+        : days <= licenseDays
           ? `免許の有効期限まであと${days}日です。`
           : '';
   function pickDriver(v: string) {
@@ -282,7 +283,7 @@ export default function RentalTripsPanel({
                 {error}
               </div>
             )}
-            <TripFields draft={entry} onChange={setDraft} drivers={data.drivers} departments={data.masters.departments} />
+            <TripFields draft={entry} onChange={setDraft} drivers={data.drivers} departments={data.masters.departments} licenseDays={normalizeAlertSettings(data.alertSettings).licenseDays} />
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
               <button className="btn btn-primary" onClick={submitInline} disabled={saving}>
                 {saving ? '保存中…' : '登録する'}
@@ -402,7 +403,7 @@ export default function RentalTripsPanel({
               ))}
             </select>
           </div>
-          <TripFields draft={form} onChange={setForm} drivers={data.drivers} departments={data.masters.departments} />
+          <TripFields draft={form} onChange={setForm} drivers={data.drivers} departments={data.masters.departments} licenseDays={normalizeAlertSettings(data.alertSettings).licenseDays} />
         </Modal>
       )}
     </div>
