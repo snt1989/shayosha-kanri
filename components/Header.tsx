@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from 'react';
 
-import { BAR_COUNT, TAB_META, TabKey } from '@/lib/menu';
+import { BAR_COUNT, MECHANIC_TABS, TAB_META, TabKey } from '@/lib/menu';
 
 type Tab = TabKey | 'settings';
 type SyncStatus = 'idle' | 'saving' | 'error';
@@ -23,6 +23,7 @@ export default function Header({
   onOpenMechanicLogin,
   onMechanicLogout,
   bell,
+  mechanicOnly = false,
 }: {
   // メニューの並び順（「設定」で変えられる）。スマホの下のバーには、上から4つが出る
   order: TabKey[];
@@ -40,14 +41,17 @@ export default function Header({
   onOpenMechanicLogin: () => void;
   onMechanicLogout: () => void;
   bell?: ReactNode;
+  mechanicOnly?: boolean;
 }) {
   const syncLabel = syncStatus === 'saving' ? '同期中…' : syncStatus === 'error' ? '同期エラー' : '同期完了';
   const syncCls = syncStatus === 'saving' ? 'saving' : syncStatus === 'error' ? 'error' : 'ok';
+  // 整備士だけでログインしているときは、整備に関係のあるページだけを出す
+  const shownOrder = mechanicOnly ? order.filter((k) => MECHANIC_TABS.includes(k)) : order;
   const TABS: { key: Tab; label: string; icon: string; admin?: boolean }[] = [
-    ...order.map((k) => ({ key: k as Tab, ...TAB_META[k] })),
-    { key: 'settings', label: '設定', icon: '⚙️' },
+    ...shownOrder.map((k) => ({ key: k as Tab, ...TAB_META[k] })),
+    ...(mechanicOnly ? [] : [{ key: 'settings' as Tab, label: '設定', icon: '⚙️' }]),
   ];
-  const MAIN_TABS: Tab[] = order.slice(0, BAR_COUNT);
+  const MAIN_TABS: Tab[] = shownOrder.slice(0, BAR_COUNT);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const inMenu = !MAIN_TABS.includes(tab);

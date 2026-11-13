@@ -16,6 +16,8 @@ export const TAB_META: Record<TabKey, { label: string; icon: string; admin?: boo
 };
 
 export const DEFAULT_ORDER: TabKey[] = ['dashboard', 'reports', 'fuel', 'rental', 'calendar', 'cards', 'maintenance', 'vehicles', 'help'];
+// 整備士だけでログインしているときに出すページ（運転日報・給油・レンタカー・カレンダー・カード貸出・設定は出さない）
+export const MECHANIC_TABS: TabKey[] = ['dashboard', 'maintenance', 'vehicles', 'help'];
 export const BAR_COUNT = 4; // スマホの下のバーに出る数（「メニュー」を除く）
 
 const KEY = 'fleet:menu:order';

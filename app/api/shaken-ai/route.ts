@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
+import { loadData } from '@/lib/store';
+import { isAdminOrMechanic } from '@/lib/mechanic-auth';
+
+async function allowed(req: NextRequest) {
+  if (isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value)) return true;
+  const data = await loadData();
+  return isAdminOrMechanic(req, data.masters.mechanics);
+}
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -67,15 +75,15 @@ function sanitize(o: Record<string, unknown>): Fields {
 
 // 使えるか（APIキーが設定されているか）だけを返す
 export async function GET(req: NextRequest) {
-  if (!isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value)) {
+  if (!(await allowed(req))) {
     return NextResponse.json({ success: false, error: 'admin only' }, { status: 401 });
   }
   return NextResponse.json({ success: true, configured: Boolean(process.env.ANTHROPIC_API_KEY) });
 }
 
 export async function POST(req: NextRequest) {
-  if (!isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value)) {
-    return NextResponse.json({ success: false, message: '管理者ログインが必要です。' }, { status: 401 });
+  if (!(await allowed(req))) {
+    return NextResponse.json({ success: false, message: '管理者か整備士のログインが必要です。' }, { status: 401 });
   }
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) {

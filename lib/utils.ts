@@ -126,3 +126,17 @@ export function tireInfoText(t: TireInfo): string {
   const y = t.year ? `${t.year.replace('-', '年')}${t.year.includes('-') ? '月' : '年'}製` : '';
   return [t.maker, y].filter(Boolean).join(' / ');
 }
+
+// 整備士としてログイン中の名前（車検証の画像・AI読み取りの権限確認に使う）
+export function mechanicQuery(): string {
+  try {
+    const m = localStorage.getItem('fleet_current_mechanic');
+    return m ? encodeURIComponent(m) : '';
+  } catch {
+    return '';
+  }
+}
+export function mechanicHeaders(): Record<string, string> {
+  const m = mechanicQuery();
+  return m ? { 'x-mechanic': m } : {};
+}

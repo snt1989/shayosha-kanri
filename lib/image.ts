@@ -1,3 +1,4 @@
+import { mechanicHeaders } from './utils';
 // 画像（データURL）を、保存に適した大きさのJPEGに縮める。
 // 保存先（Upstash）は1回のリクエストが約1MBまでなので、既定では約700KB以下にする。
 export function compressToJpeg(dataUrl: string, maxEdge = 1600, maxChars = 700_000): Promise<string> {
@@ -30,13 +31,13 @@ export function compressToJpeg(dataUrl: string, maxEdge = 1600, maxChars = 700_0
   });
 }
 
-// 車検証の画像をサーバーに保存する（管理者のみ）。成功したら true。
+// 車検証の画像をサーバーに保存する（管理者・整備士）。成功したら true。
 export async function uploadShakenImage(vehicleId: string, dataUrl: string, kind: 'cert' | 'record' = 'cert'): Promise<boolean> {
   try {
     const image = await compressToJpeg(dataUrl);
     const res = await fetch(`/api/vehicles/${encodeURIComponent(vehicleId)}/shaken${kind === 'record' ? '?kind=record' : ''}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...mechanicHeaders() },
       body: JSON.stringify({ image }),
     });
     return res.ok;

@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useMobileLimit } from '@/lib/useLimit';
 import { AppData, Vehicle } from '@/lib/types';
 import { jpDate } from '@/lib/maint-schedule';
-import { urgencyLevel, urgencyPill, daysUntil, genId, openMaintRequests, todayStr, tireSetsOf, tireInfoText, TIRE_YEAR_RE } from '@/lib/utils';
+import { urgencyLevel, urgencyPill, daysUntil, genId, openMaintRequests, todayStr, tireSetsOf, tireInfoText, TIRE_YEAR_RE, mechanicHeaders, mechanicQuery } from '@/lib/utils';
 import { csvToVehicles, downloadCsv, vehiclesToCsv } from '@/lib/csv';
 import { normalizeAlertSettings } from '@/lib/alert-settings';
 import Modal from './Modal';
@@ -38,7 +38,7 @@ export default function VehiclesTab({
   onSave: (v: Vehicle) => Promise<unknown>;
   onDelete: (id: string) => Promise<unknown>;
   onBulkSave: (list: Vehicle[]) => Promise<unknown>;
-  // 管理者以外は見るだけ（登録・編集・削除・取込のボタンを出さない）
+  // 管理者・整備士以外は見るだけ（登録・編集・削除・取込のボタンを出さない）
   readOnly?: boolean;
   // 車検証の画像を保存・削除したあとに、一覧を最新にする
   onRefresh?: () => unknown;
@@ -115,7 +115,7 @@ export default function VehiclesTab({
     const label = viewKind === 'record' ? '検査証記録事項' : '車検証';
     if (!confirm(`「${v.name}」の${label}の画像を削除しますか？（車両の登録内容は消えません）`)) return;
     try {
-      await fetch(`/api/vehicles/${encodeURIComponent(v.id)}/shaken${viewKind === 'record' ? '?kind=record' : ''}`, { method: 'DELETE' });
+      await fetch(`/api/vehicles/${encodeURIComponent(v.id)}/shaken${viewKind === 'record' ? '?kind=record' : ''}`, { method: 'DELETE', headers: mechanicHeaders() });
     } finally {
       setViewShaken(null);
       await onRefresh?.();
@@ -123,7 +123,7 @@ export default function VehiclesTab({
   }
 
   const shakenUrl = viewShaken
-    ? `/api/vehicles/${encodeURIComponent(viewShaken.id)}/shaken?${viewKind === 'record' ? 'kind=record&' : ''}t=${encodeURIComponent((viewKind === 'record' ? viewShaken.recordFileAt : viewShaken.shakenFileAt) || '')}`
+    ? `/api/vehicles/${encodeURIComponent(viewShaken.id)}/shaken?${viewKind === 'record' ? 'kind=record&' : ''}${mechanicQuery() ? `mech=${mechanicQuery()}&` : ''}t=${encodeURIComponent((viewKind === 'record' ? viewShaken.recordFileAt : viewShaken.shakenFileAt) || '')}`
     : '';
 
   function shakenBadge(v: Vehicle) {
@@ -561,7 +561,7 @@ export default function VehiclesTab({
               </button>
               <a
                 className="btn"
-                href={`/api/vehicles/${encodeURIComponent(viewShaken.id)}/shaken${viewKind === 'record' ? '?kind=record' : ''}`}
+                href={`/api/vehicles/${encodeURIComponent(viewShaken.id)}/shaken?${viewKind === 'record' ? 'kind=record&' : ''}${mechanicQuery() ? `mech=${mechanicQuery()}` : ''}`}
                 download={`${viewKind === 'record' ? '検査証記録事項' : '車検証'}_${viewShaken.plate || viewShaken.id}.jpg`}
               >
                 ⬇️ ダウンロード
@@ -573,11 +573,11 @@ export default function VehiclesTab({
           }
         >
           {shakenMissing ? (
-            <div className="notice-box">画像を読み込めませんでした。管理者ログインが切れていないか確認してください。</div>
+            <div className="notice-box">画像を読み込めませんでした。管理者・整備士のログインが切れていないか確認してください。</div>
           ) : (
             <>
               <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 8 }}>
-                保存日時：{new Date((viewKind === 'record' ? viewShaken.recordFileAt : viewShaken.shakenFileAt) || '').toLocaleString('ja-JP')}　※ 管理者だけが見られます。写真をタップすると拡大します。
+                保存日時：{new Date((viewKind === 'record' ? viewShaken.recordFileAt : viewShaken.shakenFileAt) || '').toLocaleString('ja-JP')}　※ 管理者と整備士だけが見られます。写真をタップすると拡大します。
               </div>
               <a href={shakenUrl} target="_blank" rel="noreferrer">
                 <img

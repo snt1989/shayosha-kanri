@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppData, Vehicle } from '@/lib/types';
-import { genId } from '@/lib/utils';
+import { genId, mechanicHeaders } from '@/lib/utils';
 import { loadTesseract, preprocessForOcr } from '@/lib/ocr';
 import { isPdfFile, readPdf } from '@/lib/pdf';
 import { compressToJpeg, uploadShakenImage } from '@/lib/image';
@@ -64,7 +64,7 @@ export default function VehicleOcrModal({
     if (!target) return;
     setReading(kind);
     try {
-      const res = await fetch(`/api/vehicles/${encodeURIComponent(target.id)}/shaken${kind === 'record' ? '?kind=record' : ''}`, { cache: 'no-store' });
+      const res = await fetch(`/api/vehicles/${encodeURIComponent(target.id)}/shaken${kind === 'record' ? '?kind=record' : ''}`, { cache: 'no-store', headers: mechanicHeaders() });
       if (!res.ok) throw new Error('not found');
       const blob = await res.blob();
       const url: string = await new Promise((resolve, reject) => {
@@ -85,7 +85,7 @@ export default function VehicleOcrModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
-    fetch('/api/shaken-ai', { cache: 'no-store' })
+    fetch('/api/shaken-ai', { cache: 'no-store', headers: mechanicHeaders() })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => setAiAvail(Boolean(j?.configured)))
       .catch(() => setAiAvail(false));
@@ -173,7 +173,7 @@ export default function VehicleOcrModal({
     try {
       // 送る画像は、約1.2MB以下のJPEGに縮める（文字が読める大きさは残す）
       const image = await compressToJpeg(photo, 2200, 1_200_000);
-      const res = await fetch('/api/shaken-ai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image }) });
+      const res = await fetch('/api/shaken-ai', { method: 'POST', headers: { 'Content-Type': 'application/json', ...mechanicHeaders() }, body: JSON.stringify({ image }) });
       const j = await res.json().catch(() => ({}));
       if (!res.ok || !j.success) {
         alert(j.message || 'AIでの読み取りに失敗しました。OCRで読み取るか、手入力してください。');

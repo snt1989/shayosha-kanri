@@ -3,6 +3,7 @@ import { loadData, saveData } from '@/lib/store';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
 import { kvDel, kvGet, kvSet } from '@/lib/kv';
+import { isAdminOrMechanic } from '@/lib/mechanic-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,8 +17,11 @@ const MAX_CHARS = 900_000;
 
 type Stored = { image: string; savedAt: string };
 
-function isAdmin(req: NextRequest) {
-  return isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value);
+// 管理者、または登録済みの整備士
+async function allowed(req: NextRequest) {
+  if (isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value)) return true;
+  const data = await loadData();
+  return isAdminOrMechanic(req, data.masters.mechanics);
 }
 
 async function persist(data: Awaited<ReturnType<typeof loadData>>) {
@@ -31,7 +35,7 @@ async function persist(data: Awaited<ReturnType<typeof loadData>>) {
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (!isAdmin(req)) return NextResponse.json({ success: false, error: 'admin only' }, { status: 401 });
+  if (!(await allowed(req))) return NextResponse.json({ success: false, error: 'admin or mechanic only' }, { status: 401 });
   const { id } = await params;
   const stored = await kvGet<Stored | null>(keyOf(id, kindOf(req)), null);
   if (!stored?.image?.startsWith(PREFIX)) return new NextResponse('not found', { status: 404 });
@@ -42,7 +46,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (!isAdmin(req)) return NextResponse.json({ success: false, error: 'admin only' }, { status: 401 });
+  if (!(await allowed(req))) return NextResponse.json({ success: false, error: 'admin or mechanic only' }, { status: 401 });
   const { id } = await params;
   const body = await req.json().catch(() => null);
   const image: unknown = body?.image;
@@ -57,13 +61,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   await kvSet<Stored>(keyOf(id, kind), { image, savedAt });
   if (kind === 'record') v.recordFileAt = savedAt;
   else v.shakenFileAt = savedAt;
-  pushLog(data, { actor: 'admin', action: `${LABEL[kind]}の画像を保存`, target: v.name, detail: v.plate });
+  pushLog(data, { actor: isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value) ? 'admin' : 'user', action: `${LABEL[kind]}の画像を保存`, target: v.name, detail: v.plate });
   await persist(data);
   return NextResponse.json({ success: true, savedAt });
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (!isAdmin(req)) return NextResponse.json({ success: false, error: 'admin only' }, { status: 401 });
+  if (!(await allowed(req))) return NextResponse.json({ success: false, error: 'admin or mechanic only' }, { status: 401 });
   const { id } = await params;
   const kind = kindOf(req);
   await kvDel(keyOf(id, kind));
