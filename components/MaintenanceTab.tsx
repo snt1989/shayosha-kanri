@@ -252,7 +252,7 @@ export default function MaintenanceTab({
           vehicleId: v.id,
           type: rec.type,
           note: rec.request || rec.work || rec.note || '',
-          watch: progress === 'watch',
+          watch: false,
           photos,
         })) as { id?: string } | undefined;
         if (res?.id) {
