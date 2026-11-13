@@ -50,7 +50,6 @@ export default function MaintRequestModal({
   async function submit() {
     if (!vehicleId) return setError('車両を選んでください。');
     if (!types.length) return setError('整備の種類を1つ以上選んでください。');
-    if (!note.trim()) return setError('依頼の内容（どこがどう悪いか）を入れてください。');
     setSaving(true);
     setError('');
     try {
@@ -120,7 +119,7 @@ export default function MaintRequestModal({
         </div>
       </div>
       <div className="field">
-        <label>依頼の内容（必須・500文字まで）</label>
+        <label>依頼の内容（任意・500文字まで）</label>
         <textarea rows={4} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} placeholder="例：ブレーキを踏むとキーキー音がする／左後ろのタイヤの空気圧が低い" />
       </div>
       <PhotoField ids={photos} onChange={setPhotos} label="写真（任意・故障箇所や警告灯など）" />

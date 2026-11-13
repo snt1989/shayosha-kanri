@@ -156,7 +156,7 @@ export default function MaintenanceTab({
         type: splitMaintTypes(r.maintRequestType).filter((t) => typeOptions.includes(t)).join('、'),
         types: splitMaintTypes(r.maintRequestType).filter((t) => typeOptions.includes(t)),
         km: r.endKm || v.odometer || 0,
-        request: `${r.maintRequestNote || ''}（${r.driver} ${r.date}）`,
+        request: `${r.maintRequestNote ? r.maintRequestNote + '' : ''}（${r.driver} ${r.date}）`,
         note: '',
         cost: undefined,
         shop: '',
@@ -326,7 +326,7 @@ export default function MaintenanceTab({
                         {r.maintRequestUrgency || MAINT_URGENCIES[0]}
                       </span>
                     <div style={{ fontSize: 12, marginTop: 2 }}>
-                      {r.maintRequestNote}　依頼: {r.date} {r.driver}
+                      {r.maintRequestNote || '（内容の記入なし）'}　依頼: {r.date} {r.driver}
                       {!vehicleExists && '（車両は台帳から削除済み）'}
                       <PhotoThumbs ids={r.maintRequestPhotos} />
                       <div className="contact-row">

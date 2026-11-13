@@ -90,7 +90,6 @@ export function startReturn(r: Report, data: AppData): Report {
 
 export function validateReturn(r: Report): string | null {
   if (r.endKm > 0 && r.endKm < r.startKm) return `帰着時の走行距離が、出発時（${comma(r.startKm)}km）より小さくなっています。確認してください。`;
-  if (r.maintRequest && !(r.maintRequestNote || '').trim()) return '整備依頼の内容・症状を入力してください。';
   return null;
 }
 

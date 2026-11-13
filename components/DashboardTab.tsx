@@ -137,7 +137,7 @@ export default function DashboardTab({
                         {r.maintRequestUrgency || MAINT_URGENCIES[0]}
                       </span>
                     <div style={{ fontSize: 12, marginTop: 2 }}>
-                      {r.maintRequestNote}　依頼: {r.date} {r.driver}
+                      {r.maintRequestNote || '（内容の記入なし）'}　依頼: {r.date} {r.driver}
                       <PhotoThumbs ids={r.maintRequestPhotos} />
                       <div className="contact-row">
                         <ContactRequester report={r} mechanic={mechanic} show={Boolean(mechanic) || isAdmin} />

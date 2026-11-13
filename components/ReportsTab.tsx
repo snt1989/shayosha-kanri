@@ -273,10 +273,6 @@ export default function ReportsTab({
       alert('運転者（姓・名）・車両は必須です。');
       return;
     }
-    if (editing.postDone && editing.maintRequest && !(editing.maintRequestNote || '').trim()) {
-      alert('整備依頼の内容・症状を入力してください。');
-      return;
-    }
     const tripKm = editing.postDone ? Math.max(0, (editing.endKm || 0) - (editing.startKm || 0)) : 0;
     const driver = `${editing.driverLast} ${editing.driverFirst}`.trim();
     setSaving(true);

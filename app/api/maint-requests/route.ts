@@ -21,8 +21,8 @@ export async function POST(req: NextRequest) {
     photos?: string[];
   };
   const note = String(b.note || '').trim().slice(0, 500);
-  if (!b.vehicleId || !note) {
-    return NextResponse.json({ success: false, message: '車両と依頼の内容は必須です。' }, { status: 400 });
+  if (!b.vehicleId) {
+    return NextResponse.json({ success: false, message: '車両を選んでください。' }, { status: 400 });
   }
   const urgency = (MAINT_URGENCIES as readonly string[]).includes(String(b.urgency)) ? String(b.urgency) : MAINT_URGENCIES[0];
 

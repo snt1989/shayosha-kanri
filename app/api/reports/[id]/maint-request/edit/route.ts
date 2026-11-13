@@ -36,7 +36,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ success: false, message: '依頼を出した本人・整備士・管理者だけが編集できます。' }, { status: 403 });
   }
   const note = String(b.note || '').trim().slice(0, 500);
-  if (!note) return NextResponse.json({ success: false, message: '依頼の内容は必須です。' }, { status: 400 });
 
   const before = `${r.maintRequestType || ''}/${r.maintRequestUrgency || ''}/${r.maintRequestNote || ''}/${r.vehicleName}`;
   r.maintRequestType = String(b.type ?? r.maintRequestType ?? '').trim().slice(0, 80);

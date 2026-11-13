@@ -424,7 +424,7 @@ export default function VehiclesTab({
                       <strong>{r.maintRequestType || '整備'}</strong>
                       <span className={`pill ${urgencyPill(r.maintRequestUrgency)}`} style={{ marginLeft: 6 }}>{r.maintRequestUrgency || '通常'}</span>
                       <div style={{ fontSize: 12, marginTop: 2 }}>
-                        {r.maintRequestNote}　依頼: {r.date} {r.driver}
+                        {r.maintRequestNote || '（内容の記入なし）'}　依頼: {r.date} {r.driver}
                       </div>
                     </div>
                   </div>
