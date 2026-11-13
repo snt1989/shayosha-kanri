@@ -156,20 +156,31 @@ export default function Header({
 
       {menuOpen && (
         <div className="menu-sheet-wrap" onMouseDown={(e) => e.target === e.currentTarget && setMenuOpen(false)}>
-          <div className="menu-sheet" role="dialog" aria-label="メニュー">
-            <div className="menu-sheet-head">
-              <strong>メニュー</strong>
-              <button className="modal-close" onClick={() => setMenuOpen(false)} aria-label="閉じる">
+          <aside className="menu-sheet" role="dialog" aria-label="メニュー">
+            <div className="drawer-brand">
+              <div className="logo2">🚙</div>
+              <div className="drawer-name">運行管理アプリ</div>
+              <button className="drawer-x" onClick={() => setMenuOpen(false)} aria-label="閉じる">
                 ×
               </button>
             </div>
+            <div className="drawer-user">
+              <div className="drawer-avatar">{(currentDriverName || mechanicName || (isAdmin ? '管' : '？')).charAt(0)}</div>
+              <div style={{ minWidth: 0 }}>
+                <div className="drawer-user-name">{currentDriverName ? `${currentDriverName} さん` : mechanicName ? `${mechanicName}（整備士）` : isAdmin ? '管理者' : '未ログイン'}</div>
+                <div className="drawer-user-sub">
+                  {[currentDriverName ? '🪪 運転者' : '', mechanicName ? '🔧 整備士' : '', isAdmin ? '🔓 管理者' : ''].filter(Boolean).join('　') || '下の「ログイン」から選べます'}
+                </div>
+              </div>
+            </div>
+            <nav className="drawer-nav">
             <div className="menu-sheet-section">画面</div>
-            {TABS.filter((t) => !MAIN_TABS.includes(t.key)).map((t) => (
+            {TABS.map((t) => (
               <button key={t.key} className={`menu-row ${tab === t.key ? 'active' : ''}`} onClick={() => goTab(t.key)}>
                 <span className="menu-row-ic">{t.icon}</span>
                 <span className="menu-row-label">{t.label}</span>
                 {t.admin && <span className="adminbadge">ADMIN</span>}
-                <span className="menu-row-go">›</span>
+                <span className="menu-row-go">{tab === t.key ? '表示中' : '›'}</span>
               </button>
             ))}
             <div className="menu-sheet-section">ログイン</div>
@@ -200,7 +211,13 @@ export default function Header({
               <span className="menu-row-label">{isAdmin ? '管理者ログアウト' : '管理者ログイン'}</span>
               <span className="menu-row-go">{isAdmin ? '解除' : '›'}</span>
             </button>
-          </div>
+            </nav>
+            <div className="drawer-foot">
+              <button className="drawer-close" onClick={() => setMenuOpen(false)}>
+                ‹ 閉じる
+              </button>
+            </div>
+          </aside>
         </div>
       )}
 
