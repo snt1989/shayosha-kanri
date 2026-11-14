@@ -7,6 +7,7 @@ import MaintRequestModal, { MaintRequestInput } from './MaintRequestModal';
 import PhotoField, { PhotoThumbs } from './PhotoField';
 import { jpDate } from '@/lib/schedule-text';
 import RequestSchedule from './RequestSchedule';
+import MechNotices from './MechNotices';
 import ContactRequester from './ContactRequester';
 import { cleanPhotoIds } from '@/lib/photo-ids';
 import { downloadCsv, maintenanceToCsv } from '@/lib/csv';
@@ -317,6 +318,7 @@ export default function MaintenanceTab({
     });
   return (
     <div>
+      <MechNotices canEdit={canEdit} />
       {requests.length > 0 && (
         <div className="card" style={{ marginBottom: 14 }}>
           <h3 className="card-title">
