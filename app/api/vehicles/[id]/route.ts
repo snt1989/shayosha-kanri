@@ -21,6 +21,7 @@ export async function DELETE(
   }
   if (target?.shakenFileAt) await kvDel(`fleet:shaken:v1:${id}`);
   if (target?.recordFileAt) await kvDel(`fleet:shaken:v1:${id}:record`);
+  for (const pid of target?.photos || []) await kvDel(`fleet:photo:v1:${pid}`);
   pushLog(data, {
     actor: isAdminReq ? 'admin' : 'user',
     action: '車両削除',

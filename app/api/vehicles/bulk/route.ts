@@ -3,6 +3,7 @@ import { loadData, saveData } from '@/lib/store';
 import { Vehicle } from '@/lib/types';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
+import { MAX_VEHICLE_PHOTOS, cleanPhotoIds } from '@/lib/photo-ids';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,8 +14,13 @@ export async function POST(req: NextRequest) {
   // 車検証の画像の印は、一括編集やCSV取込で消えないよう、今保存されているものを引き継ぐ
   const flags = new Map(data.vehicles.map((v) => [v.id, v.shakenFileAt]));
   const recFlags = new Map(data.vehicles.map((v) => [v.id, v.recordFileAt]));
+  // 写真は一括編集では触らない。いま保存されているものを引き継ぐ（CSV取込でも消えない）
+  const photoMap = new Map(data.vehicles.map((v) => [v.id, v.photos]));
   data.vehicles = (list || []).map((v) => {
     const nv: Vehicle = { ...v, maintHistory: v.maintHistory || [] };
+    const keepPh = cleanPhotoIds(photoMap.get(v.id), MAX_VEHICLE_PHOTOS);
+    if (keepPh.length) nv.photos = keepPh;
+    else delete nv.photos;
     const keep = flags.get(v.id);
     if (keep) nv.shakenFileAt = keep;
     else delete nv.shakenFileAt;

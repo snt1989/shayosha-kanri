@@ -87,6 +87,7 @@ export type Vehicle = {
   odometer: number;
   oilKm: number;
   tire: string;
+  photos?: string[]; // 車両の写真のid（最大6枚。小さく縮めて保存。本体は /api/photos/{id}）
   tireSummer?: TireInfo; // 夏タイヤのメーカー・製造年
   tireWinter?: TireInfo; // 冬タイヤ（スタッドレス）のメーカー・製造年
   tireMaker?: string; // （旧）タイヤのメーカー。夏・冬に分ける前の項目。tireSetsOf で読む

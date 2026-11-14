@@ -39,10 +39,12 @@ export default function PhotoField({
   ids,
   onChange,
   label = '写真（任意）',
+  max = MAX_PHOTOS,
 }: {
   ids: string[];
   onChange: (ids: string[]) => void;
   label?: string;
+  max?: number;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -58,8 +60,8 @@ export default function PhotoField({
       const next = [...ids];
       const newly: string[] = [];
       for (const file of Array.from(files)) {
-        if (next.length >= MAX_PHOTOS) {
-          setError(`写真は${MAX_PHOTOS}枚までです。`);
+        if (next.length >= max) {
+          setError(`写真は${max}枚までです。`);
           break;
         }
         if (!file.type.startsWith('image/')) {
@@ -105,7 +107,7 @@ export default function PhotoField({
             </button>
           </div>
         ))}
-        {ids.length < MAX_PHOTOS && (
+        {ids.length < max && (
           <button type="button" className="photo-add" onClick={() => inputRef.current?.click()} disabled={busy}>
             {busy ? '保存中…' : '📷 写真を追加'}
           </button>
@@ -113,7 +115,7 @@ export default function PhotoField({
       </div>
       <input ref={inputRef} type="file" accept="image/*" multiple hidden onChange={(e) => pick(e.target.files)} />
       <div style={{ fontSize: 12, color: 'var(--slate-500)', marginTop: 4 }}>
-        {MAX_PHOTOS}枚まで。通信量を減らすため、写真は自動で小さく（1枚およそ50KB以下）して保存します。
+        {max}枚まで。通信量を減らすため、写真は自動で小さく（1枚およそ50KB以下）して保存します。
       </div>
       {error && (
         <div role="alert" style={{ fontSize: 12, color: 'var(--red-600, #dc2626)', marginTop: 4 }}>

@@ -1,5 +1,7 @@
 'use client';
 
+import PhotoField, { PhotoThumbs } from './PhotoField';
+import { MAX_VEHICLE_PHOTOS } from '@/lib/photo-ids';
 import { useMemo, useRef, useState } from 'react';
 import { useMobileLimit } from '@/lib/useLimit';
 import { AppData, Vehicle } from '@/lib/types';
@@ -301,6 +303,11 @@ export default function VehiclesTab({
                     </div>
                     <span className="pill pill-slate">{v.tire}</span>
                   </div>
+                  {v.photos && v.photos.length > 0 && (
+                    <div style={{ marginBottom: 6 }}>
+                      <PhotoThumbs ids={v.photos} />
+                    </div>
+                  )}
                   {(() => {
                     const t = tireSetsOf(v);
                     const winterNow = /スタッドレス|冬/.test(v.tire || '');
@@ -732,6 +739,9 @@ export default function VehiclesTab({
             ))}
           </datalist>
           <div style={{ fontSize: 11, color: 'var(--slate-500)', margin: '-4px 0 12px' }}>「タイヤ種別」は、いま付けているほうです。DOTは、タイヤ側面の「DOT」刻印の最後の4桁です。</div>
+
+          <div className="section-heading">車両の写真</div>
+          <PhotoField ids={editing.photos || []} max={MAX_VEHICLE_PHOTOS} label="写真（任意）" onChange={(photos) => setEditing({ ...editing, photos })} />
 
           <div className="section-heading" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             車検証の情報

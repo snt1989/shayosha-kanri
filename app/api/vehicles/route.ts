@@ -3,6 +3,7 @@ import { loadData, saveData } from '@/lib/store';
 import { Vehicle } from '@/lib/types';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
+import { MAX_VEHICLE_PHOTOS, cleanPhotoIds } from '@/lib/photo-ids';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +14,10 @@ export async function POST(req: NextRequest) {
     v.id = 'v' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   }
   if (!v.maintHistory) v.maintHistory = [];
+  // 写真は、正しい形のidだけ・最大6枚
+  const ph = cleanPhotoIds(v.photos, MAX_VEHICLE_PHOTOS);
+  if (ph.length) v.photos = ph;
+  else delete v.photos;
 
   const isAdminReq = isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value);
   const data = await loadData();
