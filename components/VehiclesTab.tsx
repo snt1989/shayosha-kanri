@@ -664,11 +664,11 @@ export default function VehiclesTab({
           <div className="field-row row2">
             <div className="field">
               <label>現在積算走行（km）</label>
-              <input type="number" value={editing.odometer} onChange={(e) => setEditing({ ...editing, odometer: Number(e.target.value) })} />
+              <input type="number" inputMode="numeric" placeholder="0" value={editing.odometer || ''} onChange={(e) => setEditing({ ...editing, odometer: Number(e.target.value) })} />
             </div>
             <div className="field">
               <label>次回オイル交換目安（km）</label>
-              <input type="number" value={editing.oilKm} onChange={(e) => setEditing({ ...editing, oilKm: Number(e.target.value) })} />
+              <input type="number" inputMode="numeric" placeholder="0" value={editing.oilKm || ''} onChange={(e) => setEditing({ ...editing, oilKm: Number(e.target.value) })} />
             </div>
           </div>
           <div className="field">
@@ -835,10 +835,10 @@ export default function VehiclesTab({
                       <input type="date" value={v.checkDate} onChange={(e) => updateBulkRow(idx, { checkDate: e.target.value })} />
                     </td>
                     <td>
-                      <input type="number" value={v.odometer} onChange={(e) => updateBulkRow(idx, { odometer: Number(e.target.value) })} />
+                      <input type="number" inputMode="numeric" placeholder="0" value={v.odometer || ''} onChange={(e) => updateBulkRow(idx, { odometer: Number(e.target.value) })} />
                     </td>
                     <td>
-                      <input type="number" value={v.oilKm} onChange={(e) => updateBulkRow(idx, { oilKm: Number(e.target.value) })} />
+                      <input type="number" inputMode="numeric" placeholder="0" value={v.oilKm || ''} onChange={(e) => updateBulkRow(idx, { oilKm: Number(e.target.value) })} />
                     </td>
                     <td>
                       <select value={v.tire} onChange={(e) => updateBulkRow(idx, { tire: e.target.value })}>

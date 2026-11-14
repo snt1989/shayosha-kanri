@@ -572,7 +572,9 @@ export default function ReportsTab({
             <div style={{ display: 'flex', gap: 6 }}>
               <input
                 type="number"
-                value={editing.startKm}
+                inputMode="numeric"
+                placeholder="0"
+                value={editing.startKm || ''}
                 onChange={(e) => setEditing({ ...editing, startKm: Number(e.target.value) })}
                 style={{ flex: 1 }}
               />
@@ -668,7 +670,9 @@ export default function ReportsTab({
                 <div style={{ display: 'flex', gap: 6 }}>
                   <input
                     type="number"
-                    value={editing.endKm}
+                    inputMode="numeric"
+                    placeholder="0"
+                    value={editing.endKm || ''}
                     onChange={(e) => setEditing({ ...editing, endKm: Number(e.target.value) })}
                     style={{ flex: 1 }}
                   />
