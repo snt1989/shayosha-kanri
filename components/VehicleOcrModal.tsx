@@ -250,7 +250,7 @@ export default function VehicleOcrModal({
       return;
     }
     if (!existing && !name.trim()) {
-      alert('車両呼称は必須です（例：社用車4号（ハイエース 白））。');
+      alert('車両呼称は必須です（例：車両4号（ハイエース 白））。');
       return;
     }
     if (!onSave) return;
@@ -417,7 +417,7 @@ export default function VehicleOcrModal({
           <input
             value={existing ? existing.name : onApply ? '' : name}
             disabled={!!existing || !!onApply}
-            placeholder="例：社用車4号（ハイエース 白）"
+            placeholder="例：車両4号（ハイエース 白）"
             onChange={(e) => setName(e.target.value)}
           />
         </div>

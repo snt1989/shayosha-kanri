@@ -369,7 +369,7 @@ export default function NoticeBell({ data, isAdmin, onNavigate }: { data: AppDat
               <h3 className="card-title">{editingId ? '✏️ 連絡事項を直す（管理者）' : '✏️ 連絡事項を投稿（管理者）'}</h3>
               <div className="field">
                 <label>タイトル（60文字まで）</label>
-                <input value={form.title} maxLength={60} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="例：10/30 は社用車の一斉点検です" />
+                <input value={form.title} maxLength={60} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="例：10/30 は車両の一斉点検です" />
               </div>
               <div className="field">
                 <label>本文（任意）</label>

@@ -176,7 +176,7 @@ export type Reservation = {
   createdAt: string;
 };
 
-// レンタカーの利用記録（社用車とは別管理）
+// レンタカーの利用記録（車両台帳とは別管理）
 export type Rental = {
   id: string;
   company: string; // レンタカー会社
@@ -269,7 +269,7 @@ export const DEFAULT_MASTERS: Masters = {
 export const DEFAULT_VEHICLES: Vehicle[] = [
   {
     id: 'v1',
-    name: '社用車1号（プリウス 白）',
+    name: '車両1号（プリウス 白）',
     plate: '品川 500 さ 12-34',
     modelType: '6AA-ZVW51',
     shakenDate: '2026-10-15',
@@ -281,7 +281,7 @@ export const DEFAULT_VEHICLES: Vehicle[] = [
   },
   {
     id: 'v2',
-    name: '社用車2号（プロボックス 銀）',
+    name: '車両2号（プロボックス 銀）',
     plate: '品川 400 た 56-78',
     modelType: '3BD-NCP160V',
     shakenDate: '2027-03-25',
@@ -293,7 +293,7 @@ export const DEFAULT_VEHICLES: Vehicle[] = [
   },
   {
     id: 'v3',
-    name: '社用車3号（ハイエース 白）',
+    name: '車両3号（ハイエース 白）',
     plate: '品川 400 す 99-01',
     modelType: '3DF-GDH201V',
     shakenDate: '2027-01-20',

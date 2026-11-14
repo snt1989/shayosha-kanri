@@ -5,7 +5,7 @@ import { AppData, Vehicle } from '@/lib/types';
 import VehiclesTab from './VehiclesTab';
 import VehicleListTab from './VehicleListTab';
 
-// 「車両台帳」ページ：社用車の一覧。誰でも見られる。登録・編集・削除・取込・車検証の読み取りは管理者と整備士。
+// 「車両台帳」ページ：車両の一覧。誰でも見られる。登録・編集・削除・取込・車検証の読み取りは管理者と整備士。
 export default function VehicleLedgerTab({
   data,
   isAdmin,

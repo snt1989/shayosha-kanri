@@ -242,7 +242,7 @@ export default function VehiclesTab({
         <div className="toolbar2">
           <div>
             <h3 className="card-title" style={{ marginBottom: 4 }}>
-              🚗 社用車 台帳管理 <span className="pill pill-slate">車検・車両・整備</span>
+              🚗 車両 台帳管理 <span className="pill pill-slate">車検・車両・整備</span>
             </h3>
             <div style={{ fontSize: 12, color: 'var(--slate-500)' }}>
               車検満了日・12ヶ月点検・走行メーター・タイヤ種別を一括管理できます。

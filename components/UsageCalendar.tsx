@@ -21,7 +21,7 @@ const MAX_CHIPS = 3;
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const ymd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-// 「社用車1号（プリウス 白）」→「社用車1号」
+// 「車両1号（プリウス 白）」→「車両1号」
 const shortName = (name: string) => name.split(/[（(]/)[0].trim() || name;
 const addDays = (s: string, n: number) => {
   const [yy, mm, dd] = s.split('-').map(Number);
@@ -478,7 +478,7 @@ export default function UsageCalendar({
           <div className="field">
             <label>車両 *</label>
             <select value={form.vehicleId} onChange={(e) => changeVehicle(e.target.value)}>
-              <optgroup label="社用車">
+              <optgroup label="車両">
                 {data.vehicles.map((v) => (
                   <option key={v.id} value={v.id}>
                     {v.name}（{v.plate}）

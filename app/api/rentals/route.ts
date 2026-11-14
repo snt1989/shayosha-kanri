@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 const num = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 
-// レンタカー利用の登録・更新。社用車とは別管理。
+// レンタカー利用の登録・更新。車両台帳とは別管理。
 export async function POST(req: NextRequest) {
   const r: Rental = await req.json();
   const isNew = !r.id;

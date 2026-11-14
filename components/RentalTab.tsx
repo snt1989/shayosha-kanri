@@ -193,7 +193,7 @@ export default function RentalTab({
         <div className="toolbar2">
           <div>
             <h3 className="card-title" style={{ marginBottom: 4 }}>
-              🚗 レンタカー登録 <span className="pill pill-slate">社用車とは別管理</span>
+              🚗 レンタカー登録 <span className="pill pill-slate">車両台帳とは別管理</span>
             </h3>
             <div style={{ fontSize: 12, color: 'var(--slate-500)' }}>
               借りたレンタカーと料金を登録します。登録したレンタカーを押すと、運転した人を記録する「運行記録」の入力画面に切り替わります。

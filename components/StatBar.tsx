@@ -51,7 +51,7 @@ export default function StatBar({ data }: { data: AppData }) {
         </div>
       </div>
       <div className="stat-tile">
-        <div className="label">登録社用車</div>
+        <div className="label">登録車両</div>
         <div className="value">
           {data.vehicles.length} <small>台</small>
         </div>
