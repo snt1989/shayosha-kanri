@@ -5,6 +5,7 @@ import { AppData, MAINT_PROGRESS, MAINT_URGENCIES, MaintProgress, MaintRecord, R
 import { isRequestOpen, splitMaintTypes, maintTypesOf, urgencyLevel, urgencyPill, canEditMaintRequest, openMaintRequests, todayStr } from '@/lib/utils';
 import MaintRequestModal, { MaintRequestInput } from './MaintRequestModal';
 import PhotoField, { PhotoThumbs } from './PhotoField';
+import { jpDate } from '@/lib/schedule-text';
 import RequestSchedule from './RequestSchedule';
 import ContactRequester from './ContactRequester';
 import { cleanPhotoIds } from '@/lib/photo-ids';
@@ -305,7 +306,15 @@ export default function MaintenanceTab({
   const filtering = Boolean(query.trim() || vehicleFilter || typeFilter || progressFilter);
 
   const lim = useMobileLimit(rows, 3, `${query}|${vehicleFilter}|${typeFilter}|${progressFilter}`);
-  const reqLim = useMobileLimit(requests, 3);
+  // 整備依頼は、件数で切らずに全部出す（スマホでは1件ずつ短く表示し、「▼ 詳細・操作」で開く）
+  const [reqOpen, setReqOpen] = useState<Set<string>>(new Set());
+  const toggleReq = (id: string) =>
+    setReqOpen((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   return (
     <div>
       {requests.length > 0 && (
@@ -317,28 +326,35 @@ export default function MaintenanceTab({
             帰着登録やダッシュボードで受け付けた依頼です。「整備記録として登録」から、整備中・経過観察・完了を選べます（経過観察は完了と同じ扱いで、対応待ちから外れます）。
           </div>
           <div className="alert-list">
-            {reqLim.shown.map((r) => {
+            {requests.map((r) => {
               const vehicleExists = data.vehicles.some((v) => v.id === r.vehicleId);
               return (
-                <div key={r.id} className={`alert-item u-${urgencyLevel(r.maintRequestUrgency)}`}>
+                <div key={r.id} className={`alert-item req-item u-${urgencyLevel(r.maintRequestUrgency)} ${reqOpen.has(r.id) ? 'req-open' : ''}`}>
                   <span>🔧</span>
                   <div style={{ flex: 1 }}>
                     <strong>{r.vehicleName}</strong>
-                    {r.plate ? `（${r.plate}）` : ''}— {r.maintRequestType || '整備'}
+                    <span className="req-plate">{r.plate ? `（${r.plate}）` : ''}</span>— {r.maintRequestType || '整備'}
                     <span className={`pill ${urgencyPill(r.maintRequestUrgency)}`} style={{ marginLeft: 6 }}>
                         {r.maintRequestUrgency || MAINT_URGENCIES[0]}
                       </span>
                     <div style={{ fontSize: 12, marginTop: 2 }}>
-                      {r.maintRequestNote || '（内容の記入なし）'}　依頼: {r.date} {r.driver}
+                      <span className="req-note">{r.maintRequestNote || '（内容の記入なし）'}</span>
+                      <span className="req-by">　依頼: {r.date} {r.driver}</span>
                       {!vehicleExists && '（車両は台帳から削除済み）'}
-                      <PhotoThumbs ids={r.maintRequestPhotos} />
-                      <RequestSchedule report={r} mechanic={mechanic} isAdmin={canEdit && !mechanic} onChanged={onRefresh} />
-                      <div className="contact-row">
-                        <ContactRequester report={r} mechanic={mechanic} show={canEdit} />
+                      {r.maintRequestScheduledDate && <span className="req-short-date">　📅 {jpDate(r.maintRequestScheduledDate)}</span>}
+                      <div className="req-more">
+                        <PhotoThumbs ids={r.maintRequestPhotos} />
+                        <RequestSchedule report={r} mechanic={mechanic} isAdmin={canEdit && !mechanic} onChanged={onRefresh} />
+                        <div className="contact-row">
+                          <ContactRequester report={r} mechanic={mechanic} show={canEdit} />
+                        </div>
                       </div>
                     </div>
+                    <button type="button" className="req-toggle" onClick={() => toggleReq(r.id)}>
+                      {reqOpen.has(r.id) ? '▲ 閉じる' : '▼ 詳細・操作'}
+                    </button>
                   </div>
-                  <div className="alert-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <div className="alert-actions req-more" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {canEditMaintRequest(r, { driverId: currentDriverId, mechanic: canEdit ? mechanic || '管理者' : null, isAdmin: canEdit && !mechanic }) && (
                       <button className="btn btn-sm" onClick={() => setEditingReq(r)}>
                         ✏️ 編集
