@@ -3047,3 +3047,11 @@ body::before {
   .vlist-wrap table.data-table.vlist-table.vlist-table td::before { content: none; display: none; }
   .vlist-wrap table.data-table.vlist-table.vlist-table td[style*='text-align: right'] { text-align: right; }
 }
+
+/* メニューのパネルの中で、その場で並び替える */
+.drawer-reorder-btn { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.3); color: #e0f2fe; border-radius: 999px; padding: 4px 12px; font-size: 12px; font-weight: 700; cursor: pointer; letter-spacing: 0; }
+.drawer-reorder-hint { font-size: 11px; color: #bae6fd; padding: 6px 10px 0; line-height: 1.5; }
+.menu-row.reorder-row { cursor: default; }
+.menu-row.reorder-row.in-bar { background: rgba(56,189,248,.14); }
+.reorder-arrow { flex: none; width: 40px; height: 36px; border-radius: 8px; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.1); color: #fff; font-size: 17px; font-weight: 800; cursor: pointer; }
+.reorder-arrow:disabled { opacity: .3; cursor: default; }

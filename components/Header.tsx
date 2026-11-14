@@ -9,6 +9,7 @@ type SyncStatus = 'idle' | 'saving' | 'error';
 
 export default function Header({
   order,
+  onChangeOrder,
   tab,
   onTabChange,
   syncStatus,
@@ -27,6 +28,7 @@ export default function Header({
 }: {
   // メニューの並び順（「設定」で変えられる）。スマホの下のバーには、上から4つが出る
   order: TabKey[];
+  onChangeOrder?: (o: TabKey[]) => void;
   tab: Tab;
   onTabChange: (t: Tab) => void;
   syncStatus: SyncStatus;
@@ -54,6 +56,19 @@ export default function Header({
   const MAIN_TABS: Tab[] = shownOrder.slice(0, BAR_COUNT);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  // メニューの中で、その場で並び替える（この端末だけに保存。整備士だけのときも使える）
+  const [reorder, setReorder] = useState(false);
+  const moveTab = (key: TabKey, d: number) => {
+    if (!onChangeOrder) return;
+    const j = shownOrder.indexOf(key) + d;
+    if (j < 0 || j >= shownOrder.length) return;
+    const other = shownOrder[j];
+    const next = [...order];
+    const a = next.indexOf(key);
+    const b = next.indexOf(other);
+    [next[a], next[b]] = [next[b], next[a]];
+    onChangeOrder(next);
+  };
   const inMenu = !MAIN_TABS.includes(tab);
   const goTab = (t: Tab) => {
     setMenuOpen(false);
@@ -211,15 +226,44 @@ export default function Header({
               </button>
             </div>
             <nav className="drawer-nav">
-            <div className="menu-sheet-section">画面</div>
-            {TABS.map((t) => (
-              <button key={t.key} className={`menu-row ${tab === t.key ? 'active' : ''}`} onClick={() => goTab(t.key)}>
-                <span className="menu-row-ic">{t.icon}</span>
-                <span className="menu-row-label">{t.label}</span>
-                {t.admin && <span className="adminbadge">ADMIN</span>}
-                <span className="menu-row-go">{tab === t.key ? '表示中' : '›'}</span>
-              </button>
-            ))}
+            <div className="menu-sheet-section" style={{ display: 'flex', alignItems: 'center' }}>
+              <span style={{ flex: 1 }}>{reorder ? '画面（↑↓で並び替え）' : '画面'}</span>
+              {onChangeOrder && (
+                <button type="button" className="drawer-reorder-btn" onClick={() => setReorder(!reorder)}>
+                  {reorder ? '✓ 完了' : '↕ 並び替え'}
+                </button>
+              )}
+            </div>
+            {TABS.map((t) => {
+              const idx = shownOrder.indexOf(t.key as TabKey);
+              if (reorder) {
+                if (idx < 0) return null; // 「設定」は最後に固定
+                return (
+                  <div key={t.key} className={`menu-row reorder-row ${idx < BAR_COUNT ? 'in-bar' : ''}`}>
+                    <span className="menu-row-ic">{t.icon}</span>
+                    <span className="menu-row-label">
+                      {t.label}
+                      {idx < BAR_COUNT && <span className="pill pill-sky" style={{ marginLeft: 6 }}>下のバー</span>}
+                    </span>
+                    <button type="button" className="reorder-arrow" onClick={() => moveTab(t.key as TabKey, -1)} disabled={idx === 0} aria-label={`${t.label}を上へ`}>
+                      ↑
+                    </button>
+                    <button type="button" className="reorder-arrow" onClick={() => moveTab(t.key as TabKey, 1)} disabled={idx === shownOrder.length - 1} aria-label={`${t.label}を下へ`}>
+                      ↓
+                    </button>
+                  </div>
+                );
+              }
+              return (
+                <button key={t.key} className={`menu-row ${tab === t.key ? 'active' : ''}`} onClick={() => goTab(t.key)}>
+                  <span className="menu-row-ic">{t.icon}</span>
+                  <span className="menu-row-label">{t.label}</span>
+                  {t.admin && <span className="adminbadge">ADMIN</span>}
+                  <span className="menu-row-go">{tab === t.key ? '表示中' : '›'}</span>
+                </button>
+              );
+            })}
+            {reorder && <div className="drawer-reorder-hint">上から{BAR_COUNT}つが、スマホの下のバーに出ます。この端末だけに保存されます。</div>}
             </nav>
             <div className="drawer-foot">
               <button className="drawer-close" onClick={() => setMenuOpen(false)}>

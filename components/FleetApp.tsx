@@ -489,6 +489,7 @@ export default function FleetApp() {
     <div className="app-shell">
       <Header
         order={menuOrder}
+        onChangeOrder={changeMenuOrder}
         mechanicOnly={mechanicOnly}
         tab={visibleTab}
         onTabChange={setTab}
