@@ -11,6 +11,7 @@ const SCREEN_NAMES: Record<HelpTarget, string> = {
   rental: 'レンタカー',
   maintenance: '整備台帳',
   vehicles: '車両台帳',
+  vehicleList: '車両一覧',
   cards: 'カード貸出',
   calendar: 'カレンダー',
   settings: '設定',

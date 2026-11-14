@@ -778,7 +778,7 @@ export default function VehiclesTab({
 
       {bulkRows !== null && (
         <Modal
-          title="社用車台帳 まとめて一括編集"
+          title="車両台帳 まとめて一括編集"
           onClose={() => setBulkRows(null)}
           wide="x"
           footer={

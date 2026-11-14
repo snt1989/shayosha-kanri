@@ -15,6 +15,7 @@ import MechanicLoginModal from './MechanicLoginModal';
 import RentalTab from './RentalTab';
 import FuelTab from './FuelTab';
 import HelpTab from './HelpTab';
+import VehicleListTab from './VehicleListTab';
 import VehicleLedgerTab from './VehicleLedgerTab';
 import CardsTab from './CardsTab';
 import CalendarTab from './CalendarTab';
@@ -23,7 +24,7 @@ import { DEFAULT_ORDER, MECHANIC_TABS, TabKey, loadOrder, saveOrder } from '@/li
 import AdminLoginModal from './AdminLoginModal';
 import DriverLoginModal from './DriverLoginModal';
 
-type Tab = 'dashboard' | 'reports' | 'maintenance' | 'vehicles' | 'fuel' | 'rental' | 'calendar' | 'cards' | 'help' | 'settings';
+type Tab = 'dashboard' | 'reports' | 'maintenance' | 'vehicles' | 'vehicleList' | 'fuel' | 'rental' | 'calendar' | 'cards' | 'help' | 'settings';
 type SyncStatus = 'idle' | 'saving' | 'error';
 const DRIVER_SESSION_KEY = 'fleet_current_driver_id';
 const MECHANIC_SESSION_KEY = 'fleet_current_mechanic';
@@ -620,6 +621,7 @@ export default function FleetApp() {
             onRequestDriverLogin={() => requireDriverLogin()}
           />
         )}
+        {visibleTab === 'vehicleList' && <VehicleListTab data={viewData} onOpenLedger={() => setTab('vehicles')} />}
         {visibleTab === 'vehicles' && (
           <VehicleLedgerTab
             data={viewData}
