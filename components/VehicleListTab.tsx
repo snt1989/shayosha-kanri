@@ -17,7 +17,7 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: 'odometer', label: '走行距離が多い順' },
 ];
 
-// 「車両一覧」ページ：全車両を1つの表で見比べる（車検・点検・走行・オイル・タイヤ・整備依頼）。誰でも見られる。
+// 車両台帳の「📋 一覧表」：全車両を1つの表で見比べる（車検・点検・走行・オイル・タイヤ・整備依頼）。誰でも見られる。
 export default function VehicleListTab({ data, onOpenLedger }: { data: AppData; onOpenLedger: () => void }) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('');
@@ -188,7 +188,7 @@ export default function VehicleListTab({ data, onOpenLedger }: { data: AppData; 
         <div style={{ marginTop: 10, fontSize: 12, color: 'var(--slate-500)' }}>
           車検・点検・オイルの色は、設定の「アラートを出す時期」に合わせています。登録・編集・車検証の確認は{' '}
           <button type="button" className="btn btn-sm" onClick={onOpenLedger}>
-            🚘 車両台帳を開く
+            🗂 カード表示へ
           </button>
         </div>
       </div>

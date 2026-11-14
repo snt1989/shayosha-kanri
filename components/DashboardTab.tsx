@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useMobileLimit } from '@/lib/useLimit';
 import { AppData, Driver, MAINT_URGENCIES, Report, Reservation, cardKindIcon } from '@/lib/types';
 import { urgencyLevel, urgencyPill, canEditMaintRequest, openMaintRequests, rentalReservations, reservationRange, todayStr } from '@/lib/utils';
-import VehicleListTab from './VehicleListTab';
 import AlertsPanel, { MaintPrefill } from './AlertsPanel';
 import DashboardNotices from './DashboardNotices';
 import { fmtDateTime, isOverdue, useCards } from './useCards';
@@ -29,7 +28,6 @@ export default function DashboardTab({
   onEditMaintRequest,
   onDeleteMaintRequest,
   hideOpenReports = false,
-  onOpenLedger,
   onRefresh,
   mechanic,
 }: {
@@ -47,8 +45,6 @@ export default function DashboardTab({
   onDeleteMaintRequest: (id: string) => Promise<unknown>;
   // 整備士だけのときは、帰着登録が済んでいない日報の欄を出さない
   hideOpenReports?: boolean;
-  // 下の「車両一覧」から、車両台帳（登録・編集）を開く
-  onOpenLedger: () => void;
   onRefresh?: () => void;
   mechanic: string | null;
 }) {
@@ -295,7 +291,6 @@ export default function DashboardTab({
 
       <AlertsPanel data={data} standalone onRequestMaint={openMaintForm} />
 
-      <VehicleListTab data={data} onOpenLedger={onOpenLedger} />
     </div>
   );
 }

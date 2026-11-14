@@ -523,7 +523,6 @@ export default function FleetApp() {
           <DashboardTab
             data={viewData}
             hideOpenReports={mechanicOnly}
-            onOpenLedger={() => { setTab('vehicles'); if (typeof window !== 'undefined') window.scrollTo({ top: 0 }); }}
             onReturnCheckin={handleReturnCheckin}
             onOpenMaintenance={() => setTab('maintenance')}
             onOpenCalendar={() => { setTab('calendar'); if (typeof window !== 'undefined') window.scrollTo({ top: 0 }); }}
