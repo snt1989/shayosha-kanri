@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { photoUrl } from '@/lib/image';
 import { AppData, Vehicle } from '@/lib/types';
 import { DEFAULT_ALERT_SETTINGS, normalizeAlertSettings } from '@/lib/alert-settings';
 import { downloadCsv, vehiclesToCsv } from '@/lib/csv';
@@ -17,11 +18,47 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: 'odometer', label: '走行距離が多い順' },
 ];
 
+// 表に出す項目（「車両」の列は常に出す）。チェックで出し入れでき、選んだ内容はこの端末に残る
+type ColKey = 'photo' | 'model' | 'chassis' | 'shaken' | 'check' | 'odo' | 'oil' | 'tire' | 'req';
+const COLS: { key: ColKey; label: string; on: boolean }[] = [
+  { key: 'photo', label: '写真', on: false },
+  { key: 'model', label: '型式', on: true },
+  { key: 'chassis', label: '車台番号', on: false },
+  { key: 'shaken', label: '車検満了日', on: true },
+  { key: 'check', label: '12ヶ月点検日', on: true },
+  { key: 'odo', label: '走行距離', on: true },
+  { key: 'oil', label: 'オイル交換', on: true },
+  { key: 'tire', label: 'タイヤ', on: true },
+  { key: 'req', label: '整備依頼', on: true },
+];
+const COLS_KEY = 'fleet:vlist:cols';
+const defaultCols = () => COLS.filter((c) => c.on).map((c) => c.key);
+
 // 車両台帳の「📋 一覧表」：全車両を1つの表で見比べる（車検・点検・走行・オイル・タイヤ・整備依頼）。誰でも見られる。
 export default function VehicleListTab({ data, onOpenLedger }: { data: AppData; onOpenLedger: () => void }) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('');
   const [sort, setSort] = useState<SortKey>('name');
+  const [cols, setCols] = useState<ColKey[]>(defaultCols());
+  const [colsOpen, setColsOpen] = useState(false);
+  useEffect(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(COLS_KEY) || 'null');
+      if (Array.isArray(raw)) setCols(COLS.map((c) => c.key).filter((k) => raw.includes(k)));
+    } catch {
+      // 読めなければ標準の表示
+    }
+  }, []);
+  const toggleCol = (k: ColKey) => {
+    const next = COLS.map((c) => c.key).filter((x) => (x === k ? !cols.includes(x) : cols.includes(x)));
+    setCols(next);
+    try {
+      localStorage.setItem(COLS_KEY, JSON.stringify(next));
+    } catch {
+      // 保存できなくても、この画面の間は変わる
+    }
+  };
+  const show = (k: ColKey) => cols.includes(k);
 
   const st = data.alertSettings ? normalizeAlertSettings(data.alertSettings) : DEFAULT_ALERT_SETTINGS;
   const requests = useMemo(() => openMaintRequests(data.reports), [data.reports]);
@@ -125,7 +162,25 @@ export default function VehicleListTab({ data, onOpenLedger }: { data: AppData; 
               </option>
             ))}
           </select>
+          <button type="button" className="btn btn-sm" aria-expanded={colsOpen} onClick={() => setColsOpen(!colsOpen)}>
+            ☑ 表示項目{cols.length < COLS.length ? `（${cols.length}/${COLS.length}）` : ''}
+          </button>
         </div>
+        {colsOpen && (
+          <div className="vlist-cols">
+            <div className="vlist-cols-title">表に出す項目にチェックを入れてください（車両名は常に出ます。この端末に残ります）</div>
+            <div className="vlist-cols-grid">
+              {COLS.map((c) => (
+                <label key={c.key} className="checkbox-field">
+                  <input type="checkbox" checked={show(c.key)} onChange={() => toggleCol(c.key)} /> {c.label}
+                </label>
+              ))}
+            </div>
+            <button type="button" className="btn btn-sm" onClick={() => { setCols(defaultCols()); try { localStorage.removeItem(COLS_KEY); } catch {} }}>
+              標準に戻す
+            </button>
+          </div>
+        )}
 
         {rows.length === 0 ? (
           <div className="empty-state">条件に合う車両はありません</div>
@@ -135,13 +190,15 @@ export default function VehicleListTab({ data, onOpenLedger }: { data: AppData; 
               <thead>
                 <tr>
                   <th className="vl-sticky">車両</th>
-                  <th>型式</th>
-                  <th>車検満了日</th>
-                  <th>12ヶ月点検日</th>
-                  <th style={{ textAlign: 'right' }}>走行（km）</th>
-                  <th style={{ textAlign: 'right' }}>オイル交換</th>
-                  <th>タイヤ</th>
-                  <th>整備依頼</th>
+                  {show('photo') && <th>写真</th>}
+                  {show('model') && <th>型式</th>}
+                  {show('chassis') && <th>車台番号</th>}
+                  {show('shaken') && <th>車検満了日</th>}
+                  {show('check') && <th>12ヶ月点検日</th>}
+                  {show('odo') && <th style={{ textAlign: 'right' }}>走行（km）</th>}
+                  {show('oil') && <th style={{ textAlign: 'right' }}>オイル交換</th>}
+                  {show('tire') && <th>タイヤ</th>}
+                  {show('req') && <th>整備依頼</th>}
                 </tr>
               </thead>
               <tbody>
@@ -151,14 +208,30 @@ export default function VehicleListTab({ data, onOpenLedger }: { data: AppData; 
                       <strong>{v.name}</strong>
                       <div style={{ fontSize: 11, color: 'var(--slate-500)' }}>{v.plate}</div>
                     </td>
-                    <td style={{ whiteSpace: 'nowrap' }}>{v.modelType || '-'}</td>
-                    <td style={{ whiteSpace: 'nowrap' }}>
-                      {v.shakenDate || '-'} {dayPill(shaken)}
-                    </td>
-                    <td style={{ whiteSpace: 'nowrap' }}>
-                      {v.checkDate || '-'} {dayPill(check)}
-                    </td>
-                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{v.odometer.toLocaleString()}</td>
+                    {show('photo') && (
+                      <td>
+                        {v.photos && v.photos[0] ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={photoUrl(v.photos[0])} alt="車両の写真" loading="lazy" style={{ width: 56, height: 42, objectFit: 'cover', borderRadius: 6, display: 'block' }} />
+                        ) : (
+                          <span style={{ color: 'var(--slate-400)' }}>-</span>
+                        )}
+                      </td>
+                    )}
+                    {show('model') && <td style={{ whiteSpace: 'nowrap' }}>{v.modelType || '-'}</td>}
+                    {show('chassis') && <td style={{ whiteSpace: 'nowrap', fontSize: 12 }}>{v.chassisNo || '-'}</td>}
+                    {show('shaken') && (
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        {v.shakenDate || '-'} {dayPill(shaken)}
+                      </td>
+                    )}
+                    {show('check') && (
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        {v.checkDate || '-'} {dayPill(check)}
+                      </td>
+                    )}
+                    {show('odo') && <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{v.odometer.toLocaleString()}</td>}
+                    {show('oil') && (
                     <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                       {v.oilKm ? (
                         <>
@@ -177,8 +250,9 @@ export default function VehicleListTab({ data, onOpenLedger }: { data: AppData; 
                         '-'
                       )}
                     </td>
-                    <td style={{ fontSize: 12 }}>{tireCell(v)}</td>
-                    <td>{req > 0 ? <span className="pill pill-red">{req}件</span> : <span style={{ color: 'var(--slate-400)' }}>-</span>}</td>
+                    )}
+                    {show('tire') && <td style={{ fontSize: 12 }}>{tireCell(v)}</td>}
+                    {show('req') && <td>{req > 0 ? <span className="pill pill-red">{req}件</span> : <span style={{ color: 'var(--slate-400)' }}>-</span>}</td>}
                   </tr>
                 ))}
               </tbody>
