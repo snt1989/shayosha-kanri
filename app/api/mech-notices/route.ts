@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   if (!isAdminOrMechanic(req, data.masters.mechanics)) return deny();
   const isAdmin = isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value);
   const list = await kvGet<MechNotice[]>(MECH_NOTICES_KEY, []);
-  return NextResponse.json({ success: true, notices: sortNotices(isAdmin ? list : list.filter((n) => !isNoticeExpired(n))) });
+  return NextResponse.json({ success: true, mechanics: data.masters.mechanics, notices: sortNotices(isAdmin ? list : list.filter((n) => !isNoticeExpired(n))) });
 }
 
 // 投稿・更新（管理者・整備士）。
@@ -49,6 +49,12 @@ export async function POST(req: NextRequest) {
     createdAt: idx >= 0 ? list[idx].createdAt : new Date().toISOString(),
     createdBy: idx >= 0 ? list[idx].createdBy : who,
   };
+  // 内容（タイトル・本文・重要）を直したときは、既読を空に戻す（読み直してもらう）。期限・固定だけなら引き継ぐ
+  if (idx >= 0) {
+    const old = list[idx];
+    const same = old.title === title && old.body === body && old.level === notice.level;
+    if (same && old.readBy?.length) notice.readBy = old.readBy;
+  }
   if (idx >= 0) list[idx] = notice;
   else list.unshift(notice);
   await kvSet(MECH_NOTICES_KEY, sortNotices(list).slice(0, MECH_NOTICE_MAX));

@@ -12,8 +12,9 @@ const fmt = (iso: string) => {
 const blank = { id: '', title: '', body: '', level: 'info' as 'info' | 'important', pinned: false, expiresAt: '' };
 
 // 整備台帳の先頭に出す「整備士向けのお知らせ」。管理者・整備士だけが見られて、書ける・直せる・消せる。
-export default function MechNotices({ canEdit }: { canEdit: boolean }) {
+export default function MechNotices({ canEdit, mechanic }: { canEdit: boolean; mechanic: string | null }) {
   const [list, setList] = useState<MechNotice[] | null>(null);
+  const [mechanics, setMechanics] = useState<string[]>([]);
   const [form, setForm] = useState<typeof blank | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -23,7 +24,10 @@ export default function MechNotices({ canEdit }: { canEdit: boolean }) {
     try {
       const res = await fetch('/api/mech-notices', { cache: 'no-store', headers: mechanicHeaders() });
       const j = await res.json().catch(() => null);
-      if (res.ok && j?.success) setList(j.notices || []);
+      if (res.ok && j?.success) {
+        setList(j.notices || []);
+        setMechanics(j.mechanics || []);
+      }
     } catch {
       // 前に取得した内容のまま
     }
@@ -57,6 +61,11 @@ export default function MechNotices({ canEdit }: { canEdit: boolean }) {
       setBusy(false);
     }
   }
+  async function markRead(ids: string[]) {
+    if (!ids.length) return;
+    await fetch('/api/mech-notices/read', { method: 'POST', headers: { 'Content-Type': 'application/json', ...mechanicHeaders() }, body: JSON.stringify({ ids }) }).catch(() => undefined);
+    await load();
+  }
   async function remove(n: MechNotice) {
     if (!confirm(`「${n.title}」を削除しますか？`)) return;
     await fetch(`/api/mech-notices/${n.id}`, { method: 'DELETE', headers: mechanicHeaders() });
@@ -66,12 +75,19 @@ export default function MechNotices({ canEdit }: { canEdit: boolean }) {
   if (!canEdit) return null; // 整備士・管理者のログインがないときは、出さない
   const visible = (list ?? []).filter((n) => !isNoticeExpired(n));
   const shown = all ? visible : visible.slice(0, 3);
+  const isRead = (n: MechNotice) => Boolean(mechanic && n.readBy?.some((r) => r.name === mechanic));
+  const unread = mechanic ? visible.filter((n) => !isRead(n)) : [];
+  const fmtAt = (iso: string) => {
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? '' : `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  };
 
   return (
     <div className="card" style={{ marginBottom: 14 }}>
       <h3 className="card-title">
         📣 整備士向けのお知らせ
         {visible.length > 0 && <span className="pill pill-slate" style={{ marginLeft: 8 }}>{visible.length}件</span>}
+        {unread.length > 0 && <span className="pill pill-red" style={{ marginLeft: 6 }}>未読 {unread.length}件</span>}
       </h3>
       <div style={{ fontSize: 11, color: 'var(--slate-500)', marginBottom: 8 }}>整備士と管理者だけに見えます（部品の入荷・工場の予定・申し送りなど）。</div>
       {list === null ? (
@@ -94,6 +110,32 @@ export default function MechNotices({ canEdit }: { canEdit: boolean }) {
               </div>
               {n.body && <div className="notice-body">{n.body}</div>}
               {n.expiresAt && <div style={{ fontSize: 11, color: 'var(--slate-500)' }}>表示は {n.expiresAt} まで</div>}
+              {(() => {
+                // 既読の状況：読んだ人（日時つき）と、まだの人
+                const read = n.readBy || [];
+                const names = mechanics.length ? mechanics : read.map((r) => r.name);
+                const pending = names.filter((m) => !read.some((r) => r.name === m));
+                return (
+                  <div className="mech-read">
+                    <div>
+                      <strong>既読 {read.length}/{names.length}人</strong>
+                      {read.length > 0 && (
+                        <span className="mech-read-names">
+                          {' '}
+                          {read.map((r) => `${r.name.replace(/^整備士\s*/, '')}（${fmtAt(r.at)}）`).join('、')}
+                        </span>
+                      )}
+                    </div>
+                    {pending.length > 0 && <div className="mech-unread-names">未読：{pending.map((m) => m.replace(/^整備士\s*/, '')).join('、')}</div>}
+                    {mechanic && !isRead(n) && (
+                      <button type="button" className="btn btn-sm btn-primary" style={{ marginTop: 4 }} onClick={() => markRead([n.id])}>
+                        ✓ 既読にする
+                      </button>
+                    )}
+                    {mechanic && isRead(n) && <span className="pill pill-green" style={{ marginTop: 4 }}>✓ あなたは既読です</span>}
+                  </div>
+                );
+              })()}
               <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
                 <button type="button" className="btn btn-sm" onClick={() => { setForm({ id: n.id, title: n.title, body: n.body, level: n.level, pinned: Boolean(n.pinned), expiresAt: n.expiresAt || '' }); setError(''); }}>
                   編集
@@ -110,6 +152,11 @@ export default function MechNotices({ canEdit }: { canEdit: boolean }) {
         {visible.length > 3 && (
           <button type="button" className="btn btn-sm" onClick={() => setAll(!all)}>
             {all ? '少なく表示' : `すべて見る（${visible.length}件）`}
+          </button>
+        )}
+        {unread.length > 0 && (
+          <button type="button" className="btn btn-sm btn-primary" onClick={() => markRead(unread.map((n) => n.id))}>
+            ✓ すべて既読にする（{unread.length}件）
           </button>
         )}
         {!form && (

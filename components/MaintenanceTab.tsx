@@ -318,7 +318,7 @@ export default function MaintenanceTab({
     });
   return (
     <div>
-      <MechNotices canEdit={canEdit} />
+      <MechNotices canEdit={canEdit} mechanic={mechanic} />
       {requests.length > 0 && (
         <div className="card" style={{ marginBottom: 14 }}>
           <h3 className="card-title">
