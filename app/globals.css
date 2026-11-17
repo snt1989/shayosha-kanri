@@ -3085,3 +3085,54 @@ body::before {
 .incident-tel.incident-tow strong { font-size: 15px; }
 .incident-tel.incident-tow small { font-size: 14px; font-weight: 700; }
 @media (max-width: 420px) { .incident-tels { grid-template-columns: 1fr; } }
+
+/* 車両のQRコードを読み取ったときの画面 */
+.vq-head { margin-bottom: 12px; }
+.vq-name { font-size: 20px; font-weight: 800; color: var(--slate-800); }
+.vq-sub { font-size: 13px; color: var(--slate-500); margin-top: 2px; }
+.vq-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.vq-actions { display: grid; gap: 10px; }
+.vq-btn { display: flex; align-items: center; gap: 12px; text-align: left; min-height: 64px; padding: 10px 14px; }
+.vq-btn > span:last-child { display: flex; flex-direction: column; line-height: 1.35; }
+.vq-btn strong { font-size: 16px; }
+.vq-btn small { font-size: 12px; font-weight: 400; opacity: .9; }
+.vq-ic { font-size: 28px; flex: none; }
+
+/* 車両のQRコードステッカー（大きさは mm。画面のプレビューと印刷で同じ） */
+.sticker { box-sizing: border-box; border: 0.4mm solid #111827; border-radius: 3mm; background: #fff; color: #111827; overflow: hidden; display: flex; flex-direction: column; break-inside: avoid; page-break-inside: avoid; font-family: inherit; }
+.sticker-m { width: 90mm; height: 55mm; }
+.sticker-s { width: 60mm; height: 38mm; }
+.sticker-top { background: #0369a1; color: #fff; font-weight: 800; text-align: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.sticker-m .sticker-top { font-size: 3.4mm; padding: 1mm 0; }
+.sticker-s .sticker-top { font-size: 2.6mm; padding: 0.7mm 0; }
+.sticker-body { flex: 1; display: flex; align-items: center; gap: 3mm; min-height: 0; }
+.sticker-m .sticker-body { padding: 2mm 3mm; }
+.sticker-s .sticker-body { padding: 1.4mm 2mm; gap: 2mm; }
+.sticker-qr { flex: none; background: #fff; }
+.sticker-qr svg { display: block; width: 100%; height: 100%; }
+.sticker-m .sticker-qr { width: 33mm; height: 33mm; }
+.sticker-s .sticker-qr { width: 24mm; height: 24mm; }
+.sticker-info { min-width: 0; flex: 1; line-height: 1.25; }
+.sticker-name { font-weight: 800; word-break: break-all; }
+.sticker-plate { color: #374151; }
+.sticker-how { color: #374151; margin-top: 1.5mm; }
+.sticker-m .sticker-name { font-size: 6mm; }
+.sticker-m .sticker-plate { font-size: 3.4mm; }
+.sticker-m .sticker-how { font-size: 2.8mm; }
+.sticker-s .sticker-name { font-size: 4.2mm; }
+.sticker-s .sticker-plate { font-size: 2.6mm; }
+.sticker-s .sticker-how { font-size: 2.1mm; }
+.sticker-foot { background: #dc2626; color: #fff; text-align: center; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.sticker-m .sticker-foot { font-size: 3.4mm; padding: 1mm 0; }
+.sticker-s .sticker-foot { font-size: 2.5mm; padding: 0.7mm 0; }
+.sticker-preview { display: flex; flex-wrap: wrap; gap: 8px; max-height: 340px; overflow: auto; padding: 6px; background: var(--slate-100); border-radius: 10px; }
+.sticker-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 4px 10px; max-height: 160px; overflow: auto; }
+.sticker-pick .checkbox-field { margin: 0; font-size: 13px; }
+/* 画面には出さない。印刷のときだけ、ステッカーだけを並べて出す */
+.sticker-print-sheet { display: none; }
+@media print {
+  @page { size: A4; margin: 8mm; }
+  body > *:not(.sticker-print-sheet) { display: none !important; }
+  .sticker-print-sheet { display: flex !important; flex-wrap: wrap; gap: 4mm; align-content: flex-start; }
+  body { background: #fff !important; }
+}

@@ -97,6 +97,7 @@ export default function ReportsTab({
   openTrigger,
   openDestination,
   openDivision,
+  openVehicleId,
   onQuickReportHandled,
   returnCheckinRequest,
   onReturnCheckinHandled,
@@ -112,6 +113,8 @@ export default function ReportsTab({
   // 現場管理アプリの案件から開いたときの現場名（出発登録の行先に入れる）
   openDestination?: string;
   openDivision?: string;
+  // 車両のQRコードから開いたときの車両（出発登録の車両に入れる）
+  openVehicleId?: string;
   onQuickReportHandled?: () => void;
   returnCheckinRequest?: { id: string; token: number } | null;
   onReturnCheckinHandled?: () => void;
@@ -140,7 +143,9 @@ export default function ReportsTab({
     if (openTrigger != null) {
       if (currentDriver) {
         setReturnMode(false);
-        setEditing(emptyReport(data, currentDriver, openDestination || '', openDivision || ''));
+        const base = emptyReport(data, currentDriver, openDestination || '', openDivision || '');
+        const qv = openVehicleId ? data.vehicles.find((v) => v.id === openVehicleId) : undefined;
+        setEditing(qv ? { ...base, vehicleId: qv.id, vehicleName: qv.name, plate: qv.plate, startKm: qv.odometer } : base);
       } else {
         onRequestDriverLogin();
       }

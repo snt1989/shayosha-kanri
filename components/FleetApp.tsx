@@ -6,6 +6,9 @@ import Header from './Header';
 import AssistantButton from './AssistantButton';
 import NoticeBell from './NoticeBell';
 import IncidentButton from './IncidentButton';
+import VehicleQuickModal from './VehicleQuickModal';
+import MaintRequestModal from './MaintRequestModal';
+import { OPEN_INCIDENT_EVENT, VEHICLE_QR_PARAM } from '@/lib/vehicle-qr';
 import SetupNudge from './SetupNudge';
 import StatBar from './StatBar';
 import DashboardTab from './DashboardTab';
@@ -56,6 +59,10 @@ export default function FleetApp() {
   const [quickReportDivision, setQuickReportDivision] = useState('');
   // 現場管理アプリの案件から開いたときの現場名（URLの ?site=）。読み込みが終わったら出発登録を開く。
   const [pendingSite, setPendingSite] = useState<{ site: string; division: string } | null>(null);
+  // 車両のQRコード（ステッカー）から開いたときの車両（URLの ?vehicle=）。読み込みが終わったら、その車両の画面を出す。
+  const [landingVehicleId, setLandingVehicleId] = useState<string | null>(null);
+  const [quickReportVehicleId, setQuickReportVehicleId] = useState('');
+  const [qrMaintVehicleId, setQrMaintVehicleId] = useState<string | null>(null);
   const [returnCheckinRequest, setReturnCheckinRequest] = useState<{ id: string; token: number } | null>(null);
   const [currentDriverId, setCurrentDriverId] = useState<string | null>(null);
   const [showDriverLogin, setShowDriverLogin] = useState(false);
@@ -78,6 +85,12 @@ export default function FleetApp() {
       let site = (u.searchParams.get('site') || '').trim().slice(0, 100);
       const division = (u.searchParams.get('division') || '').trim().slice(0, 60);
       const ticket = u.searchParams.get('sso');
+      const qrVehicle = (u.searchParams.get(VEHICLE_QR_PARAM) || '').trim().slice(0, 60);
+      if (qrVehicle) {
+        u.searchParams.delete(VEHICLE_QR_PARAM);
+        window.history.replaceState(null, '', u.pathname + (u.search || '') + u.hash);
+        setLandingVehicleId(qrVehicle);
+      }
       if (u.searchParams.has('site') || u.searchParams.has('sso') || u.searchParams.has('division')) {
         u.searchParams.delete('site');
         u.searchParams.delete('division');
@@ -374,8 +387,9 @@ export default function FleetApp() {
     setShowDriverLogin(false);
   }
 
-  function startQuickReport(site = '', division = '') {
+  function startQuickReport(site = '', division = '', vehicleId = '') {
     setTab('reports');
+    setQuickReportVehicleId(vehicleId);
     setQuickReportSite(site);
     setQuickReportDivision(division);
     setQuickReportTrigger(Date.now());
@@ -547,6 +561,7 @@ export default function FleetApp() {
             openTrigger={quickReportTrigger}
             openDestination={quickReportSite}
             openDivision={quickReportDivision}
+            openVehicleId={quickReportVehicleId}
             onQuickReportHandled={handleQuickReportHandled}
             returnCheckinRequest={returnCheckinRequest}
             onReturnCheckinHandled={handleReturnCheckinHandled}
@@ -665,6 +680,38 @@ export default function FleetApp() {
           onClose={() => setShowMechanicLogin(false)}
           onSelect={handleSelectMechanic}
         />
+      )}
+      {landingVehicleId && data && (
+        <VehicleQuickModal
+          data={viewData}
+          vehicleId={landingVehicleId}
+          currentDriver={currentDriver}
+          onClose={() => setLandingVehicleId(null)}
+          onDepart={() => {
+            const id = landingVehicleId;
+            setLandingVehicleId(null);
+            if (!requireDriverLogin(() => startQuickReport('', '', id))) return;
+            startQuickReport('', '', id);
+          }}
+          onReturn={(rid) => {
+            setLandingVehicleId(null);
+            handleReturnCheckin(rid);
+          }}
+          onMaint={() => {
+            const id = landingVehicleId;
+            setLandingVehicleId(null);
+            if (!requireDriverLogin(() => setQrMaintVehicleId(id))) return;
+            setQrMaintVehicleId(id);
+          }}
+          onIncident={() => {
+            const id = landingVehicleId;
+            setLandingVehicleId(null);
+            window.dispatchEvent(new CustomEvent(OPEN_INCIDENT_EVENT, { detail: { vehicleId: id } }));
+          }}
+        />
+      )}
+      {qrMaintVehicleId && data && currentDriver && (
+        <MaintRequestModal data={data} driver={currentDriver} initialVehicleId={qrMaintVehicleId} onClose={() => setQrMaintVehicleId(null)} onSubmit={submitMaintRequest} />
       )}
       {showAdminLogin && <AdminLoginModal onClose={() => setShowAdminLogin(false)} onLogin={handleAdminLogin} />}
       {showDriverLogin && (

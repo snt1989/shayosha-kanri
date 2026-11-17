@@ -5,6 +5,7 @@ import { AppData, Driver } from '@/lib/types';
 import { INCIDENT_INJURY, INCIDENT_KINDS, INSURER_NAME, INSURER_WEB_URL, IncidentContact, normalizePhone } from '@/lib/incidents';
 import { todayStr } from '@/lib/utils';
 import { Insurance } from '@/lib/insurance';
+import { OPEN_INCIDENT_EVENT } from '@/lib/vehicle-qr';
 import Modal from './Modal';
 import PhotoField from './PhotoField';
 
@@ -70,6 +71,20 @@ export default function IncidentButton({ data, currentDriver }: { data: AppData;
       .then((j) => setIns(j.insurance || null))
       .catch(() => undefined);
   }, [open]);
+
+  // QRコード（車両のステッカー）の画面から、車両を選んだ状態で開く
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const vid = String((e as CustomEvent).detail?.vehicleId || '');
+      setF({ ...blank(), driverId: currentDriver?.id || '', vehicleId: data.vehicles.some((v) => v.id === vid) ? vid : '' });
+      setError('');
+      setDone(false);
+      setOpen(true);
+    };
+    window.addEventListener(OPEN_INCIDENT_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_INCIDENT_EVENT, onOpen);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDriver?.id, data.vehicles]);
 
   function openModal() {
     // 今日の帰着前の日報があれば、その運転者・車両を初めから入れておく

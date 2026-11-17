@@ -1,6 +1,7 @@
 'use client';
 
 import PhotoField, { PhotoThumbs } from './PhotoField';
+import VehicleStickerModal from './VehicleStickerModal';
 import { MAX_VEHICLE_PHOTOS } from '@/lib/photo-ids';
 import { useMemo, useRef, useState } from 'react';
 import { useMobileLimit } from '@/lib/useLimit';
@@ -51,6 +52,8 @@ export default function VehiclesTab({
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<Vehicle | null>(null);
   const [saving, setSaving] = useState(false);
+  // QRコードステッカーの印刷画面（null＝閉じている。配列＝最初に選んでおく車両のid。空なら全車両）
+  const [stickerIds, setStickerIds] = useState<string[] | null>(null);
   const [bulkRows, setBulkRows] = useState<Vehicle[] | null>(null);
   const [bulkSaving, setBulkSaving] = useState(false);
   const [showShakenOcr, setShowShakenOcr] = useState(false);
@@ -271,6 +274,9 @@ export default function VehiclesTab({
             <button className="btn btn-sm" onClick={exportCsv}>
               ⬇ 車両CSV出力
             </button>
+            <button className="btn btn-sm" onClick={() => setStickerIds([])}>
+              🏷 QRステッカー
+            </button>
             {!readOnly && (
               <>
                 <button className="btn btn-sm" onClick={() => setShowShakenOcr(true)}>
@@ -348,6 +354,9 @@ export default function VehiclesTab({
                   </div>
                   <div className="efoot">
                     <div className="eactions">
+                      <button className="btn btn-sm" onClick={() => setStickerIds([v.id])}>
+                        🏷 QR
+                      </button>
                       {!readOnly && (
                         <>
                           <button className="btn btn-sm btn-primary" onClick={() => openEdit(v)}>
@@ -871,6 +880,7 @@ export default function VehiclesTab({
           </div>
         </Modal>
       )}
+      {stickerIds && <VehicleStickerModal data={data} initialIds={stickerIds} onClose={() => setStickerIds(null)} />}
     </div>
   );
 }
