@@ -5,11 +5,13 @@ import { createPortal } from 'react-dom';
 import QRCode from 'qrcode';
 import { AppData, Vehicle } from '@/lib/types';
 import { vehicleLandingUrl } from '@/lib/vehicle-qr';
+import { downloadCsv } from '@/lib/csv';
+import { todayStr } from '@/lib/utils';
 import Modal from './Modal';
 
 type Size = 'm' | 's';
 const SIZES: { key: Size; label: string; note: string }[] = [
-  { key: 'm', label: '標準（90×55mm）', note: '名刺より少し大きい。ダッシュボードやサンバイザー向き' },
+  { key: 'm', label: '名刺サイズ（91×55mm）', note: '日本の名刺サイズ。名刺用のラベルシート（10面）にそのまま合います' },
   { key: 's', label: '小（60×38mm）', note: '小さな場所向き。QRは読み取りやすい大きさを保ちます' },
 ];
 
@@ -76,6 +78,36 @@ export default function VehicleStickerModal({ data, initialIds, onClose }: { dat
   const toggle = (id: string) => setIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
   const ready = chosen.length > 0 && chosen.every((v) => svgs[v.id]);
 
+  // ラベル屋さん（A-one）などの差し込み印刷用のデータ。1行が1枚。QRコード用URLの列を、QRコード（バーコード）の差し込み項目に使う。
+  const csvCell = (s: string) => `"${String(s).replace(/"/g, '""')}"`;
+  function downloadLabelCsv() {
+    const head = ['車両名', '車両名（全体）', 'ナンバー', 'QRコード用URL', '事故連絡', 'アプリ名', '説明', '車両ID'];
+    const rows = chosen.map((v) => [
+      v.name.split(/[（(]/)[0].trim() || v.name,
+      v.name,
+      v.plate,
+      vehicleLandingUrl(origin, v.id),
+      tow ? `事故・故障：レッカー ${tow.phone}` : '事故・故障：警察110 救急119',
+      '運行管理アプリ',
+      'QRを読み取ると 出発・帰着・整備依頼・事故連絡',
+      v.id,
+    ]);
+    downloadCsv(`ラベル屋さん用_車両ステッカー_${todayStr()}.csv`, [head, ...rows].map((r) => r.map(csvCell).join(',')).join('\r\n'));
+  }
+  // QR画像（PNG）を1台ずつ保存する。ラベル屋さんに「画像」として貼り付けるときに使う
+  async function downloadQrPngs() {
+    for (const v of chosen) {
+      const url = await QRCode.toDataURL(vehicleLandingUrl(origin, v.id), { width: 600, margin: 2, errorCorrectionLevel: 'M' });
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `QR_${v.plate.replace(/[\\/:*?"<>|\s]/g, '')}_${v.name.split(/[（(]/)[0].trim()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      await new Promise((r) => setTimeout(r, 350));
+    }
+  }
+
   return (
     <>
       <Modal
@@ -95,6 +127,26 @@ export default function VehicleStickerModal({ data, initialIds, onClose }: { dat
         <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 10 }}>
           QRコードを読み取ると、その車両の画面が開き、出発登録・帰着登録・整備依頼・事故連絡ができます。印刷したら、切り抜いて車内（運転席から見える場所）に貼ってください。印刷の画面で「PDFに保存」を選ぶと、PDFにもできます。
         </div>
+        <details className="sticker-label-box">
+          <summary>🏷 ラベル屋さん（A-one）で作るとき</summary>
+          <div className="sticker-label-body">
+            <p>名刺サイズ（91×55mm）の市販のラベルシート（例：A-one 名刺用 10面）に、「ラベル屋さん」で印刷できます。</p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+              <button type="button" className="btn btn-sm btn-primary" disabled={!ready} onClick={downloadLabelCsv}>
+                ⬇ ラベル屋さん用データ（CSV）
+              </button>
+              <button type="button" className="btn btn-sm" disabled={!ready} onClick={() => void downloadQrPngs()}>
+                ⬇ QR画像（PNG）を保存
+              </button>
+            </div>
+            <ol>
+              <li>ラベル屋さんで、お使いのラベルシートの品番（名刺サイズ 91×55mm）を選びます。</li>
+              <li>「差し込み印刷」で、上のCSVを読み込みます（文字化けするときは、Excelで開いて「CSV（Shift_JIS）」で保存し直します）。</li>
+              <li>「車両名」「ナンバー」「事故連絡」を、文字の差し込み項目に入れます。</li>
+              <li>QRコードは、ラベル屋さんのQRコード（バーコード）の機能で、データに「QRコード用URL」を差し込みます。うまく作れないときは、保存したQR画像（PNG）を貼り付けてください。</li>
+            </ol>
+          </div>
+        </details>
         <div className="field">
           <label>大きさ</label>
           <div className="type-chips">

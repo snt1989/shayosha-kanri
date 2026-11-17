@@ -3100,7 +3100,7 @@ body::before {
 
 /* 車両のQRコードステッカー（大きさは mm。画面のプレビューと印刷で同じ） */
 .sticker { box-sizing: border-box; border: 0.4mm solid #111827; border-radius: 3mm; background: #fff; color: #111827; overflow: hidden; display: flex; flex-direction: column; break-inside: avoid; page-break-inside: avoid; font-family: inherit; }
-.sticker-m { width: 90mm; height: 55mm; }
+.sticker-m { width: 91mm; height: 55mm; }
 .sticker-s { width: 60mm; height: 38mm; }
 .sticker-top { background: #0369a1; color: #fff; font-weight: 800; text-align: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .sticker-m .sticker-top { font-size: 3.4mm; padding: 1mm 0; }
@@ -3136,3 +3136,10 @@ body::before {
   .sticker-print-sheet { display: flex !important; flex-wrap: wrap; gap: 4mm; align-content: flex-start; }
   body { background: #fff !important; }
 }
+
+/* ラベル屋さん用の案内 */
+.sticker-label-box { border: 1px solid var(--slate-200); background: var(--slate-50); border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; }
+.sticker-label-box summary { cursor: pointer; font-weight: 700; font-size: 13px; }
+.sticker-label-body { font-size: 12px; color: var(--slate-600); padding-top: 8px; }
+.sticker-label-body p { margin: 0 0 8px; }
+.sticker-label-body ol { margin: 0; padding-left: 18px; line-height: 1.7; }
