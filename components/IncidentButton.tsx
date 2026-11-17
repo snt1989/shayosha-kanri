@@ -12,15 +12,22 @@ const STEPS = [
   '安全な場所に車を止め、ハザードランプをつける（高速道路では、車の後ろに三角表示板を置き、ガードレールの外へ避難する）',
   'けが人がいたら、動かさずに 119 へ。救急車を呼ぶ',
   '事故のときは、小さなものでも必ず 110 へ。警察に連絡する（連絡は法律で決まっています）',
-  `会社（下の緊急連絡先）と、加入している保険（${INSURER_NAME}）の事故受付へ連絡し、このボタンから報告する`,
+  `会社（上の緊急連絡先）と、加入している保険（${INSURER_NAME}）の事故受付へ連絡し、このボタンから報告する`,
   '現場・相手の車・ナンバー・傷を、写真に撮る。相手の名前・連絡先・保険会社を控える',
   '「自分が悪い」などの話は、その場でしない。示談の約束もしない',
 ];
 
-function TelButton({ label, phone, tone }: { label: string; phone: string; tone?: 'red' }) {
+// 連絡先の名前から、わかりやすい印を選ぶ（レッカー・ロードサービス＝🚛、保険＝🛡️、代理店＝🏢）
+const iconOf = (label: string) => (/レッカー|ロード/.test(label) ? '🚛' : /保険|事故受付|三井/.test(label) ? '🛡️' : /代理店/.test(label) ? '🏢' : '📞');
+
+function TelButton({ label, phone, tone, icon }: { label: string; phone: string; tone?: 'red' | 'tow'; icon?: string }) {
   return (
-    <a className={`btn ${tone === 'red' ? 'btn-danger' : ''}`} href={`tel:${normalizePhone(phone)}`}>
-      📞 {label}（{phone}）
+    <a className={`btn incident-tel ${tone === 'red' ? 'btn-danger' : ''} ${tone === 'tow' ? 'incident-tow' : ''}`} href={`tel:${normalizePhone(phone)}`}>
+      <span className="incident-tel-ic" aria-hidden>{icon || '📞'}</span>
+      <span className="incident-tel-tx">
+        <strong>{label}</strong>
+        <small>{phone}</small>
+      </span>
     </a>
   );
 }
@@ -114,13 +121,21 @@ export default function IncidentButton({ data, currentDriver }: { data: AppData;
 
   const tels = (
     <div className="incident-tels">
-      <TelButton label="警察" phone="110" tone="red" />
-      <TelButton label="救急・消防" phone="119" tone="red" />
-      {contacts.map((c) => (
-        <TelButton key={c.label + c.phone} label={c.label} phone={c.phone} />
+      {/* レッカー・ロードサービスを先頭に、大きく出す */}
+      {contacts.filter((c) => /レッカー|ロード/.test(c.label)).map((c) => (
+        <TelButton key={c.label + c.phone} label={c.label} phone={c.phone} tone="tow" icon="🚛" />
       ))}
-      <a className="btn" href={INSURER_WEB_URL} target="_blank" rel="noreferrer">
-        🌐 {INSURER_NAME} Web・LINEで事故連絡
+      <TelButton label="警察（事故・事件）" phone="110" tone="red" icon="🚓" />
+      <TelButton label="救急・消防（けが人）" phone="119" tone="red" icon="🚑" />
+      {contacts.filter((c) => !/レッカー|ロード/.test(c.label)).map((c) => (
+        <TelButton key={c.label + c.phone} label={c.label} phone={c.phone} icon={iconOf(c.label)} />
+      ))}
+      <a className="btn incident-tel" href={INSURER_WEB_URL} target="_blank" rel="noreferrer">
+        <span className="incident-tel-ic" aria-hidden>🌐</span>
+        <span className="incident-tel-tx">
+          <strong>{INSURER_NAME} Web・LINEで事故連絡</strong>
+          <small>24時間受付</small>
+        </span>
       </a>
     </div>
   );
@@ -164,12 +179,13 @@ export default function IncidentButton({ data, currentDriver }: { data: AppData;
 
   return (
     <>
-      <button type="button" className="bell-btn incident-btn" onClick={openModal} title="事故・トラブルのとき" aria-label="事故・トラブルのとき">
-        <span aria-hidden className="bell-icon">🚨</span>
+      <button type="button" className="incident-pill" onClick={openModal} title="事故・故障・レッカーが必要なとき" aria-label="事故・故障・レッカーが必要なとき">
+        <span aria-hidden>🆘</span>
+        <span>事故・故障</span>
       </button>
       {open && (
         <Modal
-          title="🚨 事故・トラブルのとき"
+          title="🆘 事故・故障・レッカーが必要なとき"
           onClose={() => setOpen(false)}
           footer={
             done ? (
@@ -182,7 +198,7 @@ export default function IncidentButton({ data, currentDriver }: { data: AppData;
                   閉じる
                 </button>
                 <button className="btn btn-danger" onClick={submit} disabled={busy}>
-                  {busy ? '送信中…' : '🚨 会社に報告する'}
+                  {busy ? '送信中…' : '会社に報告する'}
                 </button>
               </>
             )
@@ -205,14 +221,15 @@ export default function IncidentButton({ data, currentDriver }: { data: AppData;
             </>
           ) : (
             <>
-              <div className="incident-steps-title">まず落ち着いて、次の順に</div>
+              <div className="incident-steps-title">📞 まず、電話をかけてください（押すと発信します）</div>
+              {tels}
+              {insBox}
+              <div className="incident-steps-title" style={{ marginTop: 14 }}>落ち着いて、次の順に</div>
               <ol className="incident-steps">
                 {STEPS.map((s) => (
                   <li key={s}>{s}</li>
                 ))}
               </ol>
-              {tels}
-              {insBox}
               {contacts.length === 0 && <div className="incident-hint">会社の連絡先は、管理者が「設定」の「🚨 緊急連絡先」で登録できます。</div>}
 
               <div className="incident-form-title">会社への報告（わかる範囲で。あとから直せません）</div>

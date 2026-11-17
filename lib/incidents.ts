@@ -3,7 +3,7 @@ export const INCIDENTS_KEY = 'fleet:incidents:v1';
 export const INCIDENT_CONTACTS_KEY = 'fleet:incident-contacts:v1';
 export const INCIDENTS_MAX = 200;
 
-export const INCIDENT_KINDS = ['事故（人・物・他の車）', '故障・パンクなどのトラブル', '交通違反・その他'] as const;
+export const INCIDENT_KINDS = ['事故（人・物・他の車）', '故障・パンク（レッカーが必要）', '故障・パンクなどのトラブル', '交通違反・その他'] as const;
 export const INCIDENT_INJURY = ['けが人なし', 'けが人あり', 'わからない'] as const;
 
 export type Incident = {
@@ -38,7 +38,7 @@ export const INSURER_NAME = '三井住友海上';
 export const INSURER_WEB_URL = 'https://www.ms-ins.com/contractor/emergency/';
 export const DEFAULT_INCIDENT_CONTACTS: IncidentContact[] = [
   { label: '三井住友海上 自動車保険 事故受付', phone: '0120-258-365' },
-  { label: '三井住友海上 ロードサービス', phone: '0120-096-991' },
+  { label: 'レッカー・ロードサービス（三井住友海上）', phone: '0120-096-991' },
   { label: '取扱代理店 保険ビルド岩手（金沢）', phone: '019-601-2320' },
 ];
 
