@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { compressToJpeg } from '@/lib/image';
+import { isPdfFile, readPdf } from '@/lib/pdf';
 import { Insurance } from '@/lib/insurance';
 import { daysUntil } from '@/lib/utils';
 
@@ -48,6 +50,13 @@ export default function InsuranceAdmin() {
   const [saved, setSaved] = useState<Insurance | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  // 証券・満期のお知らせの読み込み（AI）
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [doc, setDoc] = useState<{ image: string; text: string; name: string } | null>(null);
+  const [aiAvail, setAiAvail] = useState<boolean | null>(null);
+  const [reading, setReading] = useState<'file' | 'ai' | null>(null);
+  const [readKeys, setReadKeys] = useState<(keyof Insurance)[]>([]);
+  const [readNote, setReadNote] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
     fetch('/api/insurance', { cache: 'no-store' })
@@ -58,6 +67,66 @@ export default function InsuranceAdmin() {
       })
       .catch(() => setMsg({ ok: false, text: '保険の情報を読み込めませんでした。' }));
   }, []);
+
+  useEffect(() => {
+    fetch('/api/insurance-ai', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => setAiAvail(Boolean(j?.configured)))
+      .catch(() => setAiAvail(false));
+  }, []);
+
+  // 書類（写真またはPDF）を選ぶ。PDFは、1ページ目を画像にして、文字も取り出す
+  async function pickFile(file: File | null) {
+    if (!file) return;
+    setReadNote(null);
+    setReading('file');
+    try {
+      if (isPdfFile(file)) {
+        const r = await readPdf(file);
+        setDoc({ image: r.image, text: r.text.replace(/[ \t]+/g, ' ').trim(), name: file.name });
+      } else {
+        const url: string = await new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(String(fr.result));
+          fr.onerror = () => reject(new Error('read'));
+          fr.readAsDataURL(file);
+        });
+        setDoc({ image: url, text: '', name: file.name });
+      }
+    } catch {
+      setReadNote({ ok: false, text: '書類を開けませんでした。ファイルを確かめるか、写真（画像）でお試しください。' });
+    } finally {
+      setReading(null);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  }
+
+  // AIで読み取って、フォームに入れる（保存はしない。内容を見比べてから、保存する）
+  async function readWithAi() {
+    if (!doc || !f) return;
+    setReading('ai');
+    setReadNote(null);
+    try {
+      const image = await compressToJpeg(doc.image, 2200, 1_200_000);
+      const res = await fetch('/api/insurance-ai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image, text: doc.text.slice(0, 6000) }) });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j.success) throw new Error(j.message || 'AIでの読み取りに失敗しました。手入力してください。');
+      const got = j.fields as Partial<Record<keyof Insurance, string>>;
+      const keys = (Object.keys(got) as (keyof Insurance)[]).filter((k) => got[k]);
+      if (!keys.length) {
+        setReadKeys([]);
+        setReadNote({ ok: false, text: 'この書類から、項目を読み取れませんでした。写真を撮り直すか、手入力してください。' });
+        return;
+      }
+      setF({ ...f, ...Object.fromEntries(keys.map((k) => [k, got[k]])) } as Insurance);
+      setReadKeys(keys);
+      setReadNote({ ok: true, text: `${keys.length}項目を読み取って、入れました。書類と見比べて、まちがいがないか確かめてから、「保存する」を押してください。` });
+    } catch (e) {
+      setReadNote({ ok: false, text: e instanceof Error ? e.message : 'AIでの読み取りに失敗しました。手入力してください。' });
+    } finally {
+      setReading(null);
+    }
+  }
 
   async function save() {
     if (!f) return;
@@ -102,14 +171,37 @@ export default function InsuranceAdmin() {
         加入している自動車保険の情報です。事故・故障の画面（🆘）に出て、運転者が保険会社へ証券番号などを伝えられます（ログインしていない人にも見えます）。保険を更新したら、ここを直してください。
       </div>
 
+      <div className="ins-read">
+        <div className="ins-group-title">📄 証券・満期のお知らせから読み込む</div>
+        <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 8 }}>
+          保険証券や「満期日のお知らせ」の写真かPDFを選ぶと、AIが証券番号・期間・代理店などを読み取って、下の欄に入れます（保存は、内容を確かめてからです）。
+        </div>
+        <input ref={fileRef} type="file" accept="image/*,application/pdf,.pdf" hidden onChange={(e) => pickFile(e.target.files?.[0] || null)} />
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <button type="button" className="btn btn-sm" disabled={reading !== null} onClick={() => fileRef.current?.click()}>
+            {reading === 'file' ? '開いています…' : doc ? '📎 別の書類を選ぶ' : '📎 書類（写真・PDF）を選ぶ'}
+          </button>
+          {doc && (
+            <button type="button" className="btn btn-sm btn-primary" disabled={reading !== null || aiAvail === false} onClick={readWithAi}>
+              {reading === 'ai' ? '読み取り中…（数秒〜20秒）' : '🤖 AIで読み取る'}
+            </button>
+          )}
+          {doc && <span style={{ fontSize: 12, color: 'var(--slate-500)' }}>{doc.name}</span>}
+        </div>
+        {aiAvail === false && <div className="notice-box" style={{ marginTop: 8 }}>AI読み取りは、まだ設定されていません（サーバーに ANTHROPIC_API_KEY が必要です）。手入力はできます。</div>}
+        {doc && aiAvail !== false && <div style={{ fontSize: 11, color: 'var(--slate-500)', marginTop: 6 }}>「AIで読み取る」を押すと、書類の画像が、社外のAI（Anthropic社）に送られます。読み取る項目は、この画面の項目だけです。</div>}
+        {doc && <img className="ins-read-preview" src={doc.image} alt="選んだ書類の1ページ目" />}
+        {readNote && <div role="status" className="notice-box" style={{ marginTop: 8, borderColor: readNote.ok ? 'var(--green-600, #16a34a)' : undefined }}>{readNote.text}</div>}
+      </div>
+
       {GROUPS.slice(0, 1).map((g) => (
         <div key={g.title} className="ins-group">
           <div className="ins-group-title">{g.title}</div>
           <div className="ins-grid">
             {g.fields.map((x) => (
               <div className="field" key={x.k}>
-                <label>{x.label}</label>
-                <input type={x.type || 'text'} value={f[x.k]} placeholder={x.ph} onChange={(e) => setF({ ...f, [x.k]: e.target.value })} />
+                <label>{x.label}{readKeys.includes(x.k) && <span className="ins-read-badge">読み取り</span>}</label>
+                <input type={x.type || 'text'} value={f[x.k]} placeholder={x.ph} onChange={(e) => { setReadKeys((ks) => ks.filter((k) => k !== x.k)); setF({ ...f, [x.k]: e.target.value }); }} />
               </div>
             ))}
           </div>
@@ -120,12 +212,12 @@ export default function InsuranceAdmin() {
         <div className="ins-group-title">保険期間</div>
         <div className="ins-grid">
           <div className="field">
-            <label>保険期間（始まり）</label>
-            <input type="date" value={f.periodFrom} onChange={(e) => setF({ ...f, periodFrom: e.target.value })} />
+            <label>保険期間（始まり）{readKeys.includes('periodFrom') && <span className="ins-read-badge">読み取り</span>}</label>
+            <input type="date" value={f.periodFrom} onChange={(e) => { setReadKeys((ks) => ks.filter((k) => k !== 'periodFrom')); setF({ ...f, periodFrom: e.target.value }); }} />
           </div>
           <div className="field">
-            <label>満期日（終わり）</label>
-            <input type="date" value={f.periodTo} onChange={(e) => setF({ ...f, periodTo: e.target.value })} />
+            <label>満期日（終わり）{readKeys.includes('periodTo') && <span className="ins-read-badge">読み取り</span>}</label>
+            <input type="date" value={f.periodTo} onChange={(e) => { setReadKeys((ks) => ks.filter((k) => k !== 'periodTo')); setF({ ...f, periodTo: e.target.value }); }} />
           </div>
         </div>
         {f.periodTo && (
@@ -144,8 +236,8 @@ export default function InsuranceAdmin() {
           <div className="ins-grid">
             {g.fields.map((x) => (
               <div className="field" key={x.k} style={x.wide ? { gridColumn: '1 / -1' } : undefined}>
-                <label>{x.label}</label>
-                <input type={x.type || 'text'} value={f[x.k]} placeholder={x.ph} onChange={(e) => setF({ ...f, [x.k]: e.target.value })} />
+                <label>{x.label}{readKeys.includes(x.k) && <span className="ins-read-badge">読み取り</span>}</label>
+                <input type={x.type || 'text'} value={f[x.k]} placeholder={x.ph} onChange={(e) => { setReadKeys((ks) => ks.filter((k) => k !== x.k)); setF({ ...f, [x.k]: e.target.value }); }} />
               </div>
             ))}
           </div>
