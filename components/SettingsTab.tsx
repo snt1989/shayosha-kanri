@@ -13,13 +13,14 @@ import AlertSettingsPanel from './AlertSettingsPanel';
 import IncidentContactsAdmin from './IncidentContactsAdmin';
 import InsuranceAdmin from './InsuranceAdmin';
 
-type Section = 'menu' | 'alerts' | 'incident' | 'cards' | 'drivers' | 'masters' | 'logs' | 'logo';
+type Section = 'menu' | 'alerts' | 'incident' | 'insurance' | 'cards' | 'drivers' | 'masters' | 'logs' | 'logo';
 
 // 管理者だけが使えるもの（メニューの並び替えだけは誰でも使える）
 const SECTIONS: { key: Section; icon: string; label: string; admin: boolean }[] = [
   { key: 'menu', icon: '↕️', label: 'メニューの並び替え', admin: false },
   { key: 'alerts', icon: '⏰', label: 'アラートの出す時期', admin: true },
   { key: 'incident', icon: '🚨', label: '緊急連絡先', admin: true },
+  { key: 'insurance', icon: '🛡️', label: '保険情報', admin: true },
   { key: 'cards', icon: '💳', label: 'カードの登録', admin: true },
   { key: 'drivers', icon: '🪪', label: '運転者台帳', admin: true },
   { key: 'masters', icon: '⚙️', label: '各種マスタ設定', admin: true },
@@ -102,12 +103,8 @@ export default function SettingsTab({
         <>
           {section === 'menu' && <MenuOrderSettings order={menuOrder} onChange={onChangeMenuOrder} />}
           {section === 'alerts' && <AlertSettingsPanel current={data.alertSettings} onSaved={onRefresh} />}
-          {section === 'incident' && (
-            <>
-              <IncidentContactsAdmin />
-              <InsuranceAdmin />
-            </>
-          )}
+          {section === 'incident' && <IncidentContactsAdmin />}
+          {section === 'insurance' && <InsuranceAdmin />}
           {section === 'cards' && <CardsAdmin departments={data.masters.departments} isAdmin={isAdmin} onRequestAdminLogin={onRequestLogin} />}
           {section === 'drivers' && <DriversTab data={data} onSave={onSaveDriver} onDelete={onDeleteDriver} onBulkSave={onBulkSaveDrivers} />}
           {section === 'masters' && (

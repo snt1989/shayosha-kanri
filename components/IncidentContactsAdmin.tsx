@@ -37,7 +37,7 @@ export default function IncidentContactsAdmin() {
     <div className="card">
       <h3 className="card-title">🚨 緊急連絡先</h3>
       <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 12 }}>
-        ヘッダーの「🚨」（事故・トラブルのとき）に、警察（110）・救急（119）のほかに出す電話番号です。管理者の携帯、保険会社の事故受付、ロードサービスなどを入れます（10件まで。誰でも見られます）。
+        ヘッダーの「🆘 事故・故障」ボタンに、警察（110）・救急（119）のほかに出す電話番号です。管理者の携帯、保険会社の事故受付、ロードサービスなどを入れます（10件まで。誰でも見られます）。
       </div>
       {rows.map((r, i) => (
         <div key={i} className="field-row" style={{ alignItems: 'end' }}>

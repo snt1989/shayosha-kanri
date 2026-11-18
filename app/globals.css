@@ -3143,3 +3143,14 @@ body::before {
 .sticker-label-body { font-size: 12px; color: var(--slate-600); padding-top: 8px; }
 .sticker-label-body p { margin: 0 0 8px; }
 .sticker-label-body ol { margin: 0; padding-left: 18px; line-height: 1.7; }
+
+/* 設定の「保険情報」 */
+.ins-status { display: block; width: fit-content; max-width: 100%; white-space: normal; line-height: 1.5; padding: 6px 12px; font-size: 13px; }
+.ins-group { border-top: 1px solid var(--slate-200); padding-top: 10px; margin-top: 10px; }
+.ins-group-title { font-weight: 800; font-size: 13px; margin-bottom: 6px; color: var(--slate-700); }
+.ins-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0 12px; }
+.ins-preview { background: var(--sky-50); border: 1px solid var(--sky-100); border-radius: 10px; padding: 10px 12px; margin-top: 8px; font-size: 13px; }
+.ins-preview dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; }
+.ins-preview dt { color: var(--slate-500); font-size: 12px; }
+.ins-preview dd { margin: 0; font-weight: 700; }
+.ins-preview .ins-no { font-size: 15px; letter-spacing: 0.04em; }
