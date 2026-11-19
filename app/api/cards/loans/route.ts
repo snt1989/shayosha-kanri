@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { loadData } from '@/lib/store';
 import { activeLoanOf, loadCards, saveCards } from '@/lib/cards-store';
 import { CardLoan } from '@/lib/types';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
 const todayJst = () => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
 
 // カードを借りる。運転者としてログインしている人（driverId）が借りる。
-export async function POST(req: NextRequest) {
+export const POST = withWriteLock(async function POST(req: NextRequest) {
   const b = (await req.json().catch(() => ({}))) as {
     cardId?: string;
     driverId?: string;
@@ -57,4 +58,4 @@ export async function POST(req: NextRequest) {
   d.loans = d.loans.slice(0, 2000);
   await saveCards(d);
   return NextResponse.json({ success: true, id: loan.id });
-}
+});

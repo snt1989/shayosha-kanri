@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { loadData, saveData } from '@/lib/store';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
-export async function DELETE(
+export const DELETE = withWriteLock(async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -32,4 +33,4 @@ export async function DELETE(
     logs: data.logs,
   });
   return NextResponse.json({ success: true });
-}
+});

@@ -3,13 +3,14 @@ import { loadData, saveData } from '@/lib/store';
 import { pushLog } from '@/lib/log';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { removeScheduleNotice } from '@/lib/maint-schedule';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
 // 帰着登録で受け付けた整備依頼の「対応済／対応待ち」だけを更新する。
 // 確定済みの日報の内容編集は管理者限定だが、整備依頼への対応記録は整備台帳から誰でも行えるよう、
 // 日報本体は変更せずこのフィールドだけを更新する専用のAPIにしている。
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withWriteLock(async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const body = (await req.json()) as { done?: boolean; watch?: boolean };
   const { done } = body;
@@ -62,4 +63,4 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     logs: data.logs,
   });
   return NextResponse.json({ success: true });
-}
+});

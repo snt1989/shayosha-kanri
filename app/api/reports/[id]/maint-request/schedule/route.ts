@@ -7,13 +7,14 @@ import { todayJst } from '@/lib/notices';
 import { pushConfig, sendPushToAll } from '@/lib/push';
 import { removeScheduleNotice, upsertScheduleNotice } from '@/lib/maint-schedule';
 import { jpDate, scheduleText } from '@/lib/schedule-text';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
 // 整備依頼の「修理予定日」を決める・変える・取り消す。決められるのは、整備士と管理者だけ。
 // 決める（または日にちを変える）と、全員向けのお知らせを出して（予定日まで表示）、登録済みの端末に通知を送る。
 // ※ 整備士のログインは端末側の確認なので、サーバーでは名前が整備士の一覧にあるかまでを見る（既存の操作と同じ程度）。
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withWriteLock(async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const b = (await req.json().catch(() => ({}))) as { date?: string; mechanic?: string };
   const data = await loadData();
@@ -62,4 +63,4 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
   }
   return NextResponse.json({ success: true, date, notified });
-}
+});

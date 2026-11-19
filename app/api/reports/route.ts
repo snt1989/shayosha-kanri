@@ -5,10 +5,11 @@ import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
 import { maintBlockIn, maintBlocks } from '@/lib/utils';
 import { jpDate } from '@/lib/schedule-text';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: NextRequest) {
+export const POST = withWriteLock(async function POST(req: NextRequest) {
   const r: Report = await req.json();
   if (!r.id) {
     r.id = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -87,4 +88,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json({ success: true, id: r.id });
-}
+});

@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { loadData } from '@/lib/store';
 import { loadCards, saveCards } from '@/lib/cards-store';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
 // カードを返却する。返却は誰でも記録できる（記録者の名前を残す）。
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withWriteLock(async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const b = (await req.json().catch(() => ({}))) as { driverId?: string };
   const d = await loadCards();
@@ -22,10 +23,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   loan.returnedBy = by;
   await saveCards(d);
   return NextResponse.json({ success: true });
-}
+});
 
 // 貸出の記録を削除（入力の間違いの訂正用。管理者のみ）
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withWriteLock(async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value)) {
     return NextResponse.json({ success: false, message: '管理者ログインが必要です。' }, { status: 401 });
   }
@@ -34,4 +35,4 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   d.loans = d.loans.filter((l) => l.id !== id);
   await saveCards(d);
   return NextResponse.json({ success: true });
-}
+});

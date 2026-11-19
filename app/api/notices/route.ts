@@ -5,6 +5,7 @@ import { pushLog } from '@/lib/log';
 import { kvGet, kvSet } from '@/lib/kv';
 import { pushConfig, sendPushToAll } from '@/lib/push';
 import { Notice, NOTICES_KEY, NOTICE_BODY_MAX, NOTICE_MAX, NOTICE_TITLE_MAX, isNoticeExpired, sortNotices, todayJst } from '@/lib/notices';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
 }
 
 // 連絡事項の投稿・更新（管理者のみ）。push が true なら、登録済みの端末に通知も送る。
-export async function POST(req: NextRequest) {
+export const POST = withWriteLock(async function POST(req: NextRequest) {
   if (!isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value)) {
     return NextResponse.json({ success: false, message: 'お知らせの投稿には管理者ログインが必要です。' }, { status: 401 });
   }
@@ -61,4 +62,4 @@ export async function POST(req: NextRequest) {
   // 新規の投稿のときだけ通知を送る（直しただけでは送らない）
   const push = b.push && idx < 0 ? await sendPushToAll({ title: `${notice.level === 'important' ? '【重要】' : ''}${title}`, body: body || 'お知らせを確認してください。', url: '/?notices=1' }) : null;
   return NextResponse.json({ success: true, id: notice.id, push });
-}
+});

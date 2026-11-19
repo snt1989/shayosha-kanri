@@ -4,6 +4,7 @@ import { kvGet, kvSet } from '@/lib/kv';
 import { loadData, saveData } from '@/lib/store';
 import { pushLog } from '@/lib/log';
 import { DEFAULT_INCIDENT_CONTACTS, INCIDENT_CONTACTS_KEY, IncidentContact, cleanContacts } from '@/lib/incidents';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,7 @@ export async function GET() {
   return NextResponse.json({ contacts: saved === null ? DEFAULT_INCIDENT_CONTACTS : cleanContacts(saved) });
 }
 
-export async function POST(req: NextRequest) {
+export const POST = withWriteLock(async function POST(req: NextRequest) {
   if (!isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value)) {
     return NextResponse.json({ success: false, message: '緊急連絡先の設定には管理者ログインが必要です。' }, { status: 401 });
   }
@@ -25,4 +26,4 @@ export async function POST(req: NextRequest) {
   pushLog(data, { actor: 'admin', action: '緊急連絡先更新', target: '緊急連絡先', detail: `${contacts.length}件` });
   await saveData({ reports: data.reports, vehicles: data.vehicles, drivers: data.drivers, masters: data.masters, logs: data.logs });
   return NextResponse.json({ success: true, contacts });
-}
+});

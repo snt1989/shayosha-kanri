@@ -6,6 +6,7 @@ import { pushLog } from '@/lib/log';
 import { sendPushToAll } from '@/lib/push';
 import { cleanPhotoIds } from '@/lib/photo-ids';
 import { INCIDENTS_KEY, INCIDENTS_MAX, INCIDENT_INJURY, INCIDENT_KINDS, Incident } from '@/lib/incidents';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest) {
 const s = (v: unknown, max: number) => String(v ?? '').trim().slice(0, max);
 
 // 報告する。緊急のときに使うので、ログインは求めない（運転者の名前は画面で選ぶ）。管理者と、通知を受け取る端末に通知を送る。
-export async function POST(req: NextRequest) {
+export const POST = withWriteLock(async function POST(req: NextRequest) {
   const b = await req.json().catch(() => ({}));
   const data = await loadData();
   const kind = INCIDENT_KINDS.includes(b.kind) ? b.kind : INCIDENT_KINDS[0];
@@ -65,4 +66,4 @@ export async function POST(req: NextRequest) {
     urgent: true,
   }).catch(() => null);
   return NextResponse.json({ success: true, id: inc.id, push });
-}
+});

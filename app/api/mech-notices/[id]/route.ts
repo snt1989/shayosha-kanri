@@ -5,11 +5,12 @@ import { isAdminOrMechanic, mechanicNameOf } from '@/lib/mechanic-auth';
 import { pushLog } from '@/lib/log';
 import { kvGet, kvSet } from '@/lib/kv';
 import { MECH_NOTICES_KEY, MechNotice } from '@/lib/mech-notices';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
 // 削除（管理者・整備士）
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withWriteLock(async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const data = await loadData();
   if (!isAdminOrMechanic(req, data.masters.mechanics)) return NextResponse.json({ success: false, message: '整備士か管理者のログインが必要です。' }, { status: 401 });
@@ -21,4 +22,4 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   pushLog(data, { actor: isAdmin ? 'admin' : 'user', action: '整備士向けお知らせ削除', target: n.title, detail: isAdmin ? '管理者' : mechanicNameOf(req) });
   await saveData({ reports: data.reports, vehicles: data.vehicles, drivers: data.drivers, masters: data.masters, logs: data.logs });
   return NextResponse.json({ success: true });
-}
+});

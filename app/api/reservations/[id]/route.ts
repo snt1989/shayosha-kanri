@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { loadData, saveData } from '@/lib/store';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
 // 予約の取消。誰でも行える（日報と違い、事前の予定なので改ざん防止の対象にしない）。
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withWriteLock(async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const data = await loadData();
   const target = data.reservations.find((x) => x.id === id);
@@ -31,4 +32,4 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     logs: data.logs,
   });
   return NextResponse.json({ success: true });
-}
+});

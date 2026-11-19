@@ -4,10 +4,11 @@ import { Vehicle } from '@/lib/types';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
 import { MAX_VEHICLE_PHOTOS, cleanPhotoIds } from '@/lib/photo-ids';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: NextRequest) {
+export const POST = withWriteLock(async function POST(req: NextRequest) {
   const v: Vehicle = await req.json();
   const isNew = !v.id;
   if (!v.id) {
@@ -53,4 +54,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json({ success: true, id: v.id });
-}
+});

@@ -1,0 +1,26 @@
+name: CI
+# push のたびに、型チェック・テスト・本番ビルドを自動で確かめる（本番のデプロイが失敗する前に気づくため）
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: 部品を入れる
+        run: bun install
+      - name: 型チェック
+        run: bunx tsc --noEmit
+      - name: テスト
+        run: bun test tests
+      - name: 本番ビルド
+        run: bunx next build
+        env:
+          ADMIN_PASSWORD: ci-dummy

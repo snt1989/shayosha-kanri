@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { kvGet, kvSet } from '@/lib/kv';
 import { INCIDENTS_KEY, Incident } from '@/lib/incidents';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +10,7 @@ const guard = (req: NextRequest) =>
   isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value) ? null : NextResponse.json({ success: false, message: '管理者ログインが必要です。' }, { status: 401 });
 
 // 対応済・対応中の切り替えと、対応メモの保存（管理者のみ）
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withWriteLock(async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const g = guard(req);
   if (g) return g;
   const { id } = await params;
@@ -26,13 +27,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   list[i] = cur;
   await kvSet(INCIDENTS_KEY, list);
   return NextResponse.json({ success: true });
-}
+});
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withWriteLock(async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const g = guard(req);
   if (g) return g;
   const { id } = await params;
   const list = await kvGet<Incident[]>(INCIDENTS_KEY, []);
   await kvSet(INCIDENTS_KEY, list.filter((x) => x.id !== id));
   return NextResponse.json({ success: true });
-}
+});

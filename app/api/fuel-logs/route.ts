@@ -3,13 +3,14 @@ import { loadData, saveData } from '@/lib/store';
 import { FuelLog } from '@/lib/types';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
 const num = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 
 // 給油の登録・更新。新規登録は誰でも（画面側で運転者ログインが必要）、登録済みの記録の編集は管理者のみ。
-export async function POST(req: NextRequest) {
+export const POST = withWriteLock(async function POST(req: NextRequest) {
   const f: FuelLog = await req.json();
   const isNew = !f.id;
   if (!f.id) f.id = 'fl' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -57,4 +58,4 @@ export async function POST(req: NextRequest) {
     fuelLogs: data.fuelLogs,
   });
   return NextResponse.json({ success: true, id: f.id });
-}
+});

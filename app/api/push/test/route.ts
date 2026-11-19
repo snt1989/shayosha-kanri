@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushConfig, sendPushToAll } from '@/lib/push';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
 // テスト送信（管理者のみ）。登録済みのすべての端末に届く。
-export async function POST(req: NextRequest) {
+export const POST = withWriteLock(async function POST(req: NextRequest) {
   if (!isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value)) {
     return NextResponse.json({ success: false, message: '管理者ログインが必要です。' }, { status: 401 });
   }
@@ -14,4 +15,4 @@ export async function POST(req: NextRequest) {
   }
   const r = await sendPushToAll({ title: 'テスト通知', body: '運行管理アプリからのテスト通知です。届いていれば設定は完了です。', url: '/?notices=1' });
   return NextResponse.json({ success: true, ...r });
-}
+});

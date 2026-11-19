@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { activeLoanOf, loadCards, saveCards } from '@/lib/cards-store';
 import { CARD_KINDS, FleetCard } from '@/lib/types';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +11,7 @@ export async function GET() {
 }
 
 // カードの登録・編集（管理者のみ）
-export async function POST(req: NextRequest) {
+export const POST = withWriteLock(async function POST(req: NextRequest) {
   if (!isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value)) {
     return NextResponse.json({ success: false, message: 'カードの登録・編集には管理者ログインが必要です。' }, { status: 401 });
   }
@@ -38,10 +39,10 @@ export async function POST(req: NextRequest) {
   } else d.cards.push(card);
   await saveCards(d);
   return NextResponse.json({ success: true, id: card.id });
-}
+});
 
 // 貸出中のカードは削除できない（先に返却する）
-export async function DELETE(req: NextRequest) {
+export const DELETE = withWriteLock(async function DELETE(req: NextRequest) {
   if (!isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value)) {
     return NextResponse.json({ success: false, message: '管理者ログインが必要です。' }, { status: 401 });
   }
@@ -53,4 +54,4 @@ export async function DELETE(req: NextRequest) {
   d.cards = d.cards.filter((c) => c.id !== id);
   await saveCards(d);
   return NextResponse.json({ success: true });
-}
+});

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { loadData, saveData } from '@/lib/store';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +21,7 @@ async function persist(data: Awaited<ReturnType<typeof loadData>>) {
 }
 
 // レンタカーの返却（返却日・時刻・返却者を記録）。管理者でなくても行える。
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withWriteLock(async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const body: { date?: string; time?: string; by?: string; byId?: string } = await req.json().catch(() => ({}));
   const data = await loadData();
@@ -52,10 +53,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   });
   await persist(data);
   return NextResponse.json({ success: true });
-}
+});
 
 // 返却の取り消し（押し間違いなど）。利用中に戻す。
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withWriteLock(async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const data = await loadData();
   const r = data.rentals.find((x) => x.id === id);
@@ -75,4 +76,4 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   });
   await persist(data);
   return NextResponse.json({ success: true });
-}
+});

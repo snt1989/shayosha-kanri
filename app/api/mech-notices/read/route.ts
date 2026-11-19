@@ -3,12 +3,13 @@ import { loadData } from '@/lib/store';
 import { mechanicNameOf } from '@/lib/mechanic-auth';
 import { kvGet, kvSet } from '@/lib/kv';
 import { MECH_NOTICES_KEY, MechNotice } from '@/lib/mech-notices';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
 // 整備士が「既読にする」。登録済みの整備士の名前（x-mechanic）のときだけ。ids に入れたお知らせを、その人の既読にする。
 // （整備士のログインは名前を選ぶだけの簡易なもの。ほかの人の名前では付けられない、までは守れない）
-export async function POST(req: NextRequest) {
+export const POST = withWriteLock(async function POST(req: NextRequest) {
   const data = await loadData();
   const name = mechanicNameOf(req);
   if (!name || !data.masters.mechanics.includes(name)) {
@@ -28,4 +29,4 @@ export async function POST(req: NextRequest) {
   }
   if (changed) await kvSet(MECH_NOTICES_KEY, list);
   return NextResponse.json({ success: true, changed });
-}
+});

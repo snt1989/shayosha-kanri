@@ -5,6 +5,7 @@ import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
 import { maintBlockIn, maintBlocks } from '@/lib/utils';
 import { jpDate } from '@/lib/schedule-text';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,7 @@ const endKey = (r: Pick<Reservation, 'endDate' | 'startDate' | 'endTime'>) => `$
 const fmt = (date: string, time: string) => `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))} ${time}`;
 
 // 予約の登録・変更。誰でも行える（車両の押さえ合いは重複チェックで防ぐ）。
-export async function POST(req: NextRequest) {
+export const POST = withWriteLock(async function POST(req: NextRequest) {
   const r: Reservation = await req.json();
   const isNew = !r.id;
   if (!r.id) {
@@ -89,4 +90,4 @@ export async function POST(req: NextRequest) {
     logs: data.logs,
   });
   return NextResponse.json({ success: true, id: r.id });
-}
+});

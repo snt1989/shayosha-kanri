@@ -4,10 +4,11 @@ import { Driver } from '@/lib/types';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
 import { assignMissingEmpIds } from '@/lib/empId';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: NextRequest) {
+export const POST = withWriteLock(async function POST(req: NextRequest) {
   const d: Driver = await req.json();
   const isNew = !d.id;
   if (!d.id) {
@@ -46,4 +47,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json({ success: true, id: d.id, empId: d.empId });
-}
+});

@@ -4,6 +4,7 @@ import { MAINT_URGENCIES, Report } from '@/lib/types';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
 import { cleanPhotoIds } from '@/lib/photo-ids';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,7 @@ const todayJst = () => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slic
 // 整備台帳で、依頼と結びついていない記録の進捗を「整備中／経過観察」にしたとき、
 // その記録の内容で整備依頼を作り直して、整備依頼の一覧に戻す。
 // 作れるのは整備士か管理者（運転者ログインの依頼とは別）。
-export async function POST(req: NextRequest) {
+export const POST = withWriteLock(async function POST(req: NextRequest) {
   const b = (await req.json().catch(() => ({}))) as {
     vehicleId?: string;
     type?: string;
@@ -84,4 +85,4 @@ export async function POST(req: NextRequest) {
     logs: data.logs,
   });
   return NextResponse.json({ success: true, id: r.id });
-}
+});

@@ -3,11 +3,12 @@ import { loadData, saveData } from '@/lib/store';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
 import { assignMissingEmpIds, effectiveNext } from '@/lib/empId';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
 // 社員番号の採番ルール（接頭辞・桁数・次の番号）を更新する。管理者のみ。
-export async function POST(req: NextRequest) {
+export const POST = withWriteLock(async function POST(req: NextRequest) {
   if (!isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value)) {
     return NextResponse.json({ success: false, message: '管理者ログインが必要です。' }, { status: 401 });
   }
@@ -40,4 +41,4 @@ export async function POST(req: NextRequest) {
     empIdRule: data.empIdRule,
   });
   return NextResponse.json({ success: true, assigned });
-}
+});

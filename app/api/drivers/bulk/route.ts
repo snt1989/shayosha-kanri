@@ -4,10 +4,11 @@ import { Driver } from '@/lib/types';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
 import { assignMissingEmpIds } from '@/lib/empId';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: NextRequest) {
+export const POST = withWriteLock(async function POST(req: NextRequest) {
   const list: Driver[] = await req.json();
   const isAdminReq = isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value);
   const data = await loadData();
@@ -29,4 +30,4 @@ export async function POST(req: NextRequest) {
     empIdRule: data.empIdRule,
   });
   return NextResponse.json({ success: true, count: data.drivers.length });
-}
+});

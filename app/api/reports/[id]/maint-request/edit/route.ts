@@ -5,13 +5,14 @@ import { pushLog } from '@/lib/log';
 import { cleanPhotoIds } from '@/lib/photo-ids';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { upsertScheduleNotice } from '@/lib/maint-schedule';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
 // 対応待ちの整備依頼の内容（種類・緊急度・内容。ダッシュボードから出した依頼は車両も）を直す。
 // 編集できるのは、依頼を出した本人（運転者ログイン）・整備士・管理者。対応済の依頼は編集できない。
 // ※ 運転者・整備士のログインは端末側の確認なので、サーバーでは名前の一致までを見る（既存の対応済の操作と同じ程度）。
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withWriteLock(async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const b = (await req.json().catch(() => ({}))) as {
     type?: string;
@@ -66,4 +67,4 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     logs: data.logs,
   });
   return NextResponse.json({ success: true });
-}
+});

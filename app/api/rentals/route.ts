@@ -3,13 +3,14 @@ import { loadData, saveData } from '@/lib/store';
 import { Rental } from '@/lib/types';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
 const num = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 
 // レンタカー利用の登録・更新。車両台帳とは別管理。
-export async function POST(req: NextRequest) {
+export const POST = withWriteLock(async function POST(req: NextRequest) {
   const r: Rental = await req.json();
   const isNew = !r.id;
   if (!r.id) r.id = 'rn' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -56,4 +57,4 @@ export async function POST(req: NextRequest) {
     reservations: data.reservations,
   });
   return NextResponse.json({ success: true, id: r.id });
-}
+});

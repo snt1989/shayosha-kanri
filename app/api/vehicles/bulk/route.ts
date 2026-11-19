@@ -4,10 +4,11 @@ import { Vehicle } from '@/lib/types';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
 import { MAX_VEHICLE_PHOTOS, cleanPhotoIds } from '@/lib/photo-ids';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: NextRequest) {
+export const POST = withWriteLock(async function POST(req: NextRequest) {
   const list: Vehicle[] = await req.json();
   const isAdminReq = isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value);
   const data = await loadData();
@@ -42,4 +43,4 @@ export async function POST(req: NextRequest) {
     logs: data.logs,
   });
   return NextResponse.json({ success: true, count: data.vehicles.length });
-}
+});

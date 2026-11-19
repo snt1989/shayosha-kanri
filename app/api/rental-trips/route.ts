@@ -3,11 +3,12 @@ import { loadData, saveData } from '@/lib/store';
 import { RentalTrip } from '@/lib/types';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
 // レンタカーの運行記録（誰が運転したか）の登録・更新。
-export async function POST(req: NextRequest) {
+export const POST = withWriteLock(async function POST(req: NextRequest) {
   const t: RentalTrip = await req.json();
   const isNew = !t.id;
   if (!t.id) t.id = 'rt' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -52,4 +53,4 @@ export async function POST(req: NextRequest) {
     rentalTrips: data.rentalTrips,
   });
   return NextResponse.json({ success: true, id: t.id });
-}
+});

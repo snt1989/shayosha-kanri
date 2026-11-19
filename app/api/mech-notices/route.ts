@@ -6,6 +6,7 @@ import { pushLog } from '@/lib/log';
 import { kvGet, kvSet } from '@/lib/kv';
 import { NOTICE_BODY_MAX, NOTICE_TITLE_MAX, isNoticeExpired, sortNotices, todayJst } from '@/lib/notices';
 import { MECH_NOTICES_KEY, MECH_NOTICE_MAX, MechNotice } from '@/lib/mech-notices';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest) {
 }
 
 // 投稿・更新（管理者・整備士）。
-export async function POST(req: NextRequest) {
+export const POST = withWriteLock(async function POST(req: NextRequest) {
   const data = await loadData();
   if (!isAdminOrMechanic(req, data.masters.mechanics)) return deny();
   const isAdmin = isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value);
@@ -61,4 +62,4 @@ export async function POST(req: NextRequest) {
   pushLog(data, { actor: isAdmin ? 'admin' : 'user', action: idx >= 0 ? '整備士向けお知らせ更新' : '整備士向けお知らせ投稿', target: title, detail: who });
   await saveData({ reports: data.reports, vehicles: data.vehicles, drivers: data.drivers, masters: data.masters, logs: data.logs });
   return NextResponse.json({ success: true, id: notice.id });
-}
+});

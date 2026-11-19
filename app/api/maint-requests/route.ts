@@ -4,6 +4,7 @@ import { MAINT_URGENCIES, Report } from '@/lib/types';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
 import { cleanPhotoIds } from '@/lib/photo-ids';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +12,7 @@ const todayJst = () => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slic
 
 // ダッシュボードから直接出す整備依頼。日報（運転の記録）にはせず、maintOnly の記録として保存する。
 // 以降は、帰着登録で出した依頼と同じく、整備台帳で対応済にするまで「対応待ち」に出る。
-export async function POST(req: NextRequest) {
+export const POST = withWriteLock(async function POST(req: NextRequest) {
   const b = (await req.json().catch(() => ({}))) as {
     vehicleId?: string;
     type?: string;
@@ -81,4 +82,4 @@ export async function POST(req: NextRequest) {
     logs: data.logs,
   });
   return NextResponse.json({ success: true, id: r.id });
-}
+});

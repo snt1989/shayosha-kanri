@@ -68,3 +68,58 @@ export async function kvDel(key: string): Promise<void> {
   await fs.mkdir(LOCAL_DIR, { recursive: true });
   await fs.writeFile(LOCAL_FILE, JSON.stringify(all), 'utf-8');
 }
+
+// --- 書き込みロック（同時に保存して、片方の入力が消えるのを防ぐ） ---
+// 変更するAPIは、lib/lock.ts の withWriteLock で包み、1つずつ順番に処理する。
+const LOCK_KEY = 'fleet:write-lock:v1';
+let localChain: Promise<unknown> = Promise.resolve();
+
+export async function runExclusive<T>(fn: () => Promise<T>, opt = { ttlMs: 25000, waitMs: 15000 }): Promise<T> {
+  if (!hasUpstash()) {
+    // 開発用：同じプロセスの中で、順番に並べる
+    const run = localChain.then(fn, fn);
+    localChain = run.catch(() => undefined);
+    return run;
+  }
+  const redis = await getRedis();
+  const token = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const started = Date.now();
+  let got = false;
+  while (Date.now() - started < opt.waitMs) {
+    const r = await redis.set(LOCK_KEY, token, { nx: true, px: opt.ttlMs });
+    if (r === 'OK') {
+      got = true;
+      break;
+    }
+    await new Promise((res) => setTimeout(res, 60 + Math.floor(Math.random() * 90)));
+  }
+  if (!got) throw new LockTimeoutError();
+  try {
+    return await fn();
+  } finally {
+    // 自分が持っているロックだけを外す（期限切れで、ほかの人のロックになっていたら触らない）
+    await redis.eval("if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end", [LOCK_KEY], [token]).catch(() => undefined);
+  }
+}
+
+export class LockTimeoutError extends Error {
+  constructor() {
+    super('lock timeout');
+  }
+}
+
+// 接頭辞から始まるキーの一覧（バックアップ用）
+export async function kvKeys(prefix: string): Promise<string[]> {
+  if (hasUpstash()) {
+    const redis = await getRedis();
+    const out: string[] = [];
+    let cursor = '0';
+    do {
+      const [next, keys] = await redis.scan(cursor, { match: `${prefix}*`, count: 500 });
+      out.push(...keys);
+      cursor = String(next);
+    } while (cursor !== '0');
+    return out.sort();
+  }
+  return Object.keys(await readLocalAll()).filter((k) => k.startsWith(prefix)).sort();
+}

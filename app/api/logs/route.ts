@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { loadData, saveData } from '@/lib/store';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
-export async function DELETE(req: NextRequest) {
+export const DELETE = withWriteLock(async function DELETE(req: NextRequest) {
   if (!isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value)) {
     return NextResponse.json({ success: false, message: '管理者ログインが必要です。' }, { status: 401 });
   }
@@ -21,4 +22,4 @@ export async function DELETE(req: NextRequest) {
     logs: data.logs,
   });
   return NextResponse.json({ success: true });
-}
+});

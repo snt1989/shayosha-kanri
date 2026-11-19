@@ -3,10 +3,11 @@ import { loadData, saveData } from '@/lib/store';
 import { MASTER_KEYS, Masters } from '@/lib/types';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: NextRequest) {
+export const POST = withWriteLock(async function POST(req: NextRequest) {
   if (!isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value)) {
     return NextResponse.json({ success: false, message: '管理者ログインが必要です。' }, { status: 401 });
   }
@@ -32,4 +33,4 @@ export async function POST(req: NextRequest) {
     logs: data.logs,
   });
   return NextResponse.json({ success: true });
-}
+});

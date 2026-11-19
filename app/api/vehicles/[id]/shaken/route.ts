@@ -4,6 +4,7 @@ import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
 import { kvDel, kvGet, kvSet } from '@/lib/kv';
 import { isAdminOrMechanic } from '@/lib/mechanic-auth';
+import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +46,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   });
 }
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withWriteLock(async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!(await allowed(req))) return NextResponse.json({ success: false, error: 'admin or mechanic only' }, { status: 401 });
   const { id } = await params;
   const body = await req.json().catch(() => null);
@@ -64,9 +65,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   pushLog(data, { actor: isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value) ? 'admin' : 'user', action: `${LABEL[kind]}の画像を保存`, target: v.name, detail: v.plate });
   await persist(data);
   return NextResponse.json({ success: true, savedAt });
-}
+});
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withWriteLock(async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!(await allowed(req))) return NextResponse.json({ success: false, error: 'admin or mechanic only' }, { status: 401 });
   const { id } = await params;
   const kind = kindOf(req);
@@ -80,4 +81,4 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     await persist(data);
   }
   return NextResponse.json({ success: true });
-}
+});
