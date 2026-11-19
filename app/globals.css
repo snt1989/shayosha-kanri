@@ -3159,3 +3159,26 @@ body::before {
 .ins-read { background: var(--slate-50); border: 1px dashed var(--slate-300); border-radius: 10px; padding: 10px 12px; margin-bottom: 4px; }
 .ins-read-preview { display: block; max-width: 100%; max-height: 220px; margin-top: 8px; border: 1px solid var(--slate-200); border-radius: 8px; object-fit: contain; background: #fff; }
 .ins-read-badge { margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: var(--sky-100); color: var(--sky-700); font-size: 10px; font-weight: 800; }
+
+/* いま履いているタイヤ（スタッドレス／ノーマル）を、色と絵と文字で一目でわかるように */
+.tire-now { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 800; white-space: nowrap; border: 2px solid transparent; font-family: inherit; line-height: 1.3; }
+button.tire-now { cursor: pointer; }
+.tire-now.winter { background: #0369a1; color: #fff; }
+.tire-now.summer { background: #fbbf24; color: #1f2937; }
+.tire-now.all { background: #059669; color: #fff; }
+.tire-now.unknown { background: var(--slate-100); color: var(--slate-600); }
+.tire-now.sel { border-color: #111827; box-shadow: 0 0 0 2px #fff inset; }
+.tire-now-sm { padding: 1px 7px; font-size: 11px; margin-left: 6px; vertical-align: middle; }
+.tire-summary { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.entity-card .ehead .tire-now, .ehead .tire-now { flex: none; align-self: flex-start; }
+/* 編集画面：大きなボタンで選ぶ */
+.tire-pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.tire-pick-btn { display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 8px 12px; border: 2px solid var(--slate-200); border-radius: 12px; background: #fff; font-size: 14px; font-weight: 700; color: var(--slate-700); cursor: pointer; text-align: left; font-family: inherit; }
+.tire-pick-ic { font-size: 22px; }
+.tire-pick-now { margin-left: auto; flex: none; white-space: nowrap; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: #111827; color: #fff; }
+.tire-pick-btn > span:nth-child(2) { min-width: 0; }
+@media (max-width: 480px) { .tire-pick { grid-template-columns: 1fr; } }
+.tire-pick-btn.on.winter { background: #e0f2fe; border-color: #0369a1; color: #075985; }
+.tire-pick-btn.on.summer { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+.tire-pick-btn.on.all { background: #d1fae5; border-color: #059669; color: #065f46; }
+.tire-pick-btn.on.unknown { background: var(--slate-100); border-color: var(--slate-500); }

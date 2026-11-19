@@ -7,7 +7,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useMobileLimit } from '@/lib/useLimit';
 import { AppData, Vehicle } from '@/lib/types';
 import { jpDate } from '@/lib/schedule-text';
-import { urgencyLevel, urgencyPill, daysUntil, genId, openMaintRequests, todayStr, tireSetsOf, tireInfoText, dotText, TIRE_DOT_RE, normalizeDot, mechanicHeaders, mechanicQuery, normalizeTireSize } from '@/lib/utils';
+import { urgencyLevel, urgencyPill, daysUntil, genId, openMaintRequests, todayStr, tireSetsOf, tireInfoText, tireBadge, tireKind, dotText, TIRE_DOT_RE, normalizeDot, mechanicHeaders, mechanicQuery, normalizeTireSize } from '@/lib/utils';
 import { csvToVehicles, downloadCsv, vehiclesToCsv } from '@/lib/csv';
 import { normalizeAlertSettings } from '@/lib/alert-settings';
 import Modal from './Modal';
@@ -307,7 +307,9 @@ export default function VehiclesTab({
                         {v.chassisNo ? ` / 車台番号: ${v.chassisNo}` : ''}
                       </div>
                     </div>
-                    <span className="pill pill-slate">{v.tire}</span>
+                    <span className={`tire-now ${tireBadge(v.tire).kind}`} title={`いま履いているタイヤ：${v.tire || '未設定'}`}>
+                      {tireBadge(v.tire).icon} {tireBadge(v.tire).label}
+                    </span>
                   </div>
                   {v.photos && v.photos.length > 0 && (
                     <div style={{ marginBottom: 6 }}>
@@ -316,10 +318,10 @@ export default function VehiclesTab({
                   )}
                   {(() => {
                     const t = tireSetsOf(v);
-                    const winterNow = /スタッドレス|冬/.test(v.tire || '');
+                    const tk = tireKind(v.tire);
                     const lines = [
-                      { ic: '☀️', label: '夏', info: tireInfoText(t.summer), on: !winterNow && !!v.tire },
-                      { ic: '❄️', label: '冬', info: tireInfoText(t.winter), on: winterNow },
+                      { ic: '☀️', label: '夏', info: tireInfoText(t.summer), on: tk === 'summer' || tk === 'all' },
+                      { ic: '❄️', label: '冬', info: tireInfoText(t.winter), on: tk === 'winter' || tk === 'all' },
                     ].filter((x) => x.info);
                     return lines.length ? (
                       <div className="esub" style={{ marginBottom: 6 }}>
@@ -688,14 +690,20 @@ export default function VehiclesTab({
             </div>
           </div>
           <div className="field">
-            <label>タイヤ種別</label>
-            <select value={editing.tire} onChange={(e) => setEditing({ ...editing, tire: e.target.value })}>
-              {data.masters.tireTypes.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
+            <label>いま履いているタイヤ</label>
+            <div className="tire-pick" role="group" aria-label="いま履いているタイヤ">
+              {(data.masters.tireTypes.includes(editing.tire) || !editing.tire ? data.masters.tireTypes : [editing.tire, ...data.masters.tireTypes]).map((t) => {
+                const b = tireBadge(t);
+                const on = editing.tire === t;
+                return (
+                  <button key={t} type="button" className={`tire-pick-btn ${b.kind} ${on ? 'on' : ''}`} aria-pressed={on} onClick={() => setEditing({ ...editing, tire: t })}>
+                    <span className="tire-pick-ic" aria-hidden>{b.icon}</span>
+                    <span>{t}</span>
+                    {on && <span className="tire-pick-now">装着中</span>}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           {(['summer', 'winter'] as const).map((k) => {
             const key = k === 'summer' ? 'tireSummer' : 'tireWinter';

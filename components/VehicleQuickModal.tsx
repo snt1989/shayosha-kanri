@@ -1,7 +1,7 @@
 'use client';
 
 import { AppData, Driver } from '@/lib/types';
-import { daysUntil, openMaintRequests } from '@/lib/utils';
+import { daysUntil, openMaintRequests, tireBadge } from '@/lib/utils';
 import Modal from './Modal';
 
 // 車両のQRコード（ステッカー）を読み取ったときに開く画面。その車両でよく使う操作を、大きなボタンで出す。
@@ -49,6 +49,7 @@ export default function VehicleQuickModal({
         </div>
         <div className="vq-chips">
           {trip ? <span className="pill pill-amber">🚗 使用中：{trip.driver}さん（{trip.date}出発）</span> : <span className="pill pill-green">✓ 空いています</span>}
+          <span className={`tire-now ${tireBadge(v.tire).kind}`}>{tireBadge(v.tire).icon} {tireBadge(v.tire).label}</span>
           {shaken !== null && <span className={`pill ${shaken < 0 ? 'pill-red' : shaken <= 30 ? 'pill-amber' : 'pill-slate'}`}>車検 {shaken < 0 ? `${-shaken}日超過` : `あと${shaken}日`}</span>}
           {oilLeft !== null && <span className={`pill ${oilLeft < 0 ? 'pill-red' : oilLeft <= 1000 ? 'pill-amber' : 'pill-slate'}`}>オイル {oilLeft < 0 ? `${(-oilLeft).toLocaleString()}km超過` : `残り${oilLeft.toLocaleString()}km`}</span>}
           {reqs.length > 0 && <span className="pill pill-red">整備依頼 {reqs.length}件</span>}

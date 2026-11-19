@@ -183,3 +183,21 @@ export function mechanicHeaders(): Record<string, string> {
   const m = mechanicQuery();
   return m ? { 'x-mechanic': m } : {};
 }
+
+// いま履いているタイヤの種別（「タイヤ種別」の文字から見分ける）。スタッドレス＝冬、ノーマル＝夏
+export type TireKind = 'winter' | 'summer' | 'all' | 'unknown';
+export function tireKind(tire?: string): TireKind {
+  const t = tire || '';
+  if (/スタッドレス|冬|ウィンター|ウインター/.test(t)) return 'winter';
+  if (/オールシーズン|オールウェザー/.test(t)) return 'all';
+  if (/夏|ノーマル|サマー/.test(t)) return 'summer';
+  return 'unknown';
+}
+// 画面に出す印（絵・短い名前・長い名前）
+export function tireBadge(tire?: string): { kind: TireKind; icon: string; short: string; label: string } {
+  const k = tireKind(tire);
+  if (k === 'winter') return { kind: k, icon: '❄️', short: '冬', label: 'スタッドレス装着中' };
+  if (k === 'summer') return { kind: k, icon: '☀️', short: '夏', label: 'ノーマル（夏）装着中' };
+  if (k === 'all') return { kind: k, icon: '🌦️', short: '全', label: 'オールシーズン装着中' };
+  return { kind: k, icon: '🛞', short: '?', label: tire ? `${tire}` : 'タイヤ種別 未設定' };
+}

@@ -5,10 +5,10 @@ import { photoUrl } from '@/lib/image';
 import { AppData, Vehicle } from '@/lib/types';
 import { DEFAULT_ALERT_SETTINGS, normalizeAlertSettings } from '@/lib/alert-settings';
 import { downloadCsv, vehiclesToCsv } from '@/lib/csv';
-import { daysUntil, openMaintRequests, tireInfoText, tireSetsOf, todayStr } from '@/lib/utils';
+import { daysUntil, openMaintRequests, tireBadge, tireInfoText, tireKind, tireSetsOf, todayStr } from '@/lib/utils';
 
 type SortKey = 'name' | 'shaken' | 'check' | 'oil' | 'odometer';
-type Filter = '' | 'shaken' | 'check' | 'oil' | 'request';
+type Filter = '' | 'shaken' | 'check' | 'oil' | 'request' | 'winter' | 'summer';
 
 const SORTS: { key: SortKey; label: string }[] = [
   { key: 'name', label: '車両名' },
@@ -80,6 +80,8 @@ export default function VehicleListTab({ data, onOpenLedger }: { data: AppData; 
         if (filter === 'check') return check !== null && check <= st.shakenDays;
         if (filter === 'oil') return oilLeft <= st.oilKm;
         if (filter === 'request') return req > 0;
+        if (filter === 'winter') return tireKind(v.tire) === 'winter';
+        if (filter === 'summer') return tireKind(v.tire) === 'summer';
         return true;
       });
     const far = 1e9;
@@ -105,7 +107,8 @@ export default function VehicleListTab({ data, onOpenLedger }: { data: AppData; 
     const line = (label: string, key: 'summer' | 'winter') => {
       const t = sets[key];
       const txt = tireInfoText(t);
-      const now = (v.tire || '').includes(key === 'summer' ? '夏' : '冬');
+      const tk = tireKind(v.tire);
+      const now = tk === 'all' || tk === (key === 'summer' ? 'summer' : 'winter');
       return txt || now ? (
         <div key={key} style={{ whiteSpace: 'nowrap' }}>
           {label} {txt || '（未入力）'}
@@ -140,6 +143,19 @@ export default function VehicleListTab({ data, onOpenLedger }: { data: AppData; 
             ⬇ CSV
           </button>
         </h3>
+        {(() => {
+          const all = data.vehicles;
+          const w = all.filter((v) => tireKind(v.tire) === 'winter').length;
+          const s = all.filter((v) => tireKind(v.tire) === 'summer').length;
+          const o = all.length - w - s;
+          return (
+            <div className="tire-summary">
+              <button type="button" className={`tire-now winter ${filter === 'winter' ? 'sel' : ''}`} onClick={() => setFilter(filter === 'winter' ? '' : 'winter')}>❄️ スタッドレス装着中 {w}台</button>
+              <button type="button" className={`tire-now summer ${filter === 'summer' ? 'sel' : ''}`} onClick={() => setFilter(filter === 'summer' ? '' : 'summer')}>☀️ ノーマル（夏）装着中 {s}台</button>
+              {o > 0 && <span className="tire-now unknown">その他・未設定 {o}台</span>}
+            </div>
+          );
+        })()}
         <div className="toolbar vlist-toolbar" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
           <input
             className="search"
@@ -154,6 +170,8 @@ export default function VehicleListTab({ data, onOpenLedger }: { data: AppData; 
             <option value="check">点検が近い・超過（{st.shakenDays}日以内）</option>
             <option value="oil">オイル交換が近い（残り{st.oilKm.toLocaleString()}km以内）</option>
             <option value="request">整備依頼あり</option>
+            <option value="winter">❄️ スタッドレス装着中</option>
+            <option value="summer">☀️ ノーマル（夏）装着中</option>
           </select>
           <select aria-label="並び順" value={sort} onChange={(e) => setSort(e.target.value as SortKey)} style={{ flex: '1 1 0', minWidth: 0, padding: '9px 12px', border: '1px solid var(--slate-300)', borderRadius: 8 }}>
             {SORTS.map((s) => (
@@ -206,6 +224,7 @@ export default function VehicleListTab({ data, onOpenLedger }: { data: AppData; 
                   <tr key={v.id}>
                     <td className="vl-sticky">
                       <strong>{v.name}</strong>
+                      <span className={`tire-now tire-now-sm ${tireBadge(v.tire).kind}`} title={tireBadge(v.tire).label}>{tireBadge(v.tire).icon} {tireBadge(v.tire).short}</span>
                       <div style={{ fontSize: 11, color: 'var(--slate-500)' }}>{v.plate}</div>
                     </td>
                     {show('photo') && (
