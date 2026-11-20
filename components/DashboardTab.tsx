@@ -1,5 +1,6 @@
 'use client';
 
+import { WeatherAlertStrip } from './LiveWeatherPanel';
 import FleetTodayPanel from './FleetTodayPanel';
 import ReqTypes from './ReqTypes';
 import { useState } from 'react';
@@ -145,6 +146,10 @@ export default function DashboardTab({
         <div style={{ fontSize: 12, color: 'var(--slate-500)' }}>
           車検・点検・免許更新・アルコールチェックのアラート、帰着未登録の日報、整備依頼、貸出中のカードなどをまとめて確認できます。車両の使用・予約は「カレンダー」のページです。
         </div>
+      </div>
+
+      <div style={{ marginBottom: 14 }}>
+        <WeatherAlertStrip />
       </div>
 
       <FleetTodayPanel data={data} onReturnCheckin={onReturnCheckin} onOpenCalendar={onOpenCalendar} />

@@ -35,7 +35,7 @@ export default function IwateRoadInfo() {
             {g.group === '通行止め・規制（いま）' ? '🚧 ' : '🚗 '}
             {g.group}
           </h3>
-          <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 10 }}>毎日・毎時間かわる情報です。押すと、公式のページが別の画面で開きます。出発の前に確かめてください。</div>
+          <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 10 }}>毎日・毎時間かわる情報です。押すと、公式のページが別の画面で開きます（このアプリから自動で読み込むことが、できない情報です）。出発の前に確かめてください。</div>
           <div className="tr-links">
             {g.items.map((l) => (
               <a key={l.label} className="tr-link" href={l.url} target="_blank" rel="noopener noreferrer">

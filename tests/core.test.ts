@@ -342,7 +342,7 @@ describe('取締り情報のマップ・規制', () => {
     const withGeo = iw.IWATE_UNITS.flatMap((u: { routes: { geo?: string[] }[] }) => u.routes).filter((r: { geo?: string[] }) => r.geo?.length);
     expect(withGeo.length).toBe(32);
     expect(iw.IWATE_CLOSURES.length).toBe(3);
-    expect(iw.IWATE_LIVE_LINKS.flatMap((g: { items: unknown[] }) => g.items).length).toBe(7);
+    expect(iw.IWATE_LIVE_LINKS.flatMap((g: { items: unknown[] }) => g.items).length).toBe(6);
     expect(iw.orbisGeo(iw.IWATE_ORBIS[0])).toBe('紫波郡矢巾町広宮沢');
     const kv = await import(`${ROOT}/lib/kv`);
     await kv.kvSet('fleet:geo:v1', { '岩手県盛岡市高松': [39.73, 141.15] });
@@ -352,5 +352,52 @@ describe('取締り情報のマップ・規制', () => {
     expect(j.geo).toEqual({ '岩手県盛岡市高松': [39.73, 141.15] });
     expect(j.pending).toBe(0);
     await kv.kvDel('fleet:geo:v1');
+  });
+});
+
+describe('気象庁データの読み取り', () => {
+  const area = {
+    class10s: { '030010': { name: '内陸' }, '030020': { name: '沿岸北部' }, '030030': { name: '沿岸南部' } },
+    class15s: { '030011': { name: '盛岡地域', parent: '030010' }, '030022': { name: '宮古地域', parent: '030020' } },
+    class20s: { '0320100': { name: '盛岡市', parent: '030011' }, '0320200': { name: '宮古市', parent: '030022' } },
+  };
+  test('発表中のものだけを、地域ごとにまとめる（解除・なしは出さない）', async () => {
+    const jma = await import(`${ROOT}/lib/jma`);
+    const raw = [
+      { reportDatetime: '2026-11-20T10:00:00+09:00', headlineText: '大雪に注意', warning: { class10Items: [{ areaCode: '030010', kinds: [{ code: '12', status: '発表' }] }, { areaCode: '030020', kinds: [{ status: '発表警報・注意報はなし' }] }], class20Items: [{ areaCode: '0320100', kinds: [{ code: '12', status: '発表' }, { code: '14', status: '解除' }] }] } },
+      { reportDatetime: '2026-11-19T16:00:00+09:00', headlineText: '古い', warning: { class10Items: [{ areaCode: '030030', kinds: [{ code: '15', status: '解除' }] }], class20Items: [{ areaCode: '0320200', kinds: [{ code: '06', status: '継続' }] }] } },
+    ];
+    const w = jma.parseWarnings(raw, area);
+    expect(w.reportDatetime).toBe('2026-11-20T10:00:00+09:00');
+    expect(w.headline).toBe('大雪に注意');
+    const inland = w.areas.find((a: { code: string }) => a.code === '030010');
+    expect(inland.warns.map((x: { name: string }) => x.name)).toEqual(['大雪注意報']);
+    expect(inland.warns[0].towns).toEqual(['盛岡市']);
+    const north = w.areas.find((a: { code: string }) => a.code === '030020');
+    expect(north.warns[0]).toMatchObject({ name: '大雪警報', level: 'warning', road: true, towns: ['宮古市'] });
+    expect(w.areas.find((a: { code: string }) => a.code === '030030').warns).toEqual([]);
+    expect(w.anyRoad).toBe(true);
+    expect(jma.levelOf('49')).toBe('danger');
+    expect(jma.levelOf('36')).toBe('special');
+    expect(jma.warnName('49')).toBe('土砂災害危険警報');
+    expect(jma.parseWarnings({}, area)).toBeNull();
+  });
+  test('天気予報：今日・明日の天気、降水確率、気温', async () => {
+    const jma = await import(`${ROOT}/lib/jma`);
+    const raw = [
+      {
+        reportDatetime: '2026-11-20T11:00:00+09:00',
+        timeSeries: [
+          { timeDefines: ['2026-11-20T11:00:00+09:00', '2026-11-21T00:00:00+09:00'], areas: [{ area: { name: '内陸', code: '030010' }, weathers: ['雪　時々　くもり', 'くもり'], winds: ['西の風　後　南の風', ''] }] },
+          { timeDefines: ['2026-11-20T12:00:00+09:00', '2026-11-20T18:00:00+09:00', '2026-11-21T00:00:00+09:00'], areas: [{ area: { name: '内陸', code: '030010' }, pops: ['40', '60', '30'] }] },
+          { timeDefines: ['2026-11-20T09:00:00+09:00', '2026-11-20T00:00:00+09:00', '2026-11-21T00:00:00+09:00', '2026-11-21T09:00:00+09:00'], areas: [{ area: { name: '盛岡', code: '33431' }, temps: ['5', '5', '-1', '6'] }] },
+        ],
+      },
+    ];
+    const f = jma.parseForecast(raw);
+    expect(f.areas[0].days[0]).toEqual({ date: '2026-11-20', weather: '雪 時々 くもり', pop: '60' });
+    expect(f.areas[0].days[1].pop).toBe('30');
+    expect(f.areas[0].wind).toBe('西の風 後 南の風');
+    expect(f.temps[0]).toEqual({ name: '盛岡', todayMax: '5', tomorrowMin: '-1', tomorrowMax: '6' });
   });
 });

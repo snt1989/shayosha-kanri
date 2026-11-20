@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { Driver } from '@/lib/types';
 import IwateTrafficPanel from './IwateTrafficPanel';
 import IwateRoadInfo from './IwateRoadInfo';
+import LiveWeatherPanel, { WeatherAlertStrip } from './LiveWeatherPanel';
 import dynamic from 'next/dynamic';
 
 // 地図は、ブラウザの中だけで動かす（サーバーでは描かない）
@@ -12,7 +13,7 @@ const TrafficMap = dynamic(() => import('./TrafficMap'), { ssr: false, loading: 
 type Section = 'map' | 'road' | 'enf' | 'spots';
 const SECTIONS: { key: Section; label: string }[] = [
   { key: 'map', label: '🗺 マップ' },
-  { key: 'road', label: '🚧 規制・交通情報' },
+  { key: 'road', label: '🚧 規制・交通・天気' },
   { key: 'enf', label: '🚓 取締り・オービス' },
   { key: 'spots', label: '📍 社内の注意地点' },
 ];
@@ -126,6 +127,12 @@ export default function TrafficTab({ currentDriver, mechanic, isAdmin, onRequest
         </div>
       </div>
 
+      {pref === '岩手県' && section !== 'road' && (
+        <div style={{ marginBottom: 14 }}>
+          <WeatherAlertStrip onOpen={() => setSection('road')} />
+        </div>
+      )}
+
       {section === 'map' && (
         <div className="card" style={{ marginBottom: 14 }}>
           <h3 className="card-title" style={{ marginBottom: 8 }}>
@@ -135,7 +142,12 @@ export default function TrafficTab({ currentDriver, mechanic, isAdmin, onRequest
         </div>
       )}
 
-      {section === 'road' && pref === '岩手県' && <IwateRoadInfo />}
+      {section === 'road' && pref === '岩手県' && (
+        <>
+          <LiveWeatherPanel />
+          <IwateRoadInfo />
+        </>
+      )}
       {section === 'enf' && pref === '岩手県' && <IwateTrafficPanel />}
       {(section === 'enf' || section === 'road') && pref !== '岩手県' && (
         <div className="card" style={{ marginBottom: 14 }}>

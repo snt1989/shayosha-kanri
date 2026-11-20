@@ -270,11 +270,10 @@ export const IWATE_LIVE_LINKS: { group: string; items: { icon: string; label: st
     ],
   },
   {
-    group: '渋滞・交通情報・天気',
+    group: '渋滞・交通情報',
     items: [
       { icon: '🚗', label: '高速道路の交通情報（NEXCO東日本 ドラとら）', note: '東北道・八戸道・釜石道などの渋滞・規制・チェーン規制', url: 'https://www.drivetraffic.jp/' },
       { icon: '🗾', label: '日本道路交通情報センター（JARTIC）', note: '一般道・高速道路の渋滞・事故・通行止め', url: 'https://www.jartic.or.jp/' },
-      { icon: '⛈', label: '気象庁：岩手県の警報・注意報', note: '大雪・路面凍結・暴風など', url: 'https://www.jma.go.jp/bosai/warning/#area_type=offices&area_code=030000' },
     ],
   },
 ];
