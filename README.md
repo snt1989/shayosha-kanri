@@ -225,3 +225,4 @@ CDN から読み込み、**ブラウザ内だけで**画像からテキストを
 - 項目（整備種別）が複数ある依頼は、`Report.maintRequestDoneTypes` に終わった項目を持つ。`POST /api/reports/{id}/maint-request` に `{ doneTypes: [...] }` を送ると、その項目だけ完了になり、全部そろうと `maintRequestDone` になる（`{ done: false }` で戻すと、項目の印も消える）。
 - 整備台帳（`MaintenanceTab`）では、依頼に結びついた記録を「完了」で保存すると、その記録の整備種別のうち依頼に残っている項目だけを送る。表示は `components/ReqTypes.tsx`、状態は `requestTypeState`（`lib/utils.ts`）。
 - 車両カードのタブに「📄 車検証」を追加（車検証の項目の一覧と、車検証の画像を見る・読み取る・編集するボタン。画像のボタンは管理者・整備士だけ）。
+- QRステッカーの画像保存：`lib/sticker-image.ts`（キャンバスにステッカー1枚を描いて PNG にする。1mm＝12px）。`VehicleStickerModal` の「この1枚を画像で保存」「画像で保存（1枚ずつ）」。

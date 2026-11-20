@@ -95,3 +95,6 @@
 .vtabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .vtabs::-webkit-scrollbar { display: none; }
 .vtab { flex: none; }
+
+/* QRステッカー：1枚ずつ画像で保存 */
+.sticker-item { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }

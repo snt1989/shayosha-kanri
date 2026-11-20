@@ -8,6 +8,7 @@ import { vehicleLandingUrl } from '@/lib/vehicle-qr';
 import { downloadCsv } from '@/lib/csv';
 import { todayStr } from '@/lib/utils';
 import Modal from './Modal';
+import { downloadCanvas, stickerCanvas, stickerFileName } from '@/lib/sticker-image';
 
 type Size = 'm' | 's';
 const SIZES: { key: Size; label: string; note: string }[] = [
@@ -49,6 +50,8 @@ export default function VehicleStickerModal({ data, initialIds, onClose }: { dat
   const [svgs, setSvgs] = useState<Record<string, string>>({});
   const [tow, setTow] = useState<Contact | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [saving, setSaving] = useState('');
+  const [saveErr, setSaveErr] = useState('');
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
   useEffect(() => setMounted(true), []);
@@ -108,6 +111,27 @@ export default function VehicleStickerModal({ data, initialIds, onClose }: { dat
     }
   }
 
+  const shortName = (v: Vehicle) => v.name.split(/[（(]/)[0].trim() || v.name;
+  // ステッカーを、1枚ずつ画像（PNG）で保存する
+  async function saveOne(v: Vehicle) {
+    const c = await stickerCanvas({ name: shortName(v), plate: v.plate, url: vehicleLandingUrl(origin, v.id), size, towPhone: tow?.phone });
+    await downloadCanvas(c, stickerFileName(shortName(v), v.plate));
+  }
+  async function saveStickers(list: Vehicle[]) {
+    setSaveErr('');
+    try {
+      for (const v of list) {
+        setSaving(v.id);
+        await saveOne(v);
+        if (list.length > 1) await new Promise((r) => setTimeout(r, 400)); // 続けて保存すると、ブラウザが止めることがあるため、少し間をあける
+      }
+    } catch {
+      setSaveErr('画像を保存できませんでした。もう一度お試しください。');
+    } finally {
+      setSaving('');
+    }
+  }
+
   return (
     <>
       <Modal
@@ -118,6 +142,9 @@ export default function VehicleStickerModal({ data, initialIds, onClose }: { dat
             <button className="btn" onClick={onClose}>
               閉じる
             </button>
+            <button className="btn" disabled={!ready || saving !== ''} onClick={() => void saveStickers(chosen)}>
+              {saving ? '保存中…' : `⬇ 画像で保存（${chosen.length}枚・1枚ずつ）`}
+            </button>
             <button className="btn btn-primary" disabled={!ready} onClick={() => window.print()}>
               🖨 印刷する（{chosen.length}枚）
             </button>
@@ -125,7 +152,7 @@ export default function VehicleStickerModal({ data, initialIds, onClose }: { dat
         }
       >
         <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 10 }}>
-          QRコードを読み取ると、その車両の画面が開き、出発登録・帰着登録・整備依頼・事故連絡ができます。印刷したら、切り抜いて車内（運転席から見える場所）に貼ってください。印刷の画面で「PDFに保存」を選ぶと、PDFにもできます。
+          QRコードを読み取ると、その車両の画面が開き、出発登録・帰着登録・整備依頼・事故連絡ができます。印刷したら、切り抜いて車内（運転席から見える場所）に貼ってください。印刷の画面で「PDFに保存」を選ぶと、PDFにもできます。「画像で保存」を押すと、1枚ずつ画像（PNG）でダウンロードできます。
         </div>
         <details className="sticker-label-box">
           <summary>🏷 ラベル屋さん（A-one）で作るとき</summary>
@@ -185,9 +212,24 @@ export default function VehicleStickerModal({ data, initialIds, onClose }: { dat
             {chosen.length === 0 ? (
               <div className="empty-state">車両を選んでください</div>
             ) : (
-              chosen.map((v) => (svgs[v.id] ? <Sticker key={v.id} v={v} svg={svgs[v.id]} size={size} tow={tow} /> : null))
+              chosen.map((v) =>
+                svgs[v.id] ? (
+                  <div key={v.id} className="sticker-item">
+                    <Sticker v={v} svg={svgs[v.id]} size={size} tow={tow} />
+                    <button type="button" className="btn btn-sm" disabled={saving !== ''} onClick={() => void saveStickers([v])}>
+                      {saving === v.id ? '保存中…' : '⬇ この1枚を画像で保存'}
+                    </button>
+                  </div>
+                ) : null
+              )
             )}
           </div>
+          {saveErr && (
+            <div className="notice-box" role="alert" style={{ marginTop: 8 }}>
+              {saveErr}
+            </div>
+          )}
+          <div style={{ fontSize: 11, color: 'var(--slate-500)', marginTop: 4 }}>画像（PNG）は、選んだ大きさのステッカー1枚ぶんです。印刷を頼むときや、ほかのソフトに貼るときに使えます。</div>
         </div>
       </Modal>
       {/* 印刷用（画面には出ない。印刷のときだけ、これだけを出す） */}
