@@ -1,7 +1,7 @@
 'use client';
 
-import type { BatteryInfo, TireInfo, Vehicle } from '@/lib/types';
-import { TIRE_DOT_RE, batteryAge, dotText, normalizeDot, normalizeTireSize, tireBadge, tireSetsOf } from '@/lib/utils';
+import { ETC_KINDS, type BatteryInfo, type EtcInfo, type TireInfo, type Vehicle } from '@/lib/types';
+import { TIRE_DOT_RE, batteryAge, etcExpiry, dotText, normalizeDot, normalizeTireSize, tireBadge, tireSetsOf } from '@/lib/utils';
 
 // 車両のタイヤ・バッテリーの入力欄。車両台帳の編集画面と、整備記録の登録画面の両方で使う。
 const TIRE_SIZES = ['145/80R12 80/78N', '155/65R14', '165/65R14', '165/70R14', '175/65R15', '185/65R15', '195/65R15', '195/60R16', '205/60R16', '195/80R15 107/105N', '195/70R15 106/104N', '215/60R17', '225/65R17', '205/55R16'];
@@ -162,6 +162,71 @@ export function BatteryFields({ battery, onChange, fill }: { battery: BatteryInf
           <option key={m} value={m} />
         ))}
       </datalist>
+    </>
+  );
+}
+
+export function EtcFields({ etc, onChange }: { etc: EtcInfo | undefined; onChange: (e: EtcInfo) => void }) {
+  const e = etc || {};
+  const set = (patch: EtcInfo) => onChange({ ...e, ...patch });
+  const exp = etcExpiry(e.cardExpiry);
+  const none = e.kind === 'none';
+  return (
+    <>
+      <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 10 }}>すべて任意です。ETCカードの番号は、全桁を入れないでください（カードの名前や、下4桁などの目印だけにします）。</div>
+      <div className="field">
+        <label>ETCの車載器</label>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {ETC_KINDS.map((k) => (
+            <button key={k.key} type="button" className={`btn btn-sm ${e.kind === k.key ? 'btn-primary' : ''}`} aria-pressed={e.kind === k.key} onClick={() => set({ kind: e.kind === k.key ? undefined : k.key })}>
+              {k.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {!none && (
+        <>
+          <div className="field-row row2">
+            <div className="field">
+              <label>車載器のメーカー</label>
+              <input value={e.maker || ''} maxLength={30} placeholder="パナソニック" onChange={(ev) => set({ maker: ev.target.value })} />
+            </div>
+            <div className="field">
+              <label>車載器の型式</label>
+              <input value={e.model || ''} maxLength={30} placeholder="CY-ET2020" onChange={(ev) => set({ model: ev.target.value })} />
+            </div>
+          </div>
+          <div className="field-row row2">
+            <div className="field">
+              <label>車載器の管理番号</label>
+              <input value={e.unitNo || ''} maxLength={30} placeholder="車載器本体のラベルの番号" onChange={(ev) => set({ unitNo: ev.target.value })} />
+            </div>
+            <div className="field">
+              <label>取り付けた日</label>
+              <input type="date" value={e.installedAt || ''} onChange={(ev) => set({ installedAt: ev.target.value })} />
+            </div>
+          </div>
+          <div className="field-row row2">
+            <div className="field">
+              <label>ETCカード（名前・下4桁など）</label>
+              <input value={e.cardLabel || ''} maxLength={30} placeholder="ETC 3号車用 / 1234" onChange={(ev) => set({ cardLabel: ev.target.value })} />
+            </div>
+            <div className="field">
+              <label>カードの有効期限（年月）</label>
+              <input type="month" value={e.cardExpiry || ''} onChange={(ev) => set({ cardExpiry: ev.target.value })} />
+            </div>
+          </div>
+          {exp && exp.level !== 'ok' && (
+            <div className="notice-box" style={{ marginBottom: 12 }}>
+              ETCカードの有効期限は、{exp.level === 'due' ? '切れています。' : `${exp.text}です。`}
+            </div>
+          )}
+        </>
+      )}
+      <div className="field">
+        <label>メモ</label>
+        <input value={e.note || ''} maxLength={200} placeholder="例：セットアップ済み。カードは運転席のケース" onChange={(ev) => set({ note: ev.target.value })} />
+      </div>
     </>
   );
 }

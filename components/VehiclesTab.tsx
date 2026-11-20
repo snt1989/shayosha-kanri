@@ -1,6 +1,6 @@
 'use client';
 
-import { BatteryFields, TIRE_DOT_MESSAGE, TireFields, cleanTires } from './VehicleInfoFields';
+import { BatteryFields, EtcFields, TIRE_DOT_MESSAGE, TireFields, cleanTires } from './VehicleInfoFields';
 import PhotoField, { PhotoThumbs } from './PhotoField';
 import VehicleStickerModal from './VehicleStickerModal';
 import { MAX_VEHICLE_PHOTOS } from '@/lib/photo-ids';
@@ -8,7 +8,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useMobileLimit } from '@/lib/useLimit';
 import { AppData, Vehicle } from '@/lib/types';
 import { jpDate } from '@/lib/schedule-text';
-import { urgencyLevel, urgencyPill, daysUntil, genId, openMaintRequests, todayStr, tireSetsOf, tireInfoText, batteryAge, tireBadge, tireKind, dotText, TIRE_DOT_RE, normalizeDot, mechanicHeaders, mechanicQuery, normalizeTireSize } from '@/lib/utils';
+import { urgencyLevel, urgencyPill, daysUntil, genId, openMaintRequests, todayStr, tireSetsOf, tireInfoText, batteryAge, etcExpiry, tireBadge, tireKind, dotText, TIRE_DOT_RE, normalizeDot, mechanicHeaders, mechanicQuery, normalizeTireSize } from '@/lib/utils';
 import { csvToVehicles, downloadCsv, vehiclesToCsv } from '@/lib/csv';
 import { normalizeAlertSettings } from '@/lib/alert-settings';
 import Modal from './Modal';
@@ -30,12 +30,13 @@ const emptyVehicle = (data: AppData): Vehicle => ({
 // タイヤのメーカーの入力候補（これ以外も入力できる）
 // よくあるサイズ（候補。ほかのサイズも自由に入力できる）
 
-type EditTab = 'basic' | 'tire' | 'battery' | 'photo' | 'shaken';
-type CardTab = 'main' | 'tire' | 'battery' | 'shaken';
+type EditTab = 'basic' | 'tire' | 'battery' | 'etc' | 'photo' | 'shaken';
+type CardTab = 'main' | 'tire' | 'battery' | 'etc' | 'shaken';
 const EDIT_TABS: { key: EditTab; label: string }[] = [
   { key: 'basic', label: '🚗 基本・点検' },
   { key: 'tire', label: '🛞 タイヤ' },
   { key: 'battery', label: '🔋 バッテリー' },
+  { key: 'etc', label: '🛣️ ETC' },
   { key: 'photo', label: '📷 写真' },
   { key: 'shaken', label: '📄 車検証の情報' },
 ];
@@ -330,6 +331,8 @@ export default function VehiclesTab({
                     const tk = tireKind(v.tire);
                     const bat = v.battery;
                     const age = batteryAge(bat?.replacedAt);
+                    const etc = v.etc;
+                    const etcExp = etcExpiry(etc?.cardExpiry);
                     const tab: CardTab = cardTab[v.id] || 'main';
                     const pick = (k: CardTab) => setCardTab((cur) => ({ ...cur, [v.id]: k }));
                     const tires = [
@@ -348,6 +351,10 @@ export default function VehiclesTab({
                           <button type="button" role="tab" aria-selected={tab === 'battery'} className={`vtab${tab === 'battery' ? ' on' : ''}`} onClick={() => pick('battery')}>
                             🔋 バッテリー
                             {age && age.level !== 'ok' && <span className={`vtab-dot ${age.level}`} aria-label={age.level === 'due' ? '交換の目安' : 'そろそろ交換'} />}
+                          </button>
+                          <button type="button" role="tab" aria-selected={tab === 'etc'} className={`vtab${tab === 'etc' ? ' on' : ''}`} onClick={() => pick('etc')}>
+                            🛣️ ETC
+                            {etcExp && etcExp.level !== 'ok' && <span className={`vtab-dot ${etcExp.level}`} aria-label="ETCカードの有効期限" />}
                           </button>
                           <button type="button" role="tab" aria-selected={tab === 'shaken'} className={`vtab${tab === 'shaken' ? ' on' : ''}`} onClick={() => pick('shaken')}>
                             📄 車検証
@@ -452,6 +459,52 @@ export default function VehiclesTab({
                             {!readOnly && (
                               <button className="btn btn-sm" onClick={() => openEdit(v, 'battery')}>
                                 ✏️ バッテリーの情報を編集
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        {tab === 'etc' && (
+                          <div className="vpane">
+                            {etc ? (
+                              <div className="vrow">
+                                <dl className="vdl">
+                                  <dt>車載器</dt>
+                                  <dd>{etc.kind === 'none' ? '付いていない' : etc.kind === 'etc2' ? 'ETC2.0' : etc.kind === 'etc' ? 'ETC' : '-'}</dd>
+                                  {etc.kind !== 'none' && (
+                                    <>
+                                      <dt>メーカー・型式</dt>
+                                      <dd>{[etc.maker, etc.model].filter(Boolean).join(' ') || '-'}</dd>
+                                      <dt>管理番号</dt>
+                                      <dd>{etc.unitNo || '-'}</dd>
+                                      <dt>取り付け日</dt>
+                                      <dd>{etc.installedAt || '-'}</dd>
+                                      <dt>ETCカード</dt>
+                                      <dd>{etc.cardLabel || '-'}</dd>
+                                      <dt>カードの期限</dt>
+                                      <dd>
+                                        {etc.cardExpiry || '-'}
+                                        {etcExp && (
+                                          <span className={`pill ${etcExp.level === 'due' ? 'pill-red' : etcExp.level === 'warn' ? 'pill-amber' : 'pill-green'}`} style={{ marginLeft: 6 }}>
+                                            {etcExp.text}
+                                          </span>
+                                        )}
+                                      </dd>
+                                    </>
+                                  )}
+                                  {etc.note && (
+                                    <>
+                                      <dt>メモ</dt>
+                                      <dd>{etc.note}</dd>
+                                    </>
+                                  )}
+                                </dl>
+                              </div>
+                            ) : (
+                              <div className="vempty">まだ入力されていません</div>
+                            )}
+                            {!readOnly && (
+                              <button className="btn btn-sm" onClick={() => openEdit(v, 'etc')}>
+                                ✏️ ETCの情報を編集
                               </button>
                             )}
                           </div>
@@ -878,6 +931,11 @@ export default function VehiclesTab({
           {editTab === 'battery' && (
           <>
           <BatteryFields battery={editing.battery} onChange={(battery) => setEditing({ ...editing, battery })} />
+          </>
+          )}
+          {editTab === 'etc' && (
+          <>
+          <EtcFields etc={editing.etc} onChange={(etc) => setEditing({ ...editing, etc })} />
           </>
           )}
           {editTab === 'photo' && (

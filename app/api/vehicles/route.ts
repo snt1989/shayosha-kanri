@@ -5,7 +5,7 @@ import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
 import { MAX_VEHICLE_PHOTOS, cleanPhotoIds } from '@/lib/photo-ids';
 import { withWriteLock } from '@/lib/lock';
-import { cleanBattery } from '@/lib/utils';
+import { cleanBattery, cleanEtc } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +32,10 @@ export const POST = withWriteLock(async function POST(req: NextRequest) {
   const bat = cleanBattery(v.battery);
   if (bat) v.battery = bat;
   else delete v.battery;
+  // ETCも、決まった項目だけ・空なら持たない
+  const etc = cleanEtc(v.etc);
+  if (etc) v.etc = etc;
+  else delete v.etc;
 
   const isAdminReq = isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value);
   const data = await loadData();

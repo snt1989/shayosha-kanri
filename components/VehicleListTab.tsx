@@ -5,7 +5,7 @@ import { photoUrl } from '@/lib/image';
 import { AppData, Vehicle } from '@/lib/types';
 import { DEFAULT_ALERT_SETTINGS, normalizeAlertSettings } from '@/lib/alert-settings';
 import { downloadCsv, vehiclesToCsv } from '@/lib/csv';
-import { daysUntil, openMaintRequests, tireBadge, tireInfoText, tireKind, tireSetsOf, todayStr, batteryAge } from '@/lib/utils';
+import { daysUntil, openMaintRequests, tireBadge, tireInfoText, tireKind, tireSetsOf, todayStr, batteryAge, etcExpiry } from '@/lib/utils';
 
 type SortKey = 'name' | 'shaken' | 'check' | 'oil' | 'odometer';
 type Filter = '' | 'shaken' | 'check' | 'oil' | 'request' | 'winter' | 'summer';
@@ -19,7 +19,7 @@ const SORTS: { key: SortKey; label: string }[] = [
 ];
 
 // 表に出す項目（「車両」の列は常に出す）。チェックで出し入れでき、選んだ内容はこの端末に残る
-type ColKey = 'photo' | 'model' | 'chassis' | 'shaken' | 'check' | 'odo' | 'oil' | 'tire' | 'battery' | 'location' | 'note' | 'req';
+type ColKey = 'photo' | 'model' | 'chassis' | 'shaken' | 'check' | 'odo' | 'oil' | 'tire' | 'battery' | 'etc' | 'location' | 'note' | 'req';
 const COLS: { key: ColKey; label: string; on: boolean }[] = [
   { key: 'photo', label: '写真', on: false },
   { key: 'model', label: '型式', on: true },
@@ -30,6 +30,7 @@ const COLS: { key: ColKey; label: string; on: boolean }[] = [
   { key: 'oil', label: 'オイル交換', on: true },
   { key: 'tire', label: 'タイヤ', on: true },
   { key: 'battery', label: 'バッテリー', on: false },
+  { key: 'etc', label: 'ETC', on: false },
   { key: 'location', label: '保管場所', on: false },
   { key: 'note', label: '備考', on: false },
   { key: 'req', label: '整備依頼', on: true },
@@ -220,6 +221,7 @@ export default function VehicleListTab({ data, onOpenLedger }: { data: AppData; 
                   {show('oil') && <th style={{ textAlign: 'right' }}>オイル交換</th>}
                   {show('tire') && <th>タイヤ</th>}
                   {show('battery') && <th>バッテリー</th>}
+                  {show('etc') && <th>ETC</th>}
                   {show('location') && <th>保管場所</th>}
                   {show('note') && <th>備考</th>}
                   {show('req') && <th>整備依頼</th>}
@@ -287,6 +289,25 @@ export default function VehicleListTab({ data, onOpenLedger }: { data: AppData; 
                               return age ? (
                                 <div>
                                   {v.battery?.replacedAt} <span className={`pill ${age.level === 'due' ? 'pill-red' : age.level === 'warn' ? 'pill-amber' : 'pill-green'}`}>{age.text}</span>
+                                </div>
+                              ) : null;
+                            })()}
+                          </>
+                        ) : (
+                          <span style={{ color: 'var(--slate-400)' }}>-</span>
+                        )}
+                      </td>
+                    )}
+                    {show('etc') && (
+                      <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+                        {v.etc ? (
+                          <>
+                            {v.etc.kind === 'none' ? '無し' : [v.etc.kind === 'etc2' ? 'ETC2.0' : v.etc.kind === 'etc' ? 'ETC' : '', v.etc.cardLabel].filter(Boolean).join(' ') || '-'}
+                            {(() => {
+                              const x = etcExpiry(v.etc?.cardExpiry);
+                              return x && v.etc?.kind !== 'none' ? (
+                                <div>
+                                  {v.etc?.cardExpiry} <span className={`pill ${x.level === 'due' ? 'pill-red' : x.level === 'warn' ? 'pill-amber' : 'pill-green'}`}>{x.text}</span>
                                 </div>
                               ) : null;
                             })()}

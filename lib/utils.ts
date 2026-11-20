@@ -231,6 +231,39 @@ export function cleanBattery(b: unknown): { maker?: string; model?: string; repl
   return { ...(out.maker ? { maker: out.maker } : {}), ...(out.model ? { model: out.model } : {}), ...(out.replacedAt ? { replacedAt: out.replacedAt } : {}), ...(out.replacedKm ? { replacedKm: out.replacedKm } : {}), ...(out.note ? { note: out.note } : {}) };
 }
 
+// ETC：カードの有効期限（YYYY-MM）。月末まで有効。60日前から「もうすぐ」
+export function etcExpiry(expiry?: string, today = todayStr()): { text: string; level: 'ok' | 'warn' | 'due' } | null {
+  if (!expiry || !/^\d{4}-\d{2}$/.test(expiry)) return null;
+  const [y, m] = expiry.split('-').map(Number);
+  if (m < 1 || m > 12) return null;
+  const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const end = `${expiry}-${String(last).padStart(2, '0')}`;
+  const d = Math.round((new Date(end + 'T00:00:00Z').getTime() - new Date(today + 'T00:00:00Z').getTime()) / 86400000);
+  if (d < 0) return { text: '期限切れ', level: 'due' };
+  if (d <= 60) return { text: `あと${d}日`, level: 'warn' };
+  return { text: '有効', level: 'ok' };
+}
+export function cleanEtc(e: unknown): { kind?: 'none' | 'etc' | 'etc2'; maker?: string; model?: string; unitNo?: string; installedAt?: string; cardLabel?: string; cardExpiry?: string; note?: string } | undefined {
+  if (!e || typeof e !== 'object') return undefined;
+  const o = e as Record<string, unknown>;
+  const s = (v: unknown, n: number) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
+  const half = (t: string) => t.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
+  const kind = o.kind === 'none' || o.kind === 'etc' || o.kind === 'etc2' ? o.kind : '';
+  const out = {
+    kind,
+    maker: s(o.maker, 30),
+    model: half(s(o.model, 30)).toUpperCase(),
+    unitNo: half(s(o.unitNo, 30)),
+    installedAt: /^\d{4}-\d{2}-\d{2}$/.test(s(o.installedAt, 10)) ? s(o.installedAt, 10) : '',
+    cardLabel: s(o.cardLabel, 30),
+    cardExpiry: /^\d{4}-(0[1-9]|1[0-2])$/.test(s(o.cardExpiry, 7)) ? s(o.cardExpiry, 7) : '',
+    note: s(o.note, 200),
+  };
+  const res: Record<string, string> = {};
+  for (const [k, v] of Object.entries(out)) if (v) res[k] = v;
+  return Object.keys(res).length ? res : undefined;
+}
+
 // 整備依頼の項目（複数あるとき）。done＝もう終わった項目、left＝まだ残っている項目
 export function requestTypeState(r: { maintRequestType?: string; maintRequestDoneTypes?: string[] }): { all: string[]; done: string[]; left: string[] } {
   const all = splitMaintTypes(r.maintRequestType);

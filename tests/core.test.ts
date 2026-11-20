@@ -189,6 +189,10 @@ describe('バッテリーの情報', () => {
     expect((await store.loadData()).vehicles[0].battery).toEqual({ maker: 'パナソニック', model: 'Q-85', replacedAt: '2025-04-01', replacedKm: 30000, note: 'IS車用' });
     await post({ ...v, battery: { maker: '' } });
     expect((await store.loadData()).vehicles[0].battery).toBeUndefined();
+    await post({ ...v, etc: { kind: 'etc', cardLabel: '1234', cardExpiry: '2027-03', evil: 1 } });
+    expect((await store.loadData()).vehicles[0].etc).toEqual({ kind: 'etc', cardLabel: '1234', cardExpiry: '2027-03' });
+    await post({ ...v, etc: {} });
+    expect((await store.loadData()).vehicles[0].etc).toBeUndefined();
   });
 });
 
@@ -399,5 +403,19 @@ describe('気象庁データの読み取り', () => {
     expect(f.areas[0].days[1].pop).toBe('30');
     expect(f.areas[0].wind).toBe('西の風 後 南の風');
     expect(f.temps[0]).toEqual({ name: '盛岡', todayMax: '5', tomorrowMin: '-1', tomorrowMax: '6' });
+  });
+});
+
+describe('ETC', () => {
+  test('cleanEtc は決まった項目だけ残し、空なら捨てる', () => {
+    expect(utils.cleanEtc({})).toBeUndefined();
+    expect(utils.cleanEtc({ kind: 'etc2', model: 'ｃｙ-et2020', cardExpiry: '2027-03', cardLabel: ' 3号車 ', evil: 'x' })).toEqual({ kind: 'etc2', model: 'CY-ET2020', cardLabel: '3号車', cardExpiry: '2027-03' });
+    expect(utils.cleanEtc({ kind: 'bad', cardExpiry: '2027-13' })).toBeUndefined();
+  });
+  test('etcExpiry は月末までを有効とする', () => {
+    expect(utils.etcExpiry('2026-11', '2026-11-30')?.level).toBe('warn');
+    expect(utils.etcExpiry('2026-10', '2026-11-01')).toEqual({ text: '期限切れ', level: 'due' });
+    expect(utils.etcExpiry('2027-12', '2026-11-20')?.level).toBe('ok');
+    expect(utils.etcExpiry('', '2026-11-20')).toBeNull();
   });
 });

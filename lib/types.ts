@@ -91,6 +91,14 @@ export type TireInfo = { maker?: string; model?: string; size?: string; dot?: st
 // バッテリーの情報。model は形式（例 40B19L）。replacedAt は交換した日、replacedKm はそのときの走行距離。
 export type BatteryInfo = { maker?: string; model?: string; replacedAt?: string; replacedKm?: number; note?: string };
 
+// ETC。kind：none＝付いていない／etc＝ETC／etc2＝ETC2.0。cardLabel はETCカードの識別（カード名や下4桁。全桁は入れない）。cardExpiry は有効期限（YYYY-MM）
+export type EtcInfo = { kind?: 'none' | 'etc' | 'etc2'; maker?: string; model?: string; unitNo?: string; installedAt?: string; cardLabel?: string; cardExpiry?: string; note?: string };
+export const ETC_KINDS: { key: NonNullable<EtcInfo['kind']>; label: string }[] = [
+  { key: 'etc', label: 'ETC' },
+  { key: 'etc2', label: 'ETC2.0' },
+  { key: 'none', label: '付いていない' },
+];
+
 export type Vehicle = {
   id: string;
   name: string;
@@ -106,6 +114,7 @@ export type Vehicle = {
   tireWinter?: TireInfo; // 冬タイヤ（スタッドレス）のメーカー・製造年
   location?: string; // 保管場所（駐車場・車庫。各種マスタ設定の「車両の保管場所」から選ぶ。60文字まで）
   note?: string; // 備考（自由に書けるメモ。鍵の置き場所・傷・装備など。500文字まで）
+  etc?: EtcInfo; // ETC（車載器の種類・メーカー・型式・ETCカードの識別と有効期限など）
   battery?: BatteryInfo; // バッテリー（メーカー・形式・交換日など）
   tireMaker?: string; // （旧）タイヤのメーカー。夏・冬に分ける前の項目。tireSetsOf で読む
   tireYear?: string; // （旧）タイヤの製造年
