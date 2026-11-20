@@ -98,3 +98,56 @@
 
 /* QRステッカー：1枚ずつ画像で保存 */
 .sticker-item { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+
+/* ダッシュボード：今日の車両の動き（1台＝1タイル。色で状態がわかる） */
+.ft-title { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.ft-date { font-size: 12px; font-weight: 600; color: var(--slate-500); }
+.ft-summary { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.ft-chip { font: inherit; font-size: 12.5px; font-weight: 700; border-radius: 999px; padding: 5px 11px; border: 2px solid transparent; cursor: pointer; background: var(--slate-100); color: var(--slate-800); white-space: nowrap; }
+.ft-chip strong { font-size: 14px; margin-left: 2px; }
+.ft-chip.on { border-color: #0f172a; }
+.ft-chip.out { background: #dbeafe; color: #1e40af; }
+.ft-chip.reserved { background: #ede9fe; color: #5b21b6; }
+.ft-chip.back { background: #dcfce7; color: #166534; }
+.ft-chip.maint { background: #fee2e2; color: #991b1b; }
+.ft-chip.idle { background: var(--slate-100); color: var(--slate-600); }
+.ft-bar { display: flex; height: 8px; border-radius: 999px; overflow: hidden; gap: 2px; margin-bottom: 12px; }
+.ft-seg { flex-basis: 0; min-width: 6px; }
+.ft-seg.out, .ft-dot.out { background: #2563eb; }
+.ft-seg.reserved, .ft-dot.reserved { background: #7c3aed; }
+.ft-seg.back, .ft-dot.back { background: #16a34a; }
+.ft-seg.maint, .ft-dot.maint { background: #dc2626; }
+.ft-seg.idle, .ft-dot.idle { background: #cbd5e1; }
+.ft-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.ft-tile { border-radius: 12px; border: 1px solid var(--slate-200); border-left: 8px solid #cbd5e1; background: #fff; padding: 9px 11px; min-width: 0; display: flex; flex-direction: column; }
+.ft-tile.out { border-left-color: #2563eb; background: #eff6ff; border-color: #bfdbfe; }
+.ft-tile.reserved { border-left-color: #7c3aed; background: #f5f3ff; border-color: #ddd6fe; }
+.ft-tile.back { border-left-color: #16a34a; background: #f0fdf4; border-color: #bbf7d0; }
+.ft-tile.maint { border-left-color: #dc2626; background: #fef2f2; border-color: #fecaca; }
+.ft-tile.idle { background: var(--slate-50); color: var(--slate-500); }
+.ft-tile.overdue { border-left-color: #dc2626; background: #fff7ed; border-color: #fdba74; }
+.ft-head { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.ft-state { font-size: 11.5px; font-weight: 800; }
+.ft-tile.out .ft-state { color: #1d4ed8; }
+.ft-tile.reserved .ft-state { color: #6d28d9; }
+.ft-tile.back .ft-state { color: #15803d; }
+.ft-tile.maint .ft-state, .ft-tile.overdue .ft-state { color: #b91c1c; }
+.ft-tire { font-size: 13px; }
+.ft-name { font-size: 17px; font-weight: 800; color: var(--slate-900, #0f172a); line-height: 1.25; margin-top: 2px; overflow-wrap: anywhere; }
+.ft-tile.idle .ft-name { color: var(--slate-600); }
+.ft-plate { font-size: 11px; color: var(--slate-500); margin-bottom: 6px; }
+.ft-body { font-size: 12.5px; display: grid; gap: 3px; color: var(--slate-800); }
+.ft-tile.idle .ft-body { color: var(--slate-500); }
+.ft-who { font-weight: 700; }
+.ft-line { overflow-wrap: anywhere; }
+.ft-note { font-size: 11.5px; color: var(--slate-600); }
+.ft-note.warn { color: #b45309; font-weight: 700; }
+.ft-btn { margin-top: 4px; justify-self: start; background: #fff; }
+.ft-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; font-size: 11.5px; color: var(--slate-500); }
+.ft-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 3px; vertical-align: -1px; }
+@media (max-width: 640px) {
+  .ft-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ft-tile { padding: 8px 9px; border-left-width: 6px; }
+  .ft-name { font-size: 15px; }
+  .ft-btn { justify-self: stretch; }
+}

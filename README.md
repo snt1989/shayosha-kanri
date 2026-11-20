@@ -226,3 +226,4 @@ CDN から読み込み、**ブラウザ内だけで**画像からテキストを
 - 整備台帳（`MaintenanceTab`）では、依頼に結びついた記録を「完了」で保存すると、その記録の整備種別のうち依頼に残っている項目だけを送る。表示は `components/ReqTypes.tsx`、状態は `requestTypeState`（`lib/utils.ts`）。
 - 車両カードのタブに「📄 車検証」を追加（車検証の項目の一覧と、車検証の画像を見る・読み取る・編集するボタン。画像のボタンは管理者・整備士だけ）。
 - QRステッカーの画像保存：`lib/sticker-image.ts`（キャンバスにステッカー1枚を描いて PNG にする。1mm＝12px）。`VehicleStickerModal` の「この1枚を画像で保存」「画像で保存（1枚ずつ）」。
+- ダッシュボードの「今日の車両の動き」：`lib/fleet-today.ts`（`fleetToday`：走行中／予約あり／帰着済み／整備の予定／待機中）と `components/FleetTodayPanel.tsx`。

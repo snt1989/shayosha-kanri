@@ -235,3 +235,30 @@ describe('整備依頼：項目が複数あるとき、終わったものだけ�
     expect(r.maintRequestDoneTypes.length).toBe(3);
   });
 });
+
+describe('今日の車両の動き', () => {
+  test('走行中・帰着済み・予約・整備・待機に分かれる', async () => {
+    const ft = await import(`${ROOT}/lib/fleet-today`);
+    const v = (id: string) => ({ id, name: `車${id}`, plate: id });
+    const rep = (id: string, vehicleId: string, extra = {}) => ({ id, vehicleId, date: '2026-11-20', preTime: '08:00', driver: 'A', postDone: true, tripKm: 30, ...extra });
+    const data = {
+      vehicles: ['a', 'b', 'c', 'd', 'e', 'f'].map(v),
+      reports: [
+        rep('1', 'a', { postDone: false }),
+        rep('2', 'b'),
+        rep('3', 'b', { preTime: '13:00', tripKm: 12 }),
+        rep('4', 'd', { maintOnly: true, maintRequest: true, maintRequestType: 'オイル交換', maintRequestScheduledDate: '2026-11-20' }),
+        rep('5', 'f', { date: '2026-11-18', postDone: false }),
+        rep('6', 'e', { date: '2026-11-19' }),
+      ],
+      reservations: [{ id: 'x', vehicleId: 'c', startDate: '2026-11-20', endDate: '2026-11-20', startTime: '14:00', endTime: '16:00', driver: 'B', destination: '' }, { id: 'y', vehicleId: 'e', rentalId: 'e', startDate: '2026-11-20', endDate: '2026-11-20', startTime: '', endTime: '', driver: 'C', destination: '' }],
+    };
+    const got = Object.fromEntries(ft.fleetToday(data, '2026-11-20').map((x: { id: string; state: string }) => [x.id, x.state]));
+    expect(got).toEqual({ a: 'out', b: 'back', c: 'reserved', d: 'maint', e: 'idle', f: 'out' });
+    const list = ft.fleetToday(data, '2026-11-20');
+    expect(list.find((x: { id: string }) => x.id === 'b').km).toBe(42);
+    expect(list.find((x: { id: string }) => x.id === 'f').overdue).toBe(true);
+    expect(list.find((x: { id: string }) => x.id === 'd').openRequests).toBe(1);
+    expect(list[0].state).toBe('out');
+  });
+});
