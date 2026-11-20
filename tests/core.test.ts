@@ -262,3 +262,33 @@ describe('今日の車両の動き', () => {
     expect(list[0].state).toBe('out');
   });
 });
+
+describe('整備依頼の「整備中」', () => {
+  test('印を付ける・外す。対応済にすると消える。今日の車両の動きに出る', async () => {
+    const store = await import(`${ROOT}/lib/store`);
+    const route = await import(`${ROOT}/app/api/reports/[id]/maint-request/route`);
+    const ft = await import(`${ROOT}/lib/fleet-today`);
+    const d = await store.loadData();
+    const vid = d.vehicles[1].id;
+    const rep = { id: 'req-work', date: '2026-11-20', driver: 'A B', driverLast: 'A', driverFirst: 'B', vehicleId: vid, vehicleName: 'V', plate: '', destination: '', purpose: '', preTime: '', postDone: true, maintOnly: true, maintRequest: true, maintRequestType: 'オイル交換', maintRequestUrgency: '通常', maintRequestNote: '' };
+    await store.saveData({ reports: [rep, ...d.reports], vehicles: d.vehicles, drivers: d.drivers, masters: d.masters, logs: d.logs });
+    const post = (body: unknown) => route.POST(new NextRequest('http://localhost/x', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }), { params: Promise.resolve({ id: 'req-work' }) });
+    const get = async () => (await store.loadData()).reports.find((x: { id: string }) => x.id === 'req-work');
+    expect((await post({ working: true, by: '田中' })).status).toBe(200);
+    let r = await get();
+    expect(r.maintRequestWorking).toBe(true);
+    expect(r.maintRequestWorkingBy).toBe('田中');
+    expect(utils.isRequestOpen(r)).toBe(true);
+    const tile = ft.fleetToday(await store.loadData(), '2026-11-25').find((x: { id: string }) => x.id === vid);
+    expect(tile.state).toBe('maint');
+    expect(tile.working).toBe(true);
+    await post({ working: false });
+    expect((await get()).maintRequestWorking).toBeUndefined();
+    await post({ working: true });
+    await post({ done: true });
+    r = await get();
+    expect(r.maintRequestDone).toBe(true);
+    expect(r.maintRequestWorking).toBeUndefined();
+    expect((await post({ working: true })).status).toBe(409);
+  });
+});

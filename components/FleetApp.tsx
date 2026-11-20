@@ -61,6 +61,7 @@ export default function FleetApp() {
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [flushing, setFlushing] = useState(false);
   const flushingRef = useRef(false);
+  const activeMechanicRef = useRef<string | null>(null);
   const cachedAtRef = useRef<string | null>(null);
   cachedAtRef.current = cachedAt;
   const [adminConfigured, setAdminConfigured] = useState(true);
@@ -296,6 +297,10 @@ export default function FleetApp() {
   // doneTypes を渡すと、項目が複数ある依頼の「終わった項目だけ」を完了にする（全部そろえば対応済になる）
   async function resolveMaintRequest(id: string, done: boolean, doneTypes?: string[]) {
     return withSync(() => jsonFetch(`/api/reports/${id}/maint-request`, { method: 'POST', body: JSON.stringify(doneTypes ? { doneTypes } : { done }) }));
+  }
+  // 整備に入った依頼に「整備中」の印を付ける・外す（整備士・管理者）
+  async function workMaintRequest(id: string, working: boolean) {
+    return withSync(() => jsonFetch(`/api/reports/${id}/maint-request`, { method: 'POST', body: JSON.stringify({ working, by: activeMechanicRef.current || (isAdmin ? '管理者' : '') }) }));
   }
   async function watchMaintRequest(id: string, watch: boolean) {
     return withSync(() => jsonFetch(`/api/reports/${id}/maint-request`, { method: 'POST', body: JSON.stringify({ watch }) }));
@@ -647,6 +652,7 @@ export default function FleetApp() {
 
   // マスタから外された整備士のログインは無効にする
   const activeMechanic = mechanicName && data.masters.mechanics.includes(mechanicName) ? mechanicName : null;
+  activeMechanicRef.current = activeMechanic;
   const currentDriver = data.drivers.find((d) => d.id === currentDriverId) || null;
   // 整備士だけでログインしている（運転者も管理者もいない）ときは、整備に関係のあるページだけにする
   const mechanicOnly = Boolean(activeMechanic) && !currentDriver && !isAdmin;
@@ -771,6 +777,7 @@ export default function FleetApp() {
             onSave={saveVehicle}
             onResolveRequest={resolveMaintRequest}
             onWatchRequest={watchMaintRequest}
+            onWorkRequest={workMaintRequest}
             mechanic={activeMechanic}
             canEdit={Boolean(activeMechanic) || isAdmin}
             currentDriverId={currentDriver?.id || null}

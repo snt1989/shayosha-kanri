@@ -52,6 +52,7 @@ export default function VehicleQuickModal({
           <span className={`tire-now ${tireBadge(v.tire).kind}`}>{tireBadge(v.tire).icon} {tireBadge(v.tire).label}</span>
           {shaken !== null && <span className={`pill ${shaken < 0 ? 'pill-red' : shaken <= 30 ? 'pill-amber' : 'pill-slate'}`}>車検 {shaken < 0 ? `${-shaken}日超過` : `あと${shaken}日`}</span>}
           {oilLeft !== null && <span className={`pill ${oilLeft < 0 ? 'pill-red' : oilLeft <= 1000 ? 'pill-amber' : 'pill-slate'}`}>オイル {oilLeft < 0 ? `${(-oilLeft).toLocaleString()}km超過` : `残り${oilLeft.toLocaleString()}km`}</span>}
+          {reqs.some((r) => r.maintRequestWorking) && <span className="pill req-working">🔧 整備中</span>}
           {reqs.length > 0 && <span className="pill pill-red">整備依頼 {reqs.length}件</span>}
         </div>
         {v.note && <div className="vq-note">📝 {v.note}</div>}

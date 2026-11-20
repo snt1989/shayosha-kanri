@@ -227,3 +227,4 @@ CDN から読み込み、**ブラウザ内だけで**画像からテキストを
 - 車両カードのタブに「📄 車検証」を追加（車検証の項目の一覧と、車検証の画像を見る・読み取る・編集するボタン。画像のボタンは管理者・整備士だけ）。
 - QRステッカーの画像保存：`lib/sticker-image.ts`（キャンバスにステッカー1枚を描いて PNG にする。1mm＝12px）。`VehicleStickerModal` の「この1枚を画像で保存」「画像で保存（1枚ずつ）」。
 - ダッシュボードの「今日の車両の動き」：`lib/fleet-today.ts`（`fleetToday`：走行中／予約あり／帰着済み／整備の予定／待機中）と `components/FleetTodayPanel.tsx`。
+- 整備依頼の「整備中」：`Report.maintRequestWorking`（＋At・By）。`POST /api/reports/{id}/maint-request` に `{ working: true|false }`。対応済で消える。`fleetToday` は、この印のある車両を `maint`（`working: true`）にする。表示だけで、出庫は止めない。

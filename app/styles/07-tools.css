@@ -151,3 +151,7 @@
   .ft-name { font-size: 15px; }
   .ft-btn { justify-self: stretch; }
 }
+
+/* 整備依頼：整備中の印 */
+.pill.req-working { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 800; }
+.btn.req-working-on { background: #fee2e2; border-color: #f87171; color: #991b1b; font-weight: 800; }

@@ -216,6 +216,11 @@ export default function DashboardTab({
                   <div style={{ flex: 1 }}>
                     <strong>{r.vehicleName}</strong>
                     <span className="req-plate">{r.plate ? `（${r.plate}）` : ''}</span>— <ReqTypes r={r} />
+                    {r.maintRequestWorking && (
+                      <span className="pill req-working" style={{ marginLeft: 6 }} title={`${r.maintRequestWorkingAt || ''} ${r.maintRequestWorkingBy || ''}`.trim()}>
+                        🔧 整備中
+                      </span>
+                    )}
                     <span className={`pill ${urgencyPill(r.maintRequestUrgency)}`} style={{ marginLeft: 6 }}>
                         {r.maintRequestUrgency || MAINT_URGENCIES[0]}
                       </span>

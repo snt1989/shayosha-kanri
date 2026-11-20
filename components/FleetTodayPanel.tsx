@@ -48,7 +48,7 @@ export default function FleetTodayPanel({ data, onReturnCheckin, onOpenCalendar 
             <div key={v.id} className={`ft-tile ${v.state}${v.overdue ? ' overdue' : ''}`}>
               <div className="ft-head">
                 <span className="ft-state">
-                  {TODAY_LABEL[v.state].icon} {v.overdue ? '帰着登録がまだ' : TODAY_LABEL[v.state].label}
+                  {TODAY_LABEL[v.state].icon} {v.overdue ? '帰着登録がまだ' : v.state === 'maint' ? (v.working ? '整備中' : '整備の予定') : TODAY_LABEL[v.state].label}
                 </span>
                 <span className="ft-tire" title={tb.label}>
                   {tb.icon}
@@ -91,7 +91,8 @@ export default function FleetTodayPanel({ data, onReturnCheckin, onOpenCalendar 
                     </div>
                   </>
                 )}
-                {v.state === 'maint' && <div className="ft-line">今日は使えません（{v.maintType || '整備'}）</div>}
+                {v.state === 'maint' && <div className="ft-line">{v.working ? `整備に入っています（${v.maintType || '整備'}）` : `今日は使えません（${v.maintType || '整備'}）`}</div>}
+                {v.state === 'out' && v.working && <div className="ft-note warn">🔧 整備中の印があります</div>}
                 {v.state === 'idle' && <div className="ft-line">今日は、まだ動いていません</div>}
                 {v.state !== 'reserved' && v.reservations.length > 0 && v.state !== 'maint' && (
                   <div className="ft-note">
@@ -105,7 +106,7 @@ export default function FleetTodayPanel({ data, onReturnCheckin, onOpenCalendar 
         })}
       </div>
       <div className="ft-foot">
-        <span>色：<b className="ft-dot out" />走行中　<b className="ft-dot reserved" />予約あり　<b className="ft-dot back" />帰着済み　<b className="ft-dot maint" />整備　<b className="ft-dot idle" />待機中</span>
+        <span>色：<b className="ft-dot out" />走行中　<b className="ft-dot reserved" />予約あり　<b className="ft-dot back" />帰着済み　<b className="ft-dot maint" />整備中・整備の予定　<b className="ft-dot idle" />待機中</span>
         <button type="button" className="btn btn-sm" onClick={onOpenCalendar}>
           📅 カレンダーで見る
         </button>

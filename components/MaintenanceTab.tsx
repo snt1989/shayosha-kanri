@@ -68,6 +68,7 @@ export default function MaintenanceTab({
   onSave,
   onResolveRequest,
   onWatchRequest,
+  onWorkRequest,
   mechanic,
   canEdit,
   currentDriverId,
@@ -81,6 +82,7 @@ export default function MaintenanceTab({
   onSave: (v: Vehicle) => Promise<unknown>;
   onResolveRequest: (reportId: string, done: boolean, doneTypes?: string[]) => Promise<unknown>;
   onWatchRequest: (reportId: string, watch: boolean) => Promise<unknown>;
+  onWorkRequest: (reportId: string, working: boolean) => Promise<unknown>;
   // 整備士としてログイン中の名前（管理者だけのときは null）
   mechanic: string | null;
   // 記録の追加・修正・削除、依頼への対応ができるか（整備士または管理者のログイン）
@@ -311,6 +313,10 @@ export default function MaintenanceTab({
           if (!linked.maintRequestDone || !linked.maintRequestWatch) await onWatchRequest(linked.id, true);
         } else if (linked.maintRequestDone || linked.maintRequestWatch) {
           await onResolveRequest(linked.id, false);
+          await onWorkRequest(linked.id, true);
+        } else if (!linked.maintRequestWorking) {
+          // 進捗「整備中」で記録したら、依頼にも「整備中」の印を付ける
+          await onWorkRequest(linked.id, true);
         }
       }
       setEditing(null);
@@ -368,6 +374,11 @@ export default function MaintenanceTab({
                   <div style={{ flex: 1 }}>
                     <strong>{r.vehicleName}</strong>
                     <span className="req-plate">{r.plate ? `（${r.plate}）` : ''}</span>— <ReqTypes r={r} />
+                    {r.maintRequestWorking && (
+                      <span className="pill req-working" style={{ marginLeft: 6 }} title={`${r.maintRequestWorkingAt || ''} ${r.maintRequestWorkingBy || ''}`.trim()}>
+                        🔧 整備中
+                      </span>
+                    )}
                     <span className={`pill ${urgencyPill(r.maintRequestUrgency)}`} style={{ marginLeft: 6 }}>
                         {r.maintRequestUrgency || MAINT_URGENCIES[0]}
                       </span>
@@ -402,6 +413,11 @@ export default function MaintenanceTab({
                         }}
                       >
                         削除
+                      </button>
+                    )}
+                    {canEdit && (
+                      <button className={`btn btn-sm ${r.maintRequestWorking ? 'req-working-on' : ''}`} aria-pressed={Boolean(r.maintRequestWorking)} onClick={() => onWorkRequest(r.id, !r.maintRequestWorking)}>
+                        {r.maintRequestWorking ? '🔧 整備中（押すと解除）' : '🔧 整備中にする'}
                       </button>
                     )}
                     <button className="btn btn-sm btn-primary" onClick={() => openFromRequest(r)} disabled={!vehicleExists}>

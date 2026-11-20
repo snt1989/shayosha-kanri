@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 // 日報本体は変更せずこのフィールドだけを更新する専用のAPIにしている。
 export const POST = withWriteLock(async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const body = (await req.json()) as { done?: boolean; watch?: boolean; doneTypes?: string[] };
+  const body = (await req.json()) as { done?: boolean; watch?: boolean; doneTypes?: string[]; working?: boolean; by?: string };
   const { done } = body;
 
   const data = await loadData();
@@ -25,6 +25,27 @@ export const POST = withWriteLock(async function POST(req: NextRequest, { params
   const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
   let action: string;
   const st = requestTypeState(r);
+  if (typeof body.working === 'boolean' && done === undefined && typeof body.watch !== 'boolean' && !body.doneTypes) {
+    // 「整備中」の印を付ける・外す（対応待ちのまま）。対応済の依頼には付けられない
+    if (r.maintRequestDone) return NextResponse.json({ success: false, message: '対応済の依頼は、整備中にできません。' }, { status: 409 });
+    if (body.working) {
+      r.maintRequestWorking = true;
+      r.maintRequestWorkingAt = today;
+      r.maintRequestWorkingBy = typeof body.by === 'string' ? body.by.slice(0, 40) : '';
+    } else {
+      delete r.maintRequestWorking;
+      delete r.maintRequestWorkingAt;
+      delete r.maintRequestWorkingBy;
+    }
+    pushLog(data, {
+      actor: isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value) ? 'admin' : 'user',
+      action: body.working ? '整備依頼を整備中にした' : '整備依頼の整備中を解除した',
+      target: `${r.date} ${r.driver} / ${r.vehicleName}`,
+      detail: `${r.maintRequestType || ''} ${r.maintRequestWorkingBy || ''}`.trim(),
+    });
+    await saveData({ reports: data.reports, vehicles: data.vehicles, drivers: data.drivers, masters: data.masters, logs: data.logs });
+    return NextResponse.json({ success: true });
+  }
   const picked = Array.isArray(body.doneTypes) ? st.all.filter((t) => body.doneTypes!.includes(t)) : null;
   const doneNow = picked ? st.all.filter((t) => st.done.includes(t) || picked.includes(t)) : [];
   if (picked && done === undefined && typeof body.watch !== 'boolean' && doneNow.length < st.all.length) {
@@ -67,8 +88,13 @@ export const POST = withWriteLock(async function POST(req: NextRequest, { params
     action = isDone ? '整備依頼を対応済にした' : '整備依頼を対応待ちに戻した';
   }
 
-  // 対応済・経過観察になったら、修理予定日のお知らせは出さない（予定日は記録に残す）
-  if (r.maintRequestDone) await removeScheduleNotice(r.id);
+  // 対応済・経過観察になったら、修理予定日のお知らせは出さない（予定日は記録に残す）。整備中の印も消す
+  if (r.maintRequestDone) {
+    await removeScheduleNotice(r.id);
+    delete r.maintRequestWorking;
+    delete r.maintRequestWorkingAt;
+    delete r.maintRequestWorkingBy;
+  }
 
   pushLog(data, {
     actor: isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value) ? 'admin' : 'user',
