@@ -20,6 +20,10 @@ export const POST = withWriteLock(async function POST(req: NextRequest) {
   const ph = cleanPhotoIds(v.photos, MAX_VEHICLE_PHOTOS);
   if (ph.length) v.photos = ph;
   else delete v.photos;
+  // 保管場所は60文字まで・空なら持たない
+  const loc = typeof v.location === 'string' ? v.location.trim().slice(0, 60) : '';
+  if (loc) v.location = loc;
+  else delete v.location;
   // 備考は500文字まで・空なら持たない
   const note = typeof v.note === 'string' ? v.note.trim().slice(0, 500) : '';
   if (note) v.note = note;

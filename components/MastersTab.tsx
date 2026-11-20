@@ -18,6 +18,7 @@ const ICONS: Record<MasterKey, string> = {
   mechanics: '🔧',
   fuelTypes: '⛽',
   payMethods: '💳',
+  storageLocations: '📍',
 };
 
 export default function MastersTab({

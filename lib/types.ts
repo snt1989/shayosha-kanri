@@ -104,6 +104,7 @@ export type Vehicle = {
   photos?: string[]; // 車両の写真のid（最大6枚。小さく縮めて保存。本体は /api/photos/{id}）
   tireSummer?: TireInfo; // 夏タイヤのメーカー・製造年
   tireWinter?: TireInfo; // 冬タイヤ（スタッドレス）のメーカー・製造年
+  location?: string; // 保管場所（駐車場・車庫。各種マスタ設定の「車両の保管場所」から選ぶ。60文字まで）
   note?: string; // 備考（自由に書けるメモ。鍵の置き場所・傷・装備など。500文字まで）
   battery?: BatteryInfo; // バッテリー（メーカー・形式・交換日など）
   tireMaker?: string; // （旧）タイヤのメーカー。夏・冬に分ける前の項目。tireSetsOf で読む
@@ -146,6 +147,7 @@ export const MASTER_KEYS = [
   'mechanics',
   'fuelTypes',
   'payMethods',
+  'storageLocations',
 ] as const;
 export type MasterKey = (typeof MASTER_KEYS)[number];
 export type Masters = Record<MasterKey, string[]>;
@@ -162,6 +164,7 @@ export const MASTER_LABELS: Record<MasterKey, string> = {
   mechanics: '整備士（整備台帳にログインできる人）',
   fuelTypes: '燃料種別',
   payMethods: '給油の支払方法',
+  storageLocations: '車両の保管場所（駐車場・車庫）',
 };
 
 export type LogEntry = {
@@ -281,6 +284,7 @@ export const DEFAULT_MASTERS: Masters = {
   mechanics: ['整備士 山本', '整備士 中村'],
   fuelTypes: ['レギュラー', 'ハイオク', '軽油', 'その他'],
   payMethods: ['給油カード', '現金（立替）', 'クレジットカード', 'その他'],
+  storageLocations: [], // はじめは空。設定で登録する（例：本社駐車場、第2車庫）
 };
 
 export const DEFAULT_VEHICLES: Vehicle[] = [

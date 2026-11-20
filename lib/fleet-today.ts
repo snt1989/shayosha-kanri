@@ -9,6 +9,7 @@ export type TodayVehicle = {
   id: string;
   name: string;
   plate: string;
+  location?: string; // 保管場所
   state: TodayState;
   trip?: Report; // いま出ている日報
   trips: Report[]; // 今日の日報（戻ったものも含む）
@@ -37,6 +38,7 @@ export function fleetToday(data: Pick<AppData, 'vehicles' | 'reports' | 'reserva
       id: v.id,
       name: v.name,
       plate: v.plate,
+      location: v.location,
       state,
       trip,
       trips,

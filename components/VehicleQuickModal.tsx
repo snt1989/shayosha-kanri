@@ -55,6 +55,7 @@ export default function VehicleQuickModal({
           {reqs.some((r) => r.maintRequestWorking) && <span className="pill req-working">🔧 整備中</span>}
           {reqs.length > 0 && <span className="pill pill-red">整備依頼 {reqs.length}件</span>}
         </div>
+        {v.location && <div className="vq-note">📍 保管場所：{v.location}</div>}
         {v.note && <div className="vq-note">📝 {v.note}</div>}
       </div>
       <div className="vq-actions">

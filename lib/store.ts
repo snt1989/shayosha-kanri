@@ -55,6 +55,7 @@ function mergeMasters(masters: Partial<Masters> | undefined): Masters {
     mechanics: masters.mechanics ?? base.mechanics,
     fuelTypes: masters.fuelTypes ?? base.fuelTypes,
     payMethods: masters.payMethods ?? base.payMethods,
+    storageLocations: masters.storageLocations ?? base.storageLocations,
   };
 }
 

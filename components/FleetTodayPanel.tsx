@@ -59,6 +59,7 @@ export default function FleetTodayPanel({ data, onReturnCheckin, onOpenCalendar 
                 {sub(v.name) ? `${sub(v.name)}・` : ''}
                 {v.plate}
               </div>
+              {v.location && <div className="ft-loc">📍 {v.location}</div>}
               <div className="ft-body">
                 {v.state === 'out' && v.trip && (
                   <>

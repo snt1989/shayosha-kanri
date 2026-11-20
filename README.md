@@ -228,3 +228,4 @@ CDN から読み込み、**ブラウザ内だけで**画像からテキストを
 - QRステッカーの画像保存：`lib/sticker-image.ts`（キャンバスにステッカー1枚を描いて PNG にする。1mm＝12px）。`VehicleStickerModal` の「この1枚を画像で保存」「画像で保存（1枚ずつ）」。
 - ダッシュボードの「今日の車両の動き」：`lib/fleet-today.ts`（`fleetToday`：走行中／予約あり／帰着済み／整備の予定／待機中）と `components/FleetTodayPanel.tsx`。
 - 整備依頼の「整備中」：`Report.maintRequestWorking`（＋At・By）。`POST /api/reports/{id}/maint-request` に `{ working: true|false }`。対応済で消える。`fleetToday` は、この印のある車両を `maint`（`working: true`）にする。表示だけで、出庫は止めない。
+- 車両の保管場所：`Vehicle.location`（60文字まで）。選択肢はマスタ `storageLocations`（各種マスタ設定「車両の保管場所」。はじめは空）。カードの概要・今日の車両の動き・QRの車両画面・一覧表の「保管場所」列に出る。

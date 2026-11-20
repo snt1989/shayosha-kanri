@@ -373,6 +373,12 @@ export default function VehiclesTab({
                               <span className="k">12ヶ月点検日</span>
                               <span className="v">{v.checkDate || '-'}</span>
                             </div>
+                            {v.location && (
+                              <div className="vnote">
+                                <span className="k">保管場所</span>
+                                <span className="v" style={{ fontWeight: 700 }}>📍 {v.location}</span>
+                              </div>
+                            )}
                             {v.note && (
                               <div className="vnote">
                                 <span className="k">備考</span>
@@ -819,6 +825,16 @@ export default function VehiclesTab({
             <input value={editing.modelType} onChange={(e) => setEditing({ ...editing, modelType: e.target.value })} />
           </div>
 
+          <div className="field">
+            <label>保管場所（駐車場・車庫）</label>
+            <input list="storage-locations" value={editing.location || ''} maxLength={60} placeholder={data.masters.storageLocations.length ? '選ぶか、入力してください' : '例：本社駐車場'} onChange={(e) => setEditing({ ...editing, location: e.target.value })} />
+            <datalist id="storage-locations">
+              {data.masters.storageLocations.map((m) => (
+                <option key={m} value={m} />
+              ))}
+            </datalist>
+            <div style={{ fontSize: 11, color: 'var(--slate-500)', marginTop: 3 }}>選択肢は、「設定」→「各種マスタ設定」→「車両の保管場所」で登録できます（管理者）。</div>
+          </div>
           <div className="field">
             <label>備考（任意）</label>
             <textarea

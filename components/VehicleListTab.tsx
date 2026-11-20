@@ -19,7 +19,7 @@ const SORTS: { key: SortKey; label: string }[] = [
 ];
 
 // 表に出す項目（「車両」の列は常に出す）。チェックで出し入れでき、選んだ内容はこの端末に残る
-type ColKey = 'photo' | 'model' | 'chassis' | 'shaken' | 'check' | 'odo' | 'oil' | 'tire' | 'battery' | 'note' | 'req';
+type ColKey = 'photo' | 'model' | 'chassis' | 'shaken' | 'check' | 'odo' | 'oil' | 'tire' | 'battery' | 'location' | 'note' | 'req';
 const COLS: { key: ColKey; label: string; on: boolean }[] = [
   { key: 'photo', label: '写真', on: false },
   { key: 'model', label: '型式', on: true },
@@ -30,6 +30,7 @@ const COLS: { key: ColKey; label: string; on: boolean }[] = [
   { key: 'oil', label: 'オイル交換', on: true },
   { key: 'tire', label: 'タイヤ', on: true },
   { key: 'battery', label: 'バッテリー', on: false },
+  { key: 'location', label: '保管場所', on: false },
   { key: 'note', label: '備考', on: false },
   { key: 'req', label: '整備依頼', on: true },
 ];
@@ -219,6 +220,7 @@ export default function VehicleListTab({ data, onOpenLedger }: { data: AppData; 
                   {show('oil') && <th style={{ textAlign: 'right' }}>オイル交換</th>}
                   {show('tire') && <th>タイヤ</th>}
                   {show('battery') && <th>バッテリー</th>}
+                  {show('location') && <th>保管場所</th>}
                   {show('note') && <th>備考</th>}
                   {show('req') && <th>整備依頼</th>}
                 </tr>
@@ -294,6 +296,7 @@ export default function VehicleListTab({ data, onOpenLedger }: { data: AppData; 
                         )}
                       </td>
                     )}
+                    {show('location') && <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{v.location ? `📍 ${v.location}` : <span style={{ color: 'var(--slate-400)' }}>-</span>}</td>}
                     {show('note') && <td style={{ fontSize: 12, minWidth: 160, maxWidth: 280, whiteSpace: 'pre-wrap' }}>{v.note || <span style={{ color: 'var(--slate-400)' }}>-</span>}</td>}
                     {show('req') && <td>{req > 0 ? <span className="pill pill-red">{req}件</span> : <span style={{ color: 'var(--slate-400)' }}>-</span>}</td>}
                   </tr>
