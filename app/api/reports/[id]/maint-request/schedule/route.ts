@@ -4,7 +4,7 @@ import { pushLog } from '@/lib/log';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { isRequestOpen } from '@/lib/utils';
 import { todayJst } from '@/lib/notices';
-import { pushConfig, sendPushToAll } from '@/lib/push';
+import { pushConfig, sendPush } from '@/lib/push';
 import { removeScheduleNotice, upsertScheduleNotice } from '@/lib/maint-schedule';
 import { jpDate, scheduleText } from '@/lib/schedule-text';
 import { withWriteLock } from '@/lib/lock';
@@ -56,7 +56,8 @@ export const POST = withWriteLock(async function POST(req: NextRequest, { params
   if (changed && pushConfig().enabled) {
     const t = scheduleText(r, date);
     try {
-      await sendPushToAll({ title: before ? `【変更】${t.title}` : `【修理予定】${r.vehicleName}`, body: before ? `${t.body}（${jpDate(before)}から変更）` : t.body, url: '/' });
+      // 修理予定は、依頼した本人と、管理者の端末へ
+      await sendPush({ title: before ? `【変更】${t.title}` : `【修理予定】${r.vehicleName}`, body: before ? `${t.body}（${jpDate(before)}から変更）` : t.body, url: '/' }, { admins: true, driverIds: r.driverId ? [r.driverId] : [] });
       notified = true;
     } catch {
       // 通知に失敗しても、予定日とお知らせは保存済み

@@ -90,3 +90,45 @@ describe('バックアップと復元', () => {
     expect(logs[0].action).toBe('バックアップから復元');
   });
 });
+
+describe('古い日報の保管', () => {
+  test('帰着済みで3か月より前の月の日報だけが移り、番号はずれない', async () => {
+    const arch = await import(`${ROOT}/lib/report-archive`);
+    expect(arch.archiveCutoff('2026-11-20')).toBe('2026-08-01');
+    expect(arch.archiveCutoff('2026-02-10')).toBe('2025-11-01');
+    const d = await store.loadData();
+    const mk = (id: string, date: string, extra = {}) => ({ id, date, preTime: '08:00', driver: 'A', vehicleName: 'V', destination: '', purpose: '', postDone: true, startKm: 1, endKm: 2, tripKm: 1, ...extra });
+    const reports = [
+      mk('a1', '2026-05-10'),
+      mk('a2', '2026-07-31'),
+      mk('k-open', '2026-05-11', { postDone: false }),
+      mk('k-req', '2026-05-12', { maintRequest: true, maintRequestDone: true }),
+      mk('k-new', '2026-08-01'),
+      mk('k-now', '2026-11-19'),
+    ];
+    await store.saveData({ reports, vehicles: d.vehicles, drivers: d.drivers, masters: d.masters, logs: [] });
+    const r = await arch.archiveOldReports('2026-11-20');
+    expect(r.moved).toBe(2);
+    expect(r.months).toEqual(['2026-05', '2026-07']);
+    const after = await store.loadData();
+    expect(after.reports.map((x: { id: string }) => x.id).sort()).toEqual(['k-new', 'k-now', 'k-open', 'k-req']);
+    expect(after.reports.find((x: { id: string }) => x.id === 'k-open').code).toBe('R-102');
+    expect(after.reports.find((x: { id: string }) => x.id === 'k-now').code).toBe('R-106');
+    const may = await arch.loadArchiveMonth('2026-05');
+    expect(may.length).toBe(1);
+    expect(may[0].code).toBe('R-101');
+    expect((await arch.loadArchiveMonth('2026-07'))[0].code).toBe('R-104');
+    expect((await arch.loadArchiveIndex()).total).toBe(2);
+    // もう一度走らせても、増えない
+    expect((await arch.archiveOldReports('2026-11-20')).moved).toBe(0);
+    // バックアップに、保管分も入る
+    const b = await backup.collectBackup();
+    expect(Object.keys(b.keys).filter((k) => k.startsWith('fleet:reports:archive:v1:')).length).toBe(3);
+    const route = await import(`${ROOT}/app/api/reports/archive/route`);
+    const j = await (await route.GET(new NextRequest('http://localhost/api/reports/archive'))).json();
+    expect(j.total).toBe(2);
+    expect(j.months[0].month).toBe('2026-07');
+    for (const k of await kv.kvKeys('fleet:reports:archive:v1:')) await kv.kvDel(k);
+    await store.saveData({ reports: [], vehicles: d.vehicles, drivers: d.drivers, masters: d.masters, logs: [] });
+  });
+});

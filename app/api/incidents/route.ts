@@ -3,7 +3,7 @@ import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { kvGet, kvSet } from '@/lib/kv';
 import { loadData, saveData } from '@/lib/store';
 import { pushLog } from '@/lib/log';
-import { sendPushToAll } from '@/lib/push';
+import { sendPush } from '@/lib/push';
 import { cleanPhotoIds } from '@/lib/photo-ids';
 import { INCIDENTS_KEY, INCIDENTS_MAX, INCIDENT_INJURY, INCIDENT_KINDS, Incident } from '@/lib/incidents';
 import { withWriteLock } from '@/lib/lock';
@@ -59,11 +59,15 @@ export const POST = withWriteLock(async function POST(req: NextRequest) {
   pushLog(data, { actor: 'user', action: '事故・トラブルの報告', target: `${driver} / ${inc.vehicleName || '車両未選択'}`, detail: `${kind} ${inc.injury}` });
   await saveData({ reports: data.reports, vehicles: data.vehicles, drivers: data.drivers, masters: data.masters, logs: data.logs });
 
-  const push = await sendPushToAll({
-    title: `【事故・トラブル】${driver}さん`,
-    body: `${inc.vehicleName ? inc.vehicleName + '：' : ''}${kind}（${inc.injury}）${inc.note ? ' ' + inc.note : ''}`,
-    url: '/',
-    urgent: true,
-  }).catch(() => null);
+  // 事故・トラブルの報告は、管理者の端末へ
+  const push = await sendPush(
+    {
+      title: `【事故・トラブル】${driver}さん`,
+      body: `${inc.vehicleName ? inc.vehicleName + '：' : ''}${kind}（${inc.injury}）${inc.note ? ' ' + inc.note : ''}`,
+      url: '/',
+      urgent: true,
+    },
+    { admins: true }
+  ).catch(() => null);
   return NextResponse.json({ success: true, id: inc.id, push });
 });

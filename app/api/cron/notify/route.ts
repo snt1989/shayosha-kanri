@@ -3,7 +3,7 @@ import { loadData } from '@/lib/store';
 import { kvGet } from '@/lib/kv';
 import { ALERT_SETTINGS_KEY, normalizeAlertSettings } from '@/lib/alert-settings';
 import { buildAutoNotices, summarizeAutoNotices } from '@/lib/notices';
-import { pushConfig, sendPushToAll } from '@/lib/push';
+import { pushConfig, sendPush } from '@/lib/push';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
   const summary = summarizeAutoNotices(items);
   // 毎日必ず通知する。気になる点が無い日も「問題なし」を届ける。
   const msg = summary ?? { title: '運行管理：おはようございます', body: '今日、確認が必要なお知らせはありません。' };
-  const r = await sendPushToAll({ ...msg, url: '/?notices=1' });
+  // 毎朝のまとめは、管理者と整備士の端末へ
+  const r = await sendPush({ ...msg, url: '/?notices=1' }, { admins: true, mechanics: true });
   return NextResponse.json({ success: true, count: items.length, ...r });
 }

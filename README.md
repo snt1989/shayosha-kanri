@@ -172,3 +172,10 @@ CDN から読み込み、**ブラウザ内だけで**画像からテキストを
 - **管理者ログイン**（`lib/admin.ts`、`lib/rate-limit.ts`）: 期限つきの署名トークン（8時間）。5回まちがえると15分停止。
 - **動作確認**: `GET /api/health`（保存先とロックの確認）。
 - **自動チェック**（`.github/workflows/ci.yml`）: push のたびに 型チェック → テスト（`bun test tests`）→ ビルド。
+
+## 古い日報の保管・通知の送り先
+
+- **古い日報の保管**（`lib/report-archive.ts`、`GET /api/reports/archive`、`components/ReportArchive.tsx`）: 毎晩の cron（`/api/cron/backup`。控えを取ったあと）で、
+  帰着済み・整備依頼なし・3か月より前の月の日報を `fleet:reports:archive:v1:YYYY-MM` へ移す（件数は `…:index`）。読むだけ。日報番号は `Report.code` に書き込んで固定する。
+- **通知の送り先**（`lib/push.ts` の `sendPush(msg, to)`・`pickSubs`）: 端末の登録に `who`（driverId・mechanic・admin）を持たせ、内容ごとに送り先を分ける。
+  `who` の無い登録（以前のもの）には全通知を送る。端末側は `components/usePush.ts` の `syncPushIdentity` が、ログイン状態の変化のたびに登録を更新する。

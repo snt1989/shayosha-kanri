@@ -69,6 +69,7 @@ export type Report = {
   maintRequestWatchAt?: string;
   // ダッシュボードから直接出した整備依頼（運転の記録ではない）。日報の一覧・集計・CSVには出さない
   maintOnly?: boolean;
+  code?: string; // 日報番号（R-101 など）。古い日報を保管へ移すときに、番号がずれないよう、残る日報にも書き込む。無いものは画面で数える
 };
 
 export const MAINT_URGENCIES = ['通常', '早めに', '至急（使用不可）'] as const;

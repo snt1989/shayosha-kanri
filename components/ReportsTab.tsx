@@ -1,5 +1,6 @@
 'use client';
 
+import ReportArchive from './ReportArchive';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppData, Driver, MAINT_URGENCIES, Report, Vehicle } from '@/lib/types';
 import { jpDate } from '@/lib/schedule-text';
@@ -125,6 +126,7 @@ export default function ReportsTab({
   onRequestLogin: () => void;
 }) {
   const [query, setQuery] = useState('');
+  const [archivedTotal, setArchivedTotal] = useState(0); // 保管へ移した日報の件数（日報番号を、ずらさないため）
   const [editing, setEditing] = useState<Report | null>(null);
   // 帰着登録（出庫中の日報に帰着情報だけを入れる操作）のとき true。出発登録の入力欄は表示しない。
   const [returnMode, setReturnMode] = useState(false);
@@ -175,9 +177,9 @@ export default function ReportsTab({
   const reportCodes = useMemo(() => {
     const sorted = data.reports.filter((r) => !r.maintOnly).sort((a, b) => (a.date + a.preTime).localeCompare(b.date + b.preTime));
     const map = new Map<string, string>();
-    sorted.forEach((r, idx) => map.set(r.id, `R-${101 + idx}`));
+    sorted.forEach((r, idx) => map.set(r.id, r.code || `R-${101 + archivedTotal + idx}`));
     return map;
-  }, [data.reports]);
+  }, [data.reports, archivedTotal]);
 
   function openNew() {
     if (!currentDriver) {
@@ -456,6 +458,7 @@ export default function ReportsTab({
         )}
         {lim.more}
       </div>
+      <ReportArchive toCsv={reportsToCsv} onTotal={setArchivedTotal} />
 
       {editing && (
         <Modal

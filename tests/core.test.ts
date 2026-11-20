@@ -86,3 +86,21 @@ describe('タイヤ・整備の判定', () => {
     expect(utils.maintBlocks([{ ...reports[0], maintRequestDone: true }]).length).toBe(0);
   });
 });
+
+describe('通知の送り先', () => {
+  test('当てはまる端末と、だれのものか不明の端末に送る。当てはまらなければ管理者、それも無ければ全員', async () => {
+    const push = await import(`${ROOT}/lib/push`);
+    const s = (endpoint: string, who?: object) => ({ endpoint, createdAt: '', ...(who ? { who } : {}) });
+    const subs = [s('legacy'), s('adm', { admin: true }), s('mech', { mechanic: '田中' }), s('d1', { driverId: 'd1' }), s('d2', { driverId: 'd2' }), s('anon', { driverId: '', mechanic: '', admin: false })];
+    const ep = (to?: object) => push.pickSubs(subs, to).map((x: { endpoint: string }) => x.endpoint).sort();
+    expect(ep()).toEqual(['adm', 'anon', 'd1', 'd2', 'legacy', 'mech']);
+    expect(ep({ all: true }).length).toBe(6);
+    expect(ep({ admins: true })).toEqual(['adm', 'legacy']);
+    expect(ep({ admins: true, mechanics: true })).toEqual(['adm', 'legacy', 'mech']);
+    expect(ep({ driverIds: ['d2'] })).toEqual(['d2', 'legacy']);
+    expect(ep({ driverIds: ['zzz'] })).toEqual(['adm', 'legacy']);
+    expect(push.pickSubs([s('anon', { driverId: '' }), s('d1', { driverId: 'd1' })], { admins: true }).length).toBe(2);
+    expect(push.cleanWho({ driverId: 'd1', admin: true }, false)).toEqual({ driverId: 'd1', mechanic: '', admin: false });
+    expect(push.cleanWho({ admin: true }, true).admin).toBe(true);
+  });
+});

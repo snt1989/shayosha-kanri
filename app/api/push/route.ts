@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { addSub, isValidEndpoint, pushConfig, removeSub } from '@/lib/push';
+import { addSub, cleanWho, isValidEndpoint, loadSubs, pushConfig, removeSub } from '@/lib/push';
+import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,10 @@ export const POST = withWriteLock(async function POST(req: NextRequest) {
   if (!isValidEndpoint(endpoint)) {
     return NextResponse.json({ success: false, message: '端末の登録情報が正しくありません。' }, { status: 400 });
   }
-  const r = await addSub(endpoint, req.headers.get('user-agent') || '');
+  // だれの端末か（通知を必要な人だけに送るため）。管理者の印は、管理者ログイン中の端末か、すでに印のある端末だけに付ける
+  const wasAdmin = Boolean((await loadSubs()).find((s) => s.endpoint === endpoint)?.who?.admin);
+  const who = b?.who ? cleanWho(b.who, isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value) || wasAdmin) : undefined;
+  const r = await addSub(endpoint, req.headers.get('user-agent') || '', who);
   if (!r.ok) return NextResponse.json({ success: false, message: '登録できる端末の数の上限に達しています。' }, { status: 409 });
   return NextResponse.json({ success: true });
 });

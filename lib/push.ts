@@ -15,7 +15,31 @@ export const SUBS_KEY = 'fleet:push:subs:v1';
 export const LAST_KEY = 'fleet:push:last:v1';
 export const SUBS_MAX = 1000;
 
-export type PushSub = { endpoint: string; createdAt: string; ua?: string };
+// who：その端末を使っている人（運転者・整備士・管理者）。通知を必要な人だけに送るために使う。
+// who が無い登録（以前のもの）は、だれの端末かわからないので、すべての通知を送る。
+export type PushWho = { driverId?: string; mechanic?: string; admin?: boolean };
+export type PushSub = { endpoint: string; createdAt: string; ua?: string; who?: PushWho };
+// 送り先。all か、指定なしなら全員。admins・mechanics・driverIds は、どれかに当てはまる端末へ。
+export type Audience = { all?: boolean; admins?: boolean; mechanics?: boolean; driverIds?: string[] };
+
+export function cleanWho(raw: unknown, allowAdmin: boolean): PushWho {
+  const o = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const str = (v: unknown) => (typeof v === 'string' ? v.slice(0, 60) : '');
+  return { driverId: str(o.driverId), mechanic: str(o.mechanic), admin: Boolean(o.admin) && allowAdmin };
+}
+
+// 送り先に当てはまる端末を選ぶ。
+// 当てはまる端末（だれのものか、わかっているもの）が1つも無いときは、管理者の端末へ。それも無ければ全員へ（だれにも届かないことを防ぐ）。
+export function pickSubs(subs: PushSub[], to?: Audience): PushSub[] {
+  if (!to || to.all) return subs;
+  const ids = new Set((to.driverIds || []).filter(Boolean));
+  const hit = (s: PushSub) => Boolean(s.who && ((to.admins && s.who.admin) || (to.mechanics && s.who.mechanic) || (s.who.driverId && ids.has(s.who.driverId))));
+  const legacy = subs.filter((s) => !s.who);
+  let known = subs.filter(hit);
+  if (known.length === 0) known = subs.filter((s) => s.who?.admin);
+  if (known.length === 0) return subs;
+  return [...known, ...legacy];
+}
 export type PushMessage = { title: string; body: string; url: string; at: string; urgent?: boolean };
 
 export function pushConfig(): { enabled: boolean; publicKey: string } {
@@ -41,11 +65,12 @@ export async function loadSubs(): Promise<PushSub[]> {
   return kvGet<PushSub[]>(SUBS_KEY, []);
 }
 
-export async function addSub(endpoint: string, ua?: string): Promise<{ ok: boolean; total: number }> {
+export async function addSub(endpoint: string, ua?: string, who?: PushWho): Promise<{ ok: boolean; total: number }> {
   const subs = await loadSubs();
+  const prev = subs.find((s) => s.endpoint === endpoint);
   const rest = subs.filter((s) => s.endpoint !== endpoint);
   if (rest.length >= SUBS_MAX) return { ok: false, total: subs.length };
-  const next = [...rest, { endpoint, createdAt: new Date().toISOString(), ua: (ua || '').slice(0, 120) }];
+  const next = [...rest, { endpoint, createdAt: prev?.createdAt || new Date().toISOString(), ua: (ua || '').slice(0, 120), ...(who ? { who } : prev?.who ? { who: prev.who } : {}) }];
   await kvSet(SUBS_KEY, next);
   return { ok: true, total: next.length };
 }
@@ -81,9 +106,14 @@ export type SendResult = { enabled: boolean; sent: number; removed: number; fail
 
 // 登録されたすべての端末に、合図を送る。本文は先に LAST_KEY に保存する。
 export async function sendPushToAll(msg: { title: string; body: string; url?: string; urgent?: boolean }): Promise<SendResult> {
+  return sendPush(msg, { all: true });
+}
+
+// 送り先（to）に当てはまる端末だけに、合図を送る。
+export async function sendPush(msg: { title: string; body: string; url?: string; urgent?: boolean }, to?: Audience): Promise<SendResult> {
   const cfg = pushConfig();
   const message: PushMessage = { title: msg.title.slice(0, 80), body: msg.body.slice(0, 300), url: msg.url || '/', at: new Date().toISOString(), ...(msg.urgent ? { urgent: true } : {}) };
-  const subs = await loadSubs();
+  const subs = pickSubs(await loadSubs(), to);
   if (!cfg.enabled) return { enabled: false, sent: 0, removed: 0, failed: 0, total: subs.length };
   await kvSet(LAST_KEY, message);
 

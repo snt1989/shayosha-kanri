@@ -1,5 +1,6 @@
 'use client';
 
+import { forgetPushAdmin, syncPushIdentity } from './usePush';
 import { useEffect, useRef, useState } from 'react';
 import { AppData, Driver, EmpIdRule, FuelLog, Masters, Rental, RentalTrip, Report, Reservation, Vehicle } from '@/lib/types';
 import Header from './Header';
@@ -364,6 +365,7 @@ export default function FleetApp() {
     } catch {
       // ignore
     }
+    forgetPushAdmin();
     setIsAdmin(false);
   }
 
@@ -406,6 +408,14 @@ export default function FleetApp() {
     if (requireDriverLogin(() => startQuickReport(site, division))) startQuickReport(site, division);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingSite, data, currentDriverId]);
+
+  // 通知を必要な人だけに届けるため、この端末を使っている人（運転者・整備士・管理者）を、通知の登録に伝える
+  const loaded = Boolean(data);
+  useEffect(() => {
+    if (!loaded) return;
+    const t = setTimeout(() => syncPushIdentity({ driverId: currentDriverId, mechanic: mechanicName, isAdmin }), 1500);
+    return () => clearTimeout(t);
+  }, [loaded, currentDriverId, mechanicName, isAdmin]);
 
   function handleQuickReportHandled() {
     setQuickReportTrigger(null);

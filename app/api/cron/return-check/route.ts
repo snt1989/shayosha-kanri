@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { loadData } from '@/lib/store';
 import { summarizeOpenReturns } from '@/lib/notices';
-import { pushConfig, sendPushToAll } from '@/lib/push';
+import { pushConfig, sendPush } from '@/lib/push';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,8 +13,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: false, message: '認証に失敗しました。' }, { status: 401 });
   }
   if (!pushConfig().enabled) return NextResponse.json({ success: true, skipped: '通知の設定（VAPID鍵）が未設定です。' });
-  const summary = summarizeOpenReturns(await loadData());
+  const data = await loadData();
+  const summary = summarizeOpenReturns(data);
   if (!summary) return NextResponse.json({ success: true, skipped: '帰着登録がまだの車両はありません。', count: 0 });
-  const r = await sendPushToAll({ ...summary, url: '/?notices=1' }); // urgent: 押すまで消えない通知にする
+  // 帰着登録がまだの本人と、管理者の端末へ
+  const driverIds = data.reports.filter((x) => !x.postDone && x.driverId).map((x) => x.driverId as string);
+  const r = await sendPush({ ...summary, url: '/?notices=1' }, { admins: true, driverIds }); // urgent: 押すまで消えない通知にする
   return NextResponse.json({ success: true, ...r });
 }

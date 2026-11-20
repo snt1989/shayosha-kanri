@@ -23,6 +23,57 @@ function keyToBytes(base64url: string): Uint8Array {
   return Uint8Array.from(raw, (c) => c.charCodeAt(0));
 }
 
+// だれの端末か（運転者・整備士・管理者）を、通知の登録に付けて送る。通知を必要な人だけに届けるため。
+// 管理者の印は、一度ログインした端末に残す（ログインが8時間で切れても、通知は届くように）。「管理者ログアウト」で消える。
+const WHO_KEY = 'fleet:push:who';
+const ADMIN_FLAG = 'fleet:push:admin';
+type Who = { driverId: string; mechanic: string; admin: boolean };
+const read = (k: string) => {
+  try {
+    return localStorage.getItem(k) || '';
+  } catch {
+    return '';
+  }
+};
+const write = (k: string, v: string) => {
+  try {
+    if (v) localStorage.setItem(k, v);
+    else localStorage.removeItem(k);
+  } catch {
+    // 保存できなくても動かす
+  }
+};
+export function currentWho(): Who {
+  let mechanic = '';
+  try {
+    mechanic = localStorage.getItem('fleet_current_mechanic') || '';
+  } catch {
+    mechanic = '';
+  }
+  return { driverId: read('fleet:push:driver'), mechanic, admin: read(ADMIN_FLAG) === '1' };
+}
+export function forgetPushAdmin() {
+  write(ADMIN_FLAG, '');
+}
+// ログインの状態が変わったら呼ぶ。通知を受け取っている端末なら、登録を更新する（変わっていなければ何もしない）。
+export async function syncPushIdentity(now: { driverId: string | null; mechanic: string | null; isAdmin: boolean }) {
+  try {
+    if (now.isAdmin) write(ADMIN_FLAG, '1');
+    write('fleet:push:driver', now.driverId || '');
+    const who: Who = { driverId: now.driverId || '', mechanic: now.mechanic || '', admin: now.isAdmin || read(ADMIN_FLAG) === '1' };
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sub = reg ? await reg.pushManager.getSubscription() : null;
+    if (!sub) return;
+    const sig = JSON.stringify([sub.endpoint, who]);
+    if (read(WHO_KEY) === sig) return;
+    const res = await fetch('/api/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub.toJSON(), who }) });
+    if (res.ok) write(WHO_KEY, sig);
+  } catch {
+    // 通知の登録の更新に失敗しても、ほかの操作は止めない
+  }
+}
+
 export function usePush(onMessage?: (m: string) => void) {
   const [state, setState] = useState<PushState>('loading');
   const [publicKey, setPublicKey] = useState('');
@@ -61,7 +112,7 @@ export function usePush(onMessage?: (m: string) => void) {
       }
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyToBytes(publicKey) as BufferSource });
-      const res = await fetch('/api/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub.toJSON() }) });
+      const res = await fetch('/api/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub.toJSON(), who: currentWho() }) });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {
         await sub.unsubscribe().catch(() => undefined);
