@@ -7,7 +7,7 @@ import { BatteryFields, EtcFields, TIRE_DOT_MESSAGE, TireFields, cleanTires } fr
 import PhotoField, { PhotoThumbs } from './PhotoField';
 import VehicleStickerModal from './VehicleStickerModal';
 import { MAX_VEHICLE_PHOTOS } from '@/lib/photo-ids';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMobileLimit } from '@/lib/useLimit';
 import { AppData, Vehicle } from '@/lib/types';
 import { jpDate } from '@/lib/schedule-text';
@@ -44,6 +44,16 @@ const EDIT_TABS: { key: EditTab; label: string }[] = [
   { key: 'shaken', label: '📄 車検証の情報' },
 ];
 
+// カードのタブ。並びは、使う人が変えられる（この端末に保存）。先頭のタブが、最初に開くタブになる
+const CARD_TAB_KEYS: CardTab[] = ['main', 'tire', 'battery', 'etc', 'shaken'];
+const CARD_TAB_LABEL: Record<CardTab, string> = { main: '概要', tire: '🛞 タイヤ', battery: '🔋 バッテリー', etc: '🛣️ ETC', shaken: '📄 車検証' };
+const TAB_ORDER_KEY = 'fleet:vtab-order:v1';
+function normalizeTabOrder(x: unknown): CardTab[] {
+  const given = Array.isArray(x) ? (x.filter((k) => CARD_TAB_KEYS.includes(k as CardTab)) as CardTab[]) : [];
+  const uniq = given.filter((k, i) => given.indexOf(k) === i);
+  return [...uniq, ...CARD_TAB_KEYS.filter((k) => !uniq.includes(k))];
+}
+
 const DOC_LABEL = { cert: '車検証', record: '検査証記録事項', etc: 'ETC車載器セットアップ証明書' } as const;
 const docFileAt = (v: Vehicle, k: 'cert' | 'record' | 'etc') => (k === 'record' ? v.recordFileAt : k === 'etc' ? v.etcFileAt : v.shakenFileAt);
 
@@ -71,6 +81,20 @@ export default function VehiclesTab({
   // 編集画面のタブ（基本・タイヤ・バッテリー・写真・車検証）と、カードごとの表示タブ（概要・タイヤ・バッテリー）
   const [editTab, setEditTab] = useState<EditTab>('basic');
   const [cardTab, setCardTab] = useState<Record<string, CardTab>>({});
+  const [tabOrder, setTabOrderState] = useState<CardTab[]>(CARD_TAB_KEYS);
+  const [showTabOrder, setShowTabOrder] = useState(false);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(TAB_ORDER_KEY);
+      if (raw) setTabOrderState(normalizeTabOrder(JSON.parse(raw)));
+    } catch {}
+  }, []);
+  function setTabOrder(next: CardTab[]) {
+    setTabOrderState(next);
+    try {
+      localStorage.setItem(TAB_ORDER_KEY, JSON.stringify(next));
+    } catch {}
+  }
   // QRコードステッカーの印刷画面（null＝閉じている。配列＝最初に選んでおく車両のid。空なら全車両）
   const [stickerIds, setStickerIds] = useState<string[] | null>(null);
   const [bulkRows, setBulkRows] = useState<Vehicle[] | null>(null);
@@ -306,6 +330,9 @@ export default function VehiclesTab({
               onChange={(e) => setQuery(e.target.value)}
               style={{ padding: '9px 12px', border: '1px solid var(--slate-300)', borderRadius: 8, minWidth: 180 }}
             />
+            <button className="btn btn-sm" onClick={() => setShowTabOrder(true)}>
+              ↔ タブの並び
+            </button>
             {!readOnly && (
               <>
                 <button className="btn btn-sm" onClick={openBulkEdit}>
@@ -368,7 +395,7 @@ export default function VehiclesTab({
                     const age = batteryAge(bat?.replacedAt);
                     const etc = v.etc;
                     const etcExp = etcExpiry(etc?.cardExpiry);
-                    const tab: CardTab = cardTab[v.id] || 'main';
+                    const tab: CardTab = cardTab[v.id] || tabOrder[0];
                     const pick = (k: CardTab) => setCardTab((cur) => ({ ...cur, [v.id]: k }));
                     const tires = [
                       { k: 'summer' as const, ic: '☀️', label: '夏タイヤ', info: t.summer, on: tk === 'summer' || tk === 'all' },
@@ -377,23 +404,13 @@ export default function VehiclesTab({
                     return (
                       <>
                         <div className="vtabs" role="tablist" aria-label={`${v.name} の情報`}>
-                          <button type="button" role="tab" aria-selected={tab === 'main'} className={`vtab${tab === 'main' ? ' on' : ''}`} onClick={() => pick('main')}>
-                            概要
-                          </button>
-                          <button type="button" role="tab" aria-selected={tab === 'tire'} className={`vtab${tab === 'tire' ? ' on' : ''}`} onClick={() => pick('tire')}>
-                            🛞 タイヤ
-                          </button>
-                          <button type="button" role="tab" aria-selected={tab === 'battery'} className={`vtab${tab === 'battery' ? ' on' : ''}`} onClick={() => pick('battery')}>
-                            🔋 バッテリー
-                            {age && age.level !== 'ok' && <span className={`vtab-dot ${age.level}`} aria-label={age.level === 'due' ? '交換の目安' : 'そろそろ交換'} />}
-                          </button>
-                          <button type="button" role="tab" aria-selected={tab === 'etc'} className={`vtab${tab === 'etc' ? ' on' : ''}`} onClick={() => pick('etc')}>
-                            🛣️ ETC
-                            {etcExp && etcExp.level !== 'ok' && <span className={`vtab-dot ${etcExp.level}`} aria-label="ETCカードの有効期限" />}
-                          </button>
-                          <button type="button" role="tab" aria-selected={tab === 'shaken'} className={`vtab${tab === 'shaken' ? ' on' : ''}`} onClick={() => pick('shaken')}>
-                            📄 車検証
-                          </button>
+                          {tabOrder.map((k) => (
+                            <button key={k} type="button" role="tab" aria-selected={tab === k} className={`vtab${tab === k ? ' on' : ''}`} onClick={() => pick(k)}>
+                              {CARD_TAB_LABEL[k]}
+                              {k === 'battery' && age && age.level !== 'ok' && <span className={`vtab-dot ${age.level}`} aria-label={age.level === 'due' ? '交換の目安' : 'そろそろ交換'} />}
+                              {k === 'etc' && etcExp && etcExp.level !== 'ok' && <span className={`vtab-dot ${etcExp.level}`} aria-label="ETCカードの有効期限" />}
+                            </button>
+                          ))}
                         </div>
                         {tab === 'main' && (
                           <div className="emeta">
@@ -901,6 +918,57 @@ export default function VehiclesTab({
               </a>
             </>
           )}
+        </Modal>
+      )}
+      {showTabOrder && (
+        <Modal
+          title="カードのタブの並び"
+          onClose={() => setShowTabOrder(false)}
+          footer={
+            <>
+              <button className="btn" onClick={() => setTabOrder(CARD_TAB_KEYS)}>
+                もとの並びに戻す
+              </button>
+              <button className="btn btn-primary" onClick={() => setShowTabOrder(false)}>
+                閉じる
+              </button>
+            </>
+          }
+        >
+          <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 10 }}>▲▼で並びを変えます。いちばん上のタブが、カードを開いたときに最初に出ます。この並びは、この端末（このブラウザ）だけに保存されます。</div>
+          <div style={{ display: 'grid', gap: 6 }}>
+            {tabOrder.map((k, i) => (
+              <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', border: '1px solid var(--slate-200, #e2e8f0)', borderRadius: 8 }}>
+                <span style={{ flex: 1, fontWeight: 600 }}>
+                  {i + 1}. {CARD_TAB_LABEL[k]}
+                </span>
+                <button
+                  className="btn btn-sm"
+                  disabled={i === 0}
+                  aria-label={`${CARD_TAB_LABEL[k]}を上へ`}
+                  onClick={() => {
+                    const n = [...tabOrder];
+                    [n[i - 1], n[i]] = [n[i], n[i - 1]];
+                    setTabOrder(n);
+                  }}
+                >
+                  ▲
+                </button>
+                <button
+                  className="btn btn-sm"
+                  disabled={i === tabOrder.length - 1}
+                  aria-label={`${CARD_TAB_LABEL[k]}を下へ`}
+                  onClick={() => {
+                    const n = [...tabOrder];
+                    [n[i + 1], n[i]] = [n[i], n[i + 1]];
+                    setTabOrder(n);
+                  }}
+                >
+                  ▼
+                </button>
+              </div>
+            ))}
+          </div>
         </Modal>
       )}
       {etcRead && <EtcDocReadModal vehicle={data.vehicles.find((x) => x.id === etcRead.id) || etcRead} onClose={() => setEtcRead(null)} onSave={async (nv) => { await onSave(nv); await onRefresh?.(); }} />}
