@@ -8,7 +8,7 @@ export async function GET(req: Request) {
   const path = u.searchParams.get('p') || '/urgency.php';
   const from = Number(u.searchParams.get('from') || 0);
   try {
-    const res = await fetch('https://www.douro.com' + path, { headers: { 'User-Agent': 'Mozilla/5.0 (fleet-app)' }, cache: 'no-store' });
+    const res = await fetch('https://www.douro.com' + path, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36', Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Accept-Language': 'ja,en-US;q=0.8,en;q=0.6', Referer: 'https://www.douro.com/' }, cache: 'no-store' });
     const buf = await res.arrayBuffer();
     const ct = res.headers.get('content-type') || '';
     let text = new TextDecoder('utf-8').decode(buf);
