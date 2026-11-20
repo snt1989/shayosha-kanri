@@ -174,7 +174,7 @@ export default function BackupPanel() {
         </div>
       )}
       {msg && (
-        <div role="status" className="notice-box" style={{ marginTop: 10, borderColor: msg.ok ? 'var(--green-600, #16a34a)' : undefined }}>
+        <div role="status" className={`notice-box${msg.ok ? ' notice-ok' : ''}`} style={{ marginTop: 10 }}>
           {msg.text}
         </div>
       )}

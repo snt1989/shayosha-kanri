@@ -1,3 +1,4 @@
+import { driverClaimOk, mechanicClaimOk } from '@/lib/mechanic-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { loadData, saveData } from '@/lib/store';
 import { MAINT_URGENCIES, Report } from '@/lib/types';
@@ -24,7 +25,7 @@ export const POST = withWriteLock(async function POST(req: NextRequest) {
   };
   const data = await loadData();
   const isAdminReq = isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value);
-  const mechanic = b.mechanic && data.masters.mechanics.includes(b.mechanic) ? b.mechanic : '';
+  const mechanic = b.mechanic && (await mechanicClaimOk(req, data.masters.mechanics, b.mechanic)) ? b.mechanic : '';
   if (!isAdminReq && !mechanic) {
     return NextResponse.json({ success: false, message: '整備士または管理者としてログインしてください。' }, { status: 403 });
   }

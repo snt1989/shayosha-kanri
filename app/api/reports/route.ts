@@ -1,3 +1,5 @@
+import { driverClaimOk } from '@/lib/mechanic-auth';
+import { PIN_DENY_MESSAGE } from '@/lib/pins';
 import { NextRequest, NextResponse } from 'next/server';
 import { loadData, saveData } from '@/lib/store';
 import { Report } from '@/lib/types';
@@ -39,6 +41,11 @@ export const POST = withWriteLock(async function POST(req: NextRequest) {
       { success: false, message: 'この日報を編集できるのは、記入した本人か管理者です。' },
       { status: 401 }
     );
+  }
+  // 暗証番号を設定している運転者の名前で登録・編集するときは、暗証番号を確認済みの端末だけ（管理者は除く）
+  const claim = existing ? (isOwner && editor ? editor.id : '') : r.driverId || '';
+  if (!isAdminReq && claim && !(await driverClaimOk(req, claim))) {
+    return NextResponse.json({ success: false, message: PIN_DENY_MESSAGE, pin: true }, { status: 401 });
   }
   // 本人による編集では、運転者そのものは書き換えさせない
   if (existing && isOwner && !isAdminReq) {

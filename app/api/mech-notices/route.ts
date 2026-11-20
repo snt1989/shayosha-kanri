@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { loadData, saveData } from '@/lib/store';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
-import { isAdminOrMechanic, mechanicNameOf } from '@/lib/mechanic-auth';
+import { isAdminOrMechanicP, mechanicNameOf } from '@/lib/mechanic-auth';
 import { pushLog } from '@/lib/log';
 import { kvGet, kvSet } from '@/lib/kv';
 import { NOTICE_BODY_MAX, NOTICE_TITLE_MAX, isNoticeExpired, sortNotices, todayJst } from '@/lib/notices';
@@ -15,7 +15,7 @@ const deny = () => NextResponse.json({ success: false, message: '整備士向け
 // 一覧（管理者・整備士のみ）。期限が過ぎたものは、管理者以外には返さない。
 export async function GET(req: NextRequest) {
   const data = await loadData();
-  if (!isAdminOrMechanic(req, data.masters.mechanics)) return deny();
+  if (!(await isAdminOrMechanicP(req, data.masters.mechanics))) return deny();
   const isAdmin = isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value);
   const list = await kvGet<MechNotice[]>(MECH_NOTICES_KEY, []);
   return NextResponse.json({ success: true, mechanics: data.masters.mechanics, notices: sortNotices(isAdmin ? list : list.filter((n) => !isNoticeExpired(n))) });
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 // 投稿・更新（管理者・整備士）。
 export const POST = withWriteLock(async function POST(req: NextRequest) {
   const data = await loadData();
-  if (!isAdminOrMechanic(req, data.masters.mechanics)) return deny();
+  if (!(await isAdminOrMechanicP(req, data.masters.mechanics))) return deny();
   const isAdmin = isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value);
   const who = isAdmin ? '管理者' : mechanicNameOf(req);
   const b = await req.json().catch(() => ({}));

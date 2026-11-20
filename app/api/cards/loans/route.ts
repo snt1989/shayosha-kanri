@@ -1,3 +1,5 @@
+import { PIN_DENY_MESSAGE } from '@/lib/pins';
+import { driverClaimOk, mechanicClaimOk } from '@/lib/mechanic-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { loadData } from '@/lib/store';
 import { activeLoanOf, loadCards, saveCards } from '@/lib/cards-store';
@@ -23,6 +25,7 @@ export const POST = withWriteLock(async function POST(req: NextRequest) {
   if (!card) return NextResponse.json({ success: false, message: 'カードが見つかりません。' }, { status: 404 });
   const driver = app.drivers.find((x) => x.id === b.driverId);
   if (!driver) return NextResponse.json({ success: false, message: '運転者としてログインしてください。' }, { status: 401 });
+  if (!(await driverClaimOk(req, driver.id))) return NextResponse.json({ success: false, message: PIN_DENY_MESSAGE, pin: true }, { status: 401 });
   const out = activeLoanOf(d.loans, card.id);
   if (out) {
     return NextResponse.json({ success: false, message: `このカードは、${out.borrower} さんが借りています。` }, { status: 409 });

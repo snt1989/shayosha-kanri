@@ -12,12 +12,14 @@ import MenuOrderSettings from './MenuOrderSettings';
 import AlertSettingsPanel from './AlertSettingsPanel';
 import IncidentContactsAdmin from './IncidentContactsAdmin';
 import InsuranceAdmin from './InsuranceAdmin';
+import PinSettings, { PinInfo } from './PinSettings';
 
-type Section = 'menu' | 'alerts' | 'incident' | 'insurance' | 'cards' | 'drivers' | 'masters' | 'logs' | 'logo';
+type Section = 'menu' | 'pin' | 'alerts' | 'incident' | 'insurance' | 'cards' | 'drivers' | 'masters' | 'logs' | 'logo';
 
 // 管理者だけが使えるもの（メニューの並び替えだけは誰でも使える）
 const SECTIONS: { key: Section; icon: string; label: string; admin: boolean }[] = [
   { key: 'menu', icon: '↕️', label: 'メニューの並び替え', admin: false },
+  { key: 'pin', icon: '🔑', label: '暗証番号', admin: false },
   { key: 'alerts', icon: '⏰', label: 'アラートの出す時期', admin: true },
   { key: 'incident', icon: '🚨', label: '緊急連絡先', admin: true },
   { key: 'insurance', icon: '🛡️', label: '保険情報', admin: true },
@@ -44,6 +46,10 @@ export default function SettingsTab({
   onRequestLogin,
   onClearLogs,
   onRefresh,
+  currentDriver,
+  mechanic,
+  pins,
+  onPinsChanged,
 }: {
   data: AppData;
   isAdmin: boolean;
@@ -59,6 +65,10 @@ export default function SettingsTab({
   onRequestLogin: () => void;
   onClearLogs: () => Promise<unknown>;
   onRefresh: () => Promise<unknown>;
+  currentDriver: Driver | null;
+  mechanic: string | null;
+  pins: PinInfo;
+  onPinsChanged: () => void;
 }) {
   const [section, setSection] = useState<Section>('menu');
   const current = SECTIONS.find((s) => s.key === section)!;
@@ -102,6 +112,7 @@ export default function SettingsTab({
       ) : (
         <>
           {section === 'menu' && <MenuOrderSettings order={menuOrder} onChange={onChangeMenuOrder} />}
+          {section === 'pin' && <PinSettings drivers={data.drivers} mechanics={data.masters.mechanics} currentDriver={currentDriver} mechanic={mechanic} isAdmin={isAdmin} pins={pins} onChanged={onPinsChanged} />}
           {section === 'alerts' && <AlertSettingsPanel current={data.alertSettings} onSaved={onRefresh} />}
           {section === 'incident' && <IncidentContactsAdmin />}
           {section === 'insurance' && <InsuranceAdmin />}

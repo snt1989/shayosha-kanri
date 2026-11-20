@@ -179,3 +179,11 @@ CDN から読み込み、**ブラウザ内だけで**画像からテキストを
   帰着済み・整備依頼なし・3か月より前の月の日報を `fleet:reports:archive:v1:YYYY-MM` へ移す（件数は `…:index`）。読むだけ。日報番号は `Report.code` に書き込んで固定する。
 - **通知の送り先**（`lib/push.ts` の `sendPush(msg, to)`・`pickSubs`）: 端末の登録に `who`（driverId・mechanic・admin）を持たせ、内容ごとに送り先を分ける。
   `who` の無い登録（以前のもの）には全通知を送る。端末側は `components/usePush.ts` の `syncPushIdentity` が、ログイン状態の変化のたびに登録を更新する。
+
+## 運転者・整備士の暗証番号
+
+- `lib/pins.ts`、`/api/pins`（一覧・設定・消去）、`/api/auth/pin`（確認・確認済みの照会・解除）、`components/PinPrompt.tsx`・`PinSettings.tsx`。
+- 任意。4けた。照合用の値（サーバーの鍵での HMAC）だけを `fleet:pins:v1` に保存し、`/api/data` には出さない。確認できた端末に httpOnly クッキー（`fleet_pin_d`／`fleet_pin_m`、90日）を出す。
+- サーバーで確かめる場所：日報の登録・本人による編集（`/api/reports`）、整備依頼（登録・編集・削除・修理予定・対応）、カードの貸出、整備士向けお知らせ、車検証の読み取り・画像。
+  車両・運転者の登録APIなど、もともと名前の確認をしていないAPIは対象外。
+- 鍵は管理者パスワード（＋`SESSION_SECRET`）から作るため、**管理者パスワードを変えると、暗証番号は付け直しになる**（管理者が消してから、各自で再設定）。

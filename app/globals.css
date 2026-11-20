@@ -3187,3 +3187,8 @@ button.tire-now { cursor: pointer; }
 .backup-list { display: grid; gap: 6px; }
 .backup-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--slate-200); border-radius: 10px; background: #fff; }
 .backup-confirm { margin-top: 12px; border-color: var(--red-600, #dc2626); }
+
+/* 暗証番号 */
+.pin-input, .field input.pin-input { width: 130px; max-width: 100%; font-size: 22px; letter-spacing: 0.4em; text-align: center; padding: 8px 10px; border: 1px solid var(--slate-300); border-radius: 10px; }
+.pin-self { padding: 12px; border: 1px solid var(--slate-200); border-radius: 12px; margin-bottom: 10px; background: #fff; }
+.notice-ok { background: #f0fdf4; border-color: #16a34a; color: #166534; }

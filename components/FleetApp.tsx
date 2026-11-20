@@ -1,6 +1,8 @@
 'use client';
 
 import { forgetPushAdmin, syncPushIdentity } from './usePush';
+import PinPrompt from './PinPrompt';
+import type { PinInfo } from './PinSettings';
 import { useEffect, useRef, useState } from 'react';
 import { AppData, Driver, EmpIdRule, FuelLog, Masters, Rental, RentalTrip, Report, Reservation, Vehicle } from '@/lib/types';
 import Header from './Header';
@@ -79,6 +81,14 @@ export default function FleetApp() {
   // 入力操作（出発登録・帰着登録・予約）の途中でログインを求めたときの案内と、ログイン後に続ける操作
   const [driverLoginNotice, setDriverLoginNotice] = useState<string | null>(null);
   const afterDriverLoginRef = useRef<(() => void) | null>(null);
+  // 暗証番号を設定している人（ログインのときに、暗証番号を聞く）
+  const [pins, setPins] = useState<PinInfo>({ drivers: [], mechanics: [] });
+  const [pinAsk, setPinAsk] = useState<{ kind: 'driver' | 'mechanic'; id: string; label: string; onOk: () => void } | null>(null);
+  const loadPins = () =>
+    fetch('/api/pins', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((j) => j?.success && setPins({ drivers: j.drivers, mechanics: j.mechanics }))
+      .catch(() => undefined);
 
   useEffect(() => {
     try {
@@ -409,8 +419,44 @@ export default function FleetApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingSite, data, currentDriverId]);
 
-  // 通知を必要な人だけに届けるため、この端末を使っている人（運転者・整備士・管理者）を、通知の登録に伝える
   const loaded = Boolean(data);
+  // 暗証番号：設定している人の一覧を読み、この端末が確認済みでない名前のログインは外す（あとから暗証番号が付いた場合など）
+  useEffect(() => {
+    if (!loaded) return;
+    let live = true;
+    (async () => {
+      try {
+        const [p, me] = await Promise.all([fetch('/api/pins', { cache: 'no-store' }).then((r) => r.json()), fetch('/api/auth/pin', { cache: 'no-store' }).then((r) => r.json())]);
+        if (!live || !p?.success) return;
+        setPins({ drivers: p.drivers, mechanics: p.mechanics });
+        if (isAdmin) return;
+        if (currentDriverId && p.drivers.includes(currentDriverId) && me?.driver !== currentDriverId) {
+          setCurrentDriverId(null);
+          try {
+            localStorage.removeItem(DRIVER_SESSION_KEY);
+          } catch {
+            // ignore
+          }
+        }
+        if (mechanicName && p.mechanics.includes(mechanicName) && me?.mechanic !== mechanicName) {
+          setMechanicName(null);
+          try {
+            localStorage.removeItem(MECHANIC_SESSION_KEY);
+          } catch {
+            // ignore
+          }
+        }
+      } catch {
+        // 読めないときは、そのまま（サーバー側でも確かめている）
+      }
+    })();
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, currentDriverId, mechanicName]);
+
+  // 通知を必要な人だけに届けるため、この端末を使っている人（運転者・整備士・管理者）を、通知の登録に伝える
   useEffect(() => {
     if (!loaded) return;
     const t = setTimeout(() => syncPushIdentity({ driverId: currentDriverId, mechanic: mechanicName, isAdmin }), 1500);
@@ -434,6 +480,14 @@ export default function FleetApp() {
   }
 
   function handleSelectDriver(driver: Driver) {
+    if (pins.drivers.includes(driver.id)) {
+      setPinAsk({ kind: 'driver', id: driver.id, label: `${driver.lastName} ${driver.firstName}`, onOk: () => finishDriverLogin(driver) });
+      return;
+    }
+    finishDriverLogin(driver);
+  }
+  function finishDriverLogin(driver: Driver) {
+    setPinAsk(null);
     setCurrentDriverId(driver.id);
     setShowDriverLogin(false);
     setDriverLoginNotice(null);
@@ -449,6 +503,14 @@ export default function FleetApp() {
   }
 
   function handleSelectMechanic(name: string) {
+    if (pins.mechanics.includes(name)) {
+      setPinAsk({ kind: 'mechanic', id: name, label: name, onOk: () => finishMechanicLogin(name) });
+      return;
+    }
+    finishMechanicLogin(name);
+  }
+  function finishMechanicLogin(name: string) {
+    setPinAsk(null);
     setMechanicName(name);
     setShowMechanicLogin(false);
     try {
@@ -458,6 +520,7 @@ export default function FleetApp() {
     }
   }
   function handleMechanicLogout() {
+    fetch('/api/auth/pin?kind=mechanic', { method: 'DELETE' }).catch(() => undefined);
     setMechanicName(null);
     try {
       localStorage.removeItem(MECHANIC_SESSION_KEY);
@@ -467,6 +530,7 @@ export default function FleetApp() {
   }
 
   function handleDriverLogout() {
+    fetch('/api/auth/pin?kind=driver', { method: 'DELETE' }).catch(() => undefined);
     setCurrentDriverId(null);
     try {
       localStorage.removeItem(DRIVER_SESSION_KEY);
@@ -674,6 +738,10 @@ export default function FleetApp() {
             onRequestLogin={() => setShowAdminLogin(true)}
             onClearLogs={clearLogs}
             onRefresh={refreshData}
+            currentDriver={currentDriver}
+            mechanic={activeMechanic}
+            pins={pins}
+            onPinsChanged={loadPins}
           />
         )}
       </main>
@@ -736,6 +804,8 @@ export default function FleetApp() {
           }}
         />
       )}
+      {/* ログイン画面の上に重ねるので、いちばん後ろに置く */}
+      {pinAsk && <PinPrompt kind={pinAsk.kind} id={pinAsk.id} label={pinAsk.label} onOk={pinAsk.onOk} onClose={() => setPinAsk(null)} />}
     </div>
   );
 }

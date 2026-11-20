@@ -1,3 +1,4 @@
+import { setPinCookie } from '@/lib/pins';
 import { NextRequest, NextResponse } from 'next/server';
 import { loadData } from '@/lib/store';
 import { normName, readTicket } from '@/lib/sso';
@@ -14,5 +15,8 @@ export async function POST(req: NextRequest) {
   const key = normName(t.n);
   const hit = data.drivers.filter((d) => normName(`${d.lastName}${d.firstName}`) === key);
   if (hit.length !== 1) return NextResponse.json({ ok: false, site: t.site, division: t.division });
-  return NextResponse.json({ ok: true, driverId: hit[0].id, site: t.site, division: t.division });
+  // 現場管理アプリのログインを引き継いだ端末は、暗証番号を確認済みとして扱う
+  const res = NextResponse.json({ ok: true, driverId: hit[0].id, site: t.site, division: t.division });
+  setPinCookie(res, 'driver', hit[0].id);
+  return res;
 }

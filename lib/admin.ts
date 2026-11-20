@@ -7,6 +7,8 @@ export const ADMIN_SESSION_HOURS = 8;
 function secret(): Buffer {
   return crypto.createHash('sha256').update(`${process.env.ADMIN_PASSWORD || ''}:fleet-admin-salt:${process.env.SESSION_SECRET || ''}`).digest();
 }
+// ほかの署名（運転者・整備士の暗証番号）にも使う
+export const serverSecret = () => secret();
 const sign = (payload: string) => crypto.createHmac('sha256', secret()).update(payload).digest('base64url');
 const safeEq = (a: string, b: string) => {
   const x = Buffer.from(a);

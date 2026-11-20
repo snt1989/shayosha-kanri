@@ -1,3 +1,4 @@
+import { driverClaimOk, mechanicClaimOk } from '@/lib/mechanic-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { loadData, saveData } from '@/lib/store';
 import { pushLog } from '@/lib/log';
@@ -23,7 +24,7 @@ export const POST = withWriteLock(async function POST(req: NextRequest, { params
   if (!isRequestOpen(r)) return NextResponse.json({ success: false, message: '対応済の依頼には、修理予定日を決められません。' }, { status: 409 });
 
   const isAdminReq = isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value);
-  const isMechanic = Boolean(b.mechanic && data.masters.mechanics.includes(b.mechanic));
+  const isMechanic = await mechanicClaimOk(req, data.masters.mechanics, b.mechanic);
   if (!isAdminReq && !isMechanic) return NextResponse.json({ success: false, message: '修理予定日を決められるのは、整備士と管理者だけです。' }, { status: 403 });
   const actor = isAdminReq ? '管理者' : String(b.mechanic);
 

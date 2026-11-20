@@ -3,7 +3,7 @@ import { loadData, saveData } from '@/lib/store';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { pushLog } from '@/lib/log';
 import { kvDel, kvGet, kvSet } from '@/lib/kv';
-import { isAdminOrMechanic } from '@/lib/mechanic-auth';
+import { isAdminOrMechanicP } from '@/lib/mechanic-auth';
 import { withWriteLock } from '@/lib/lock';
 
 export const dynamic = 'force-dynamic';
@@ -22,7 +22,7 @@ type Stored = { image: string; savedAt: string };
 async function allowed(req: NextRequest) {
   if (isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value)) return true;
   const data = await loadData();
-  return isAdminOrMechanic(req, data.masters.mechanics);
+  return isAdminOrMechanicP(req, data.masters.mechanics);
 }
 
 async function persist(data: Awaited<ReturnType<typeof loadData>>) {

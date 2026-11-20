@@ -1,3 +1,4 @@
+import { driverClaimOk, mechanicClaimOk } from '@/lib/mechanic-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { loadData, saveData } from '@/lib/store';
 import { pushLog } from '@/lib/log';
@@ -22,8 +23,8 @@ export const POST = withWriteLock(async function POST(req: NextRequest, { params
     return NextResponse.json({ success: false, message: '対応済の依頼は削除できません。' }, { status: 409 });
   }
   const isAdminReq = isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value);
-  const isMechanic = Boolean(b.mechanic && data.masters.mechanics.includes(b.mechanic));
-  const isRequester = Boolean(b.driverId && r.driverId && b.driverId === r.driverId);
+  const isMechanic = await mechanicClaimOk(req, data.masters.mechanics, b.mechanic);
+  const isRequester = Boolean(b.driverId && r.driverId && b.driverId === r.driverId) && (await driverClaimOk(req, b.driverId));
   if (!isAdminReq && !isMechanic && !isRequester) {
     return NextResponse.json({ success: false, message: '依頼を出した本人・整備士・管理者だけが削除できます。' }, { status: 403 });
   }

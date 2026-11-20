@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { loadData } from '@/lib/store';
-import { isAdminOrMechanic } from '@/lib/mechanic-auth';
+import { isAdminOrMechanicP } from '@/lib/mechanic-auth';
 
 async function allowed(req: NextRequest) {
   if (isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value)) return true;
   const data = await loadData();
-  return isAdminOrMechanic(req, data.masters.mechanics);
+  return isAdminOrMechanicP(req, data.masters.mechanics);
 }
 
 export const dynamic = 'force-dynamic';

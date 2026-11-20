@@ -1,3 +1,5 @@
+import { PIN_DENY_MESSAGE } from '@/lib/pins';
+import { driverClaimOk, mechanicClaimOk } from '@/lib/mechanic-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { loadData, saveData } from '@/lib/store';
 import { MAINT_URGENCIES, Report } from '@/lib/types';
@@ -32,6 +34,7 @@ export const POST = withWriteLock(async function POST(req: NextRequest) {
   if (!v) return NextResponse.json({ success: false, message: '車両が見つかりません。' }, { status: 404 });
   const d = data.drivers.find((x) => x.id === b.driverId);
   if (!d) return NextResponse.json({ success: false, message: '運転者としてログインしてください。' }, { status: 401 });
+  if (!(await driverClaimOk(req, d.id))) return NextResponse.json({ success: false, message: PIN_DENY_MESSAGE, pin: true }, { status: 401 });
 
   const r: Report = {
     id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),

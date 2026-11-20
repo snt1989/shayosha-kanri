@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { loadData } from '@/lib/store';
-import { mechanicNameOf } from '@/lib/mechanic-auth';
+import { mechanicClaimOk, mechanicNameOf } from '@/lib/mechanic-auth';
 import { kvGet, kvSet } from '@/lib/kv';
 import { MECH_NOTICES_KEY, MechNotice } from '@/lib/mech-notices';
 import { withWriteLock } from '@/lib/lock';
@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 export const POST = withWriteLock(async function POST(req: NextRequest) {
   const data = await loadData();
   const name = mechanicNameOf(req);
-  if (!name || !data.masters.mechanics.includes(name)) {
+  if (!(await mechanicClaimOk(req, data.masters.mechanics, name))) {
     return NextResponse.json({ success: false, message: '既読にできるのは、整備士としてログインしている人だけです。' }, { status: 401 });
   }
   const b = await req.json().catch(() => ({}));
