@@ -236,3 +236,4 @@ CDN から読み込み、**ブラウザ内だけで**画像からテキストを
 - 上段は、公式・公開の情報へのリンク（都道府県警の公開取締り情報・オービスの案内は Google 検索、近くのオービスは Google マップ検索、道路交通情報は JARTIC）。アプリ自身はオービス・取締りのデータを持たない。
 - 下段は、社内で共有する注意地点（`fleet:traffic-spots:v1`。最大300件。バックアップに入る）。登録は運転者・整備士・管理者、削除は本人か管理者。
 - 岩手県の情報は `lib/traffic-iwate.ts`（岩手県警察「速度取締り指針」令和8年9月版を読み取ってまとめたもの＋オービスの参考地点）と `components/IwateTrafficPanel.tsx`。**指針は半年ごと（3月・9月）に更新されるので、新しい版が出たら `traffic-iwate.ts` を書き直す**（出典：https://www.pref.iwate.jp/kenkei/kotsu/anzen/3000502.html ）。
+- 「交通・取締り」のマップ：`components/TrafficMap.tsx`（Leaflet＋国土地理院の地図。`next/dynamic` で ssr:false）。地名→位置は `/api/geocode`（国土地理院の住所検索をサーバーから引き、`fleet:geo:v1` に保存して使い回す。岩手県の地名だけ）。規制・交通情報は `components/IwateRoadInfo.tsx`（`IWATE_CLOSURES` は季節ごとに見直す。`IWATE_LIVE_LINKS` は公式ページへのリンク）。

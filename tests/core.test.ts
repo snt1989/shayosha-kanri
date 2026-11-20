@@ -335,3 +335,22 @@ describe('岩手県の取締り情報', () => {
     expect(iw.IWATE_ORBIS.filter((o: { fixed: boolean }) => o.fixed).length).toBe(7);
   });
 });
+
+describe('取締り情報のマップ・規制', () => {
+  test('地図用の地名がそろっている。地名の問い合わせは岩手県だけ受け付ける', async () => {
+    const iw = await import(`${ROOT}/lib/traffic-iwate`);
+    const withGeo = iw.IWATE_UNITS.flatMap((u: { routes: { geo?: string[] }[] }) => u.routes).filter((r: { geo?: string[] }) => r.geo?.length);
+    expect(withGeo.length).toBe(32);
+    expect(iw.IWATE_CLOSURES.length).toBe(3);
+    expect(iw.IWATE_LIVE_LINKS.flatMap((g: { items: unknown[] }) => g.items).length).toBe(7);
+    expect(iw.orbisGeo(iw.IWATE_ORBIS[0])).toBe('紫波郡矢巾町広宮沢');
+    const kv = await import(`${ROOT}/lib/kv`);
+    await kv.kvSet('fleet:geo:v1', { '岩手県盛岡市高松': [39.73, 141.15] });
+    const route = await import(`${ROOT}/app/api/geocode/route`);
+    const res = await route.POST(new NextRequest('http://localhost/api/geocode', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ q: ['岩手県盛岡市高松', '東京都千代田区', 123] }) }));
+    const j = await res.json();
+    expect(j.geo).toEqual({ '岩手県盛岡市高松': [39.73, 141.15] });
+    expect(j.pending).toBe(0);
+    await kv.kvDel('fleet:geo:v1');
+  });
+});

@@ -10,7 +10,7 @@ export const TAB_META: Record<TabKey, { label: string; icon: string; admin?: boo
   rental: { label: 'レンタカー', icon: '🚗' },
   calendar: { label: 'カレンダー', icon: '📅' },
   cards: { label: 'カード貸出', icon: '💳' },
-  traffic: { label: '取締り情報', icon: '🚓' },
+  traffic: { label: '交通・取締り', icon: '🚦' },
   maintenance: { label: '整備台帳', icon: '🔧' },
   vehicles: { label: '車両台帳', icon: '🚘' },
   help: { label: '使い方', icon: '❓' },

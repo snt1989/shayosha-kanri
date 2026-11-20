@@ -3,6 +3,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Driver } from '@/lib/types';
 import IwateTrafficPanel from './IwateTrafficPanel';
+import IwateRoadInfo from './IwateRoadInfo';
+import dynamic from 'next/dynamic';
+
+// 地図は、ブラウザの中だけで動かす（サーバーでは描かない）
+const TrafficMap = dynamic(() => import('./TrafficMap'), { ssr: false, loading: () => <div className="tm-map tm-loading">地図を読み込んでいます…</div> });
+
+type Section = 'map' | 'road' | 'enf' | 'spots';
+const SECTIONS: { key: Section; label: string }[] = [
+  { key: 'map', label: '🗺 マップ' },
+  { key: 'road', label: '🚧 規制・交通情報' },
+  { key: 'enf', label: '🚓 取締り・オービス' },
+  { key: 'spots', label: '📍 社内の注意地点' },
+];
 import { PREFECTURES, SPOT_KINDS, SpotKind, TrafficSpot, spotKind, spotMapUrl, trafficLinks } from '@/lib/traffic';
 
 const PREF_KEY = 'fleet:traffic:pref';
@@ -11,6 +24,7 @@ const empty = { kind: 'orbis' as SpotKind, name: '', road: '', limit: '', note: 
 // 「取締り・オービス」のページ。公式・公開の情報へのリンクと、社内で共有する注意地点の一覧。
 export default function TrafficTab({ currentDriver, mechanic, isAdmin, onRequestDriverLogin }: { currentDriver: Driver | null; mechanic: string | null; isAdmin: boolean; onRequestDriverLogin: () => void }) {
   const [pref, setPref] = useState('岩手県');
+  const [section, setSection] = useState<Section>('map');
   const [spots, setSpots] = useState<TrafficSpot[] | null>(null);
   const [filter, setFilter] = useState<SpotKind | ''>('');
   const [query, setQuery] = useState('');
@@ -88,7 +102,7 @@ export default function TrafficTab({ currentDriver, mechanic, isAdmin, onRequest
     <div>
       <div className="card" style={{ marginBottom: 14 }}>
         <h3 className="card-title" style={{ marginBottom: 4 }}>
-          🚓 取締り・オービス情報
+          🚦 交通情報（規制・取締り・オービス）
         </h3>
         <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 10 }}>
           安全運転のための情報です。出発の前に確かめてください。<strong>運転中は、スマホを操作しないでください。</strong>
@@ -103,11 +117,33 @@ export default function TrafficTab({ currentDriver, mechanic, isAdmin, onRequest
             ))}
           </select>
         </label>
-        {pref === '岩手県' && <div style={{ fontSize: 12.5, color: 'var(--slate-600)' }}>岩手県は、下に、取締りの重点路線とオービスの場所をまとめてあります（外のページを開かなくても読めます）。</div>}
+        <div className="subtabbar tr-tabs" role="tablist" aria-label="見る内容">
+          {SECTIONS.map((t) => (
+            <button key={t.key} type="button" role="tab" aria-selected={section === t.key} className={`subtab ${section === t.key ? 'active' : ''}`} onClick={() => setSection(t.key)}>
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {pref === '岩手県' && <IwateTrafficPanel />}
+      {section === 'map' && (
+        <div className="card" style={{ marginBottom: 14 }}>
+          <h3 className="card-title" style={{ marginBottom: 8 }}>
+            🗺 取締り・規制のマップ{pref !== '岩手県' && <span className="pill pill-slate" style={{ marginLeft: 8 }}>岩手県のみ</span>}
+          </h3>
+          <TrafficMap spots={spots || []} />
+        </div>
+      )}
 
+      {section === 'road' && pref === '岩手県' && <IwateRoadInfo />}
+      {section === 'enf' && pref === '岩手県' && <IwateTrafficPanel />}
+      {(section === 'enf' || section === 'road') && pref !== '岩手県' && (
+        <div className="card" style={{ marginBottom: 14 }}>
+          <div className="empty-state">{pref}の情報は、ページの中にはまとめていません（いまは岩手県だけです）。下のボタンから、公式・公開の情報を開いてください。</div>
+        </div>
+      )}
+
+      {(section === 'enf' || (section === 'road' && pref !== '岩手県')) && (
       <div className="card" style={{ marginBottom: 14 }}>
         <h3 className="card-title" style={{ marginBottom: 8 }}>
           🔗 公式・公開の情報を開く（{pref}）
@@ -132,7 +168,9 @@ export default function TrafficTab({ currentDriver, mechanic, isAdmin, onRequest
           ※ 上のボタンは、外のサイト（検索・地図）を別の画面で開きます。このアプリは、オービスの位置や取締りの予定のデータを持っていません。取締りは、公表されていない場所・時間でも行われます。
         </div>
       </div>
+      )}
 
+      {section === 'spots' && (
       <div className="card">
         <div className="toolbar2">
           <div>
@@ -270,6 +308,7 @@ export default function TrafficTab({ currentDriver, mechanic, isAdmin, onRequest
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
