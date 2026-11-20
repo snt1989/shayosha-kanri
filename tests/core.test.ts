@@ -191,3 +191,10 @@ describe('バッテリーの情報', () => {
     expect((await store.loadData()).vehicles[0].battery).toBeUndefined();
   });
 });
+
+describe('タイヤの品番', () => {
+  test('表示に品番が入る', () => {
+    expect(utils.tireInfoText({ maker: 'ブリヂストン', model: 'BLIZZAK VRX3', size: '195/65R15', dot: '2324' })).toBe('ブリヂストン BLIZZAK VRX3 / 195/65R15 / ' + utils.dotText('2324'));
+    expect(utils.tireInfoText({ model: 'NEWNO' })).toBe('NEWNO');
+  });
+});

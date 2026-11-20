@@ -167,7 +167,7 @@ export function normalizeTireSize(s: string | undefined): string {
 export function tireInfoText(t: TireInfo): string {
   const d = dotText(t.dot);
   const y = d || (t.year ? `${t.year.replace('-', '年')}${t.year.includes('-') ? '月' : '年'}製` : '');
-  return [t.maker, t.size, y].filter(Boolean).join(' / ');
+  return [[t.maker, t.model].filter(Boolean).join(' '), t.size, y].filter(Boolean).join(' / ');
 }
 
 // 整備士としてログイン中の名前（車検証の画像・AI読み取りの権限確認に使う）

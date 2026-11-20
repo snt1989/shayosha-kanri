@@ -1,5 +1,6 @@
 'use client';
 
+import { BatteryFields, TIRE_DOT_MESSAGE, TireFields, cleanTires } from './VehicleInfoFields';
 import PhotoField, { PhotoThumbs } from './PhotoField';
 import VehicleStickerModal from './VehicleStickerModal';
 import { MAX_VEHICLE_PHOTOS } from '@/lib/photo-ids';
@@ -28,8 +29,6 @@ const emptyVehicle = (data: AppData): Vehicle => ({
 
 // タイヤのメーカーの入力候補（これ以外も入力できる）
 // よくあるサイズ（候補。ほかのサイズも自由に入力できる）
-const TIRE_SIZES = ['145/80R12 80/78N', '155/65R14', '165/65R14', '165/70R14', '175/65R15', '185/65R15', '195/65R15', '195/60R16', '205/60R16', '195/80R15 107/105N', '195/70R15 106/104N', '215/60R17', '225/65R17', '205/55R16'];
-const TIRE_MAKERS = ['ブリヂストン', 'ヨコハマ', 'ダンロップ', 'トーヨー', 'ミシュラン', 'グッドイヤー', 'ピレリ', 'ファルケン', 'コンチネンタル', 'ハンコック', 'クムホ', 'ナンカン'];
 
 type EditTab = 'basic' | 'tire' | 'battery' | 'photo' | 'shaken';
 type CardTab = 'main' | 'tire' | 'battery';
@@ -40,7 +39,6 @@ const EDIT_TABS: { key: EditTab; label: string }[] = [
   { key: 'photo', label: '📷 写真' },
   { key: 'shaken', label: '📄 車検証の情報' },
 ];
-const BATTERY_MAKERS = ['GSユアサ', 'パナソニック', '古河電池', 'エナジーウィズ', 'ボッシュ', 'ACデルコ', 'アトラス', '純正'];
 
 export default function VehiclesTab({
   data,
@@ -113,22 +111,15 @@ export default function VehiclesTab({
       alert('車両呼称とナンバープレートは必須です。');
       return;
     }
-    const sets = tireSetsOf(editing);
-    // DOT を入れたら、旧の「製造年」は消す（DOT のほうが正確）
-    const clean = (t: { maker?: string; size?: string; dot?: string; year?: string }) => {
-      const dot = normalizeDot(t.dot);
-      return { maker: (t.maker || '').trim(), size: normalizeTireSize(t.size), dot, year: dot ? '' : (t.year || '').trim() };
-    };
-    const sm = clean(sets.summer);
-    const wn = clean(sets.winter);
-    if ((sm.dot && !TIRE_DOT_RE.test(sm.dot)) || (wn.dot && !TIRE_DOT_RE.test(wn.dot))) {
+    const tires = cleanTires(editing);
+    if (!tires.ok) {
       setEditTab('tire');
-      alert('タイヤのDOTは、タイヤ側面の「DOT」の最後の4桁（週2桁＋年2桁。例：2324）で入れてください。週は01〜53です。');
+      alert(TIRE_DOT_MESSAGE);
       return;
     }
     setSaving(true);
     try {
-      await onSave({ ...editing, tireMaker: undefined, tireYear: undefined, tireSummer: sm, tireWinter: wn });
+      await onSave({ ...editing, tireMaker: undefined, tireYear: undefined, tireSummer: tires.tireSummer, tireWinter: tires.tireWinter });
       setEditing(null);
     } finally {
       setSaving(false);
@@ -389,10 +380,12 @@ export default function VehiclesTab({
                                   {x.ic} {x.label}
                                   {x.on && <span className="pill pill-sky">装着中</span>}
                                 </div>
-                                {x.info.maker || x.info.size || x.info.dot || x.info.year ? (
+                                {x.info.maker || x.info.model || x.info.size || x.info.dot || x.info.year ? (
                                   <dl className="vdl">
                                     <dt>メーカー</dt>
                                     <dd>{x.info.maker || '-'}</dd>
+                                    <dt>品番</dt>
+                                    <dd>{x.info.model || '-'}</dd>
                                     <dt>サイズ</dt>
                                     <dd>{x.info.size || '-'}</dd>
                                     <dt>製造</dt>
@@ -799,123 +792,12 @@ export default function VehiclesTab({
           )}
           {editTab === 'tire' && (
           <>
-          <div className="field">
-            <label>いま履いているタイヤ</label>
-            <div className="tire-pick" role="group" aria-label="いま履いているタイヤ">
-              {(data.masters.tireTypes.includes(editing.tire) || !editing.tire ? data.masters.tireTypes : [editing.tire, ...data.masters.tireTypes]).map((t) => {
-                const b = tireBadge(t);
-                const on = editing.tire === t;
-                return (
-                  <button key={t} type="button" className={`tire-pick-btn ${b.kind} ${on ? 'on' : ''}`} aria-pressed={on} onClick={() => setEditing({ ...editing, tire: t })}>
-                    <span className="tire-pick-ic" aria-hidden>{b.icon}</span>
-                    <span>{t}</span>
-                    {on && <span className="tire-pick-now">装着中</span>}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          {(['summer', 'winter'] as const).map((k) => {
-            const key = k === 'summer' ? 'tireSummer' : 'tireWinter';
-            const cur = tireSetsOf(editing)[k];
-            const set = (patch: { maker?: string; size?: string; dot?: string; year?: string }) => setEditing({ ...editing, tireMaker: undefined, tireYear: undefined, tireSummer: tireSetsOf(editing).summer, tireWinter: tireSetsOf(editing).winter, [key]: { ...cur, ...patch } });
-            const dotOk = cur.dot ? TIRE_DOT_RE.test(normalizeDot(cur.dot)) : true;
-            return (
-              <div className={`tire-set ${k}`} key={k}>
-                <div className="tire-set-title">{k === 'summer' ? '☀️ 夏タイヤ' : '❄️ 冬タイヤ（スタッドレス）'}<span>（すべて任意）</span></div>
-                <div className="tire-grid">
-                  <div className="field">
-                    <label>メーカー</label>
-                    <input list="tire-makers" value={cur.maker || ''} maxLength={30} placeholder="ブリヂストン" onChange={(e) => set({ maker: e.target.value })} />
-                  </div>
-                  <div className="field">
-                    <label>サイズ</label>
-                    <input list="tire-sizes" value={cur.size || ''} maxLength={24} placeholder="195/65R15 91H" onChange={(e) => set({ size: e.target.value })} />
-                  </div>
-                  <div className="field">
-                    <label>DOT（製造年週・4桁）</label>
-                    <input
-                      value={cur.dot || ''}
-                      maxLength={8}
-                      inputMode="numeric"
-                      placeholder="2324"
-                      onChange={(e) => set({ dot: e.target.value.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0)).replace(/[^0-9]/g, '') })}
-                    />
-                  </div>
-                  <div className="tire-dot-note" style={dotOk ? undefined : { color: 'var(--amber-600)' }}>
-                    {cur.dot
-                      ? dotOk
-                        ? `→ ${dotText(normalizeDot(cur.dot))}`
-                        : '週2桁＋年2桁で入れてください（例：2324）'
-                      : cur.year
-                        ? `いまの記録：${cur.year.replace('-', '年')}${cur.year.includes('-') ? '月' : '年'}製（DOTを入れると置き換わります）`
-                        : '例：2324 ＝ 2024年の23週'}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-          <datalist id="tire-sizes">
-            {TIRE_SIZES.map((m) => (
-              <option key={m} value={m} />
-            ))}
-          </datalist>
-          <datalist id="tire-makers">
-            {TIRE_MAKERS.map((m) => (
-              <option key={m} value={m} />
-            ))}
-          </datalist>
-          <div style={{ fontSize: 11, color: 'var(--slate-500)', margin: '-4px 0 12px' }}>「タイヤ種別」は、いま付けているほうです。DOTは、タイヤ側面の「DOT」刻印の最後の4桁です。</div>
-
+          <TireFields v={editing} tireTypes={data.masters.tireTypes} onChange={(patch) => setEditing({ ...editing, ...patch })} />
           </>
           )}
           {editTab === 'battery' && (
           <>
-          {(() => {
-            const bat = editing.battery || {};
-            const set = (patch: Partial<NonNullable<Vehicle['battery']>>) => setEditing({ ...editing, battery: { ...bat, ...patch } });
-            const age = batteryAge(bat.replacedAt);
-            return (
-              <>
-                <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 10 }}>すべて任意です。形式は、バッテリーの上面のラベルにあります（例：40B19L、Q-85）。</div>
-                <div className="field-row row2">
-                  <div className="field">
-                    <label>メーカー</label>
-                    <input list="battery-makers" value={bat.maker || ''} maxLength={30} placeholder="GSユアサ" onChange={(e) => set({ maker: e.target.value })} />
-                  </div>
-                  <div className="field">
-                    <label>形式</label>
-                    <input value={bat.model || ''} maxLength={30} placeholder="40B19L" onChange={(e) => set({ model: e.target.value })} />
-                  </div>
-                </div>
-                <div className="field-row row2">
-                  <div className="field">
-                    <label>交換した日</label>
-                    <input type="date" value={bat.replacedAt || ''} onChange={(e) => set({ replacedAt: e.target.value })} />
-                  </div>
-                  <div className="field">
-                    <label>交換したときの走行（km）</label>
-                    <input type="number" inputMode="numeric" placeholder="0" value={bat.replacedKm || ''} onChange={(e) => set({ replacedKm: Number(e.target.value) })} />
-                  </div>
-                </div>
-                {age && (
-                  <div className={`notice-box${age.level === 'ok' ? ' notice-ok' : ''}`} style={{ marginBottom: 12 }}>
-                    交換から {age.text} たっています。
-                    {age.level === 'due' ? '3年をこえています。交換の目安です。' : age.level === 'warn' ? '2年をこえています。そろそろ点検・交換を考える時期です。' : ''}
-                  </div>
-                )}
-                <div className="field">
-                  <label>メモ</label>
-                  <input value={bat.note || ''} maxLength={200} placeholder="例：アイドリングストップ車用。保証3年" onChange={(e) => set({ note: e.target.value })} />
-                </div>
-                <datalist id="battery-makers">
-                  {BATTERY_MAKERS.map((m) => (
-                    <option key={m} value={m} />
-                  ))}
-                </datalist>
-              </>
-            );
-          })()}
+          <BatteryFields battery={editing.battery} onChange={(battery) => setEditing({ ...editing, battery })} />
           </>
           )}
           {editTab === 'photo' && (

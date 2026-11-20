@@ -80,7 +80,7 @@ export const MAINT_URGENCIES = ['通常', '早めに', '至急（使用不可）
 
 // タイヤ1セット分の情報。size はタイヤサイズ（例 195/65R15 91H）。dot はタイヤ側面の DOT の最後の4桁（週2桁＋年2桁。例 2324 = 2024年の23週）。
 // year は（旧）製造年（2024 か 2024-05 の形）。DOT を入れていないものだけ、表示に使う
-export type TireInfo = { maker?: string; size?: string; dot?: string; year?: string };
+export type TireInfo = { maker?: string; model?: string; size?: string; dot?: string; year?: string }; // model は品番（商品名。例 BLIZZAK VRX3）
 
 // バッテリーの情報。model は形式（例 40B19L）。replacedAt は交換した日、replacedKm はそのときの走行距離。
 export type BatteryInfo = { maker?: string; model?: string; replacedAt?: string; replacedKm?: number; note?: string };

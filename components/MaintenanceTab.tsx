@@ -1,5 +1,6 @@
 'use client';
 
+import { BatteryFields, TIRE_DOT_MESSAGE, TireFields, cleanTires } from './VehicleInfoFields';
 import { useMemo, useState } from 'react';
 import { AppData, MAINT_PROGRESS, MAINT_URGENCIES, MaintProgress, MaintRecord, Report, Vehicle } from '@/lib/types';
 import { isRequestOpen, splitMaintTypes, maintTypesOf, urgencyLevel, urgencyPill, canEditMaintRequest, openMaintRequests, todayStr } from '@/lib/utils';
@@ -28,6 +29,9 @@ type Editing = {
   index: number | null; // null は新規追加
   rec: MaintRecord;
   requestId?: string; // 整備依頼への対応として登録するとき、その日報のid
+  // この整備と一緒に、車両台帳のタイヤ・バッテリーの情報も直すとき、その入力中の内容（開いた区画だけ）
+  vehTire?: Pick<Vehicle, 'tire' | 'tireSummer' | 'tireWinter' | 'tireMaker' | 'tireYear'>;
+  vehBattery?: NonNullable<Vehicle['battery']>;
 };
 
 // 経過の表示用（例：11/10 整備中 → 11/13 完了）
@@ -183,7 +187,8 @@ export default function MaintenanceTab({
   function changeVehicle(id: string) {
     if (!editing) return;
     const v = data.vehicles.find((x) => x.id === id);
-    setEditing({ ...editing, vehicleId: id, rec: { ...editing.rec, km: editing.rec.km || v?.odometer || 0 } });
+    // 車両を変えたら、入力しかけの車両情報（タイヤ・バッテリー）は、いったん閉じる（別の車両に書き込まないように）
+    setEditing({ ...editing, vehicleId: id, vehTire: undefined, vehBattery: undefined, rec: { ...editing.rec, km: editing.rec.km || v?.odometer || 0 } });
   }
 
   async function handleSubmit() {
@@ -222,6 +227,17 @@ export default function MaintenanceTab({
       return;
     }
     if (isOil && nextOil > 0) rec.nextOilKm = nextOil;
+    // 一緒に直す車両情報（タイヤ・バッテリー）。開いた区画だけを、車両台帳に反映する
+    const vehPatch: Partial<Vehicle> = {};
+    if (editing.vehTire) {
+      const tires = cleanTires(editing.vehTire);
+      if (!tires.ok) {
+        alert(TIRE_DOT_MESSAGE);
+        return;
+      }
+      Object.assign(vehPatch, { tire: editing.vehTire.tire, tireMaker: undefined, tireYear: undefined, tireSummer: tires.tireSummer, tireWinter: tires.tireWinter });
+    }
+    if (editing.vehBattery) vehPatch.battery = editing.vehBattery;
     const progress: MaintProgress = editing.rec.progress || 'done';
     rec.progress = progress;
     let linkId = editing.requestId || editing.rec.requestId;
@@ -268,7 +284,7 @@ export default function MaintenanceTab({
       }
       const newestOil = !v.maintHistory.some((m, i) => i !== editing.index && m.type.includes('オイル') && m.date > rec.date);
       const applyOil = isOil && nextOil > 0 && newestOil;
-      await onSave({ ...v, maintHistory: list, ...(applyOil ? { oilKm: nextOil } : {}) });
+      await onSave({ ...v, ...vehPatch, maintHistory: list, ...(applyOil ? { oilKm: nextOil } : {}) });
       // 依頼に結びついた記録は、進捗を依頼の状態にも反映する（対応待ち／経過観察中／対応済）
       const linked = linkId && !reopened ? data.reports.find((x) => x.id === linkId) : undefined;
       if (linked) {
@@ -683,6 +699,49 @@ export default function MaintenanceTab({
               </div>
             </div>
           )}
+          {(() => {
+            const veh = data.vehicles.find((x) => x.id === editing.vehicleId);
+            if (!veh) return null;
+            const types = maintTypesOf(editing.rec);
+            const hintTire = types.some((t) => t.includes('タイヤ'));
+            const hintBat = types.some((t) => t.includes('バッテリー'));
+            return (
+              <div className="veh-with">
+                <div className="veh-with-title">🚗 車両情報も一緒に登録する（任意）</div>
+                <div className="veh-with-note">タイヤやバッテリーを替えたときは、ここで入れると、保存のときに車両台帳（{veh.name}）にも反映されます。開かなければ、車両台帳は変わりません。</div>
+                <div className="veh-with-btns">
+                  <button
+                    type="button"
+                    className={`btn btn-sm ${editing.vehTire ? 'btn-primary' : ''}`}
+                    aria-expanded={Boolean(editing.vehTire)}
+                    onClick={() => setEditing({ ...editing, vehTire: editing.vehTire ? undefined : { tire: veh.tire, tireSummer: veh.tireSummer, tireWinter: veh.tireWinter, tireMaker: veh.tireMaker, tireYear: veh.tireYear } })}
+                  >
+                    🛞 タイヤの情報{editing.vehTire ? '（入力中・押すと取り消し）' : hintTire ? '（入力する）' : ''}
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn btn-sm ${editing.vehBattery ? 'btn-primary' : ''}`}
+                    aria-expanded={Boolean(editing.vehBattery)}
+                    onClick={() => setEditing({ ...editing, vehBattery: editing.vehBattery ? undefined : { ...(veh.battery || {}) } })}
+                  >
+                    🔋 バッテリーの情報{editing.vehBattery ? '（入力中・押すと取り消し）' : hintBat ? '（入力する）' : ''}
+                  </button>
+                </div>
+                {editing.vehTire && (
+                  <div className="veh-with-pane">
+                    <div className="section-heading">🛞 タイヤ</div>
+                    <TireFields v={editing.vehTire} tireTypes={data.masters.tireTypes} onChange={(patch) => setEditing({ ...editing, vehTire: { ...editing.vehTire!, ...patch } })} />
+                  </div>
+                )}
+                {editing.vehBattery && (
+                  <div className="veh-with-pane">
+                    <div className="section-heading">🔋 バッテリー</div>
+                    <BatteryFields battery={editing.vehBattery} fill={{ date: editing.rec.date, km: Number(editing.rec.km) || 0 }} onChange={(b) => setEditing({ ...editing, vehBattery: b })} />
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           <div className="field">
             <label>依頼内容</label>
             <textarea

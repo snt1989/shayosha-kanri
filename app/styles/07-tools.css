@@ -66,3 +66,10 @@
   .vedit-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .vedit-tabs .subtab { flex: none; }
 }
+
+/* 整備記録の登録：車両情報（タイヤ・バッテリー）も一緒に */
+.veh-with { border: 1px dashed var(--slate-300); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; background: var(--slate-50); }
+.veh-with-title { font-weight: 800; font-size: 13px; }
+.veh-with-note { font-size: 11.5px; color: var(--slate-500); margin: 2px 0 8px; }
+.veh-with-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.veh-with-pane { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--slate-200); }
