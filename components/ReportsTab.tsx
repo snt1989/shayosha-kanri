@@ -1,6 +1,8 @@
 'use client';
 
 import ReportArchive from './ReportArchive';
+import AlcoholRecordBook from './AlcoholRecordBook';
+import { editSummary } from '@/lib/report-edit';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppData, Driver, MAINT_URGENCIES, Report, Vehicle } from '@/lib/types';
 import { jpDate } from '@/lib/schedule-text';
@@ -126,6 +128,7 @@ export default function ReportsTab({
   onRequestLogin: () => void;
 }) {
   const [query, setQuery] = useState('');
+  const [showBook, setShowBook] = useState(false);
   const [archivedTotal, setArchivedTotal] = useState(0); // 保管へ移した日報の件数（日報番号を、ずらさないため）
   const [editing, setEditing] = useState<Report | null>(null);
   // 帰着登録（出庫中の日報に帰着情報だけを入れる操作）のとき true。出発登録の入力欄は表示しない。
@@ -342,6 +345,9 @@ export default function ReportsTab({
             <button className="btn btn-sm" onClick={exportCsv}>
               ⬇ CSV出力
             </button>
+            <button className="btn btn-sm" onClick={() => setShowBook(true)}>
+              🍺 アルコールチェック記録簿
+            </button>
             <button className="btn btn-primary btn-sm" onClick={openNew}>
               ＋ 出発登録（運転前）
             </button>
@@ -426,6 +432,11 @@ export default function ReportsTab({
                     </td>
                     <td>
                       {r.postDone ? <span className="pill pill-green">帰着済</span> : <span className="pill pill-amber">出庫中</span>}
+                      {r.editLog?.length ? (
+                        <span className="pill pill-slate cell-sub-pill" title={r.editLog.map(editSummary).join('\n')}>
+                          ✏️ 修正あり（{r.editLog.length}）
+                        </span>
+                      ) : null}
                       {r.maintRequest && (
                         <span
                           className={`pill ${r.maintRequestWatch ? 'pill-sky' : r.maintRequestDone ? 'pill-green' : urgencyPill(r.maintRequestUrgency)} cell-sub-pill`}
@@ -459,6 +470,7 @@ export default function ReportsTab({
         {lim.more}
       </div>
       <ReportArchive toCsv={reportsToCsv} onTotal={setArchivedTotal} />
+      {showBook && <AlcoholRecordBook data={data} onClose={() => setShowBook(false)} />}
 
       {editing && (
         <Modal

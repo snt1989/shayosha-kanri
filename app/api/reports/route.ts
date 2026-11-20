@@ -1,3 +1,4 @@
+import { appendEdit } from '@/lib/report-edit';
 import { driverClaimOk } from '@/lib/mechanic-auth';
 import { PIN_DENY_MESSAGE } from '@/lib/pins';
 import { NextRequest, NextResponse } from 'next/server';
@@ -65,6 +66,17 @@ export const POST = withWriteLock(async function POST(req: NextRequest) {
       );
     }
   }
+
+  // 番号と修正の履歴は、サーバーで持つ（端末から送られた値は使わない）。帰着済みの日報を直したら、何を変えたかを残す
+  if (existing) {
+    r.code = existing.code;
+    r.editLog = wasCompleted ? appendEdit(existing, r, isAdminReq ? '管理者' : editor ? `${editor.lastName} ${editor.firstName}` : '利用者') : existing.editLog;
+  } else {
+    delete r.code;
+    delete r.editLog;
+  }
+  if (!r.code) delete r.code;
+  if (!r.editLog) delete r.editLog;
 
   if (idx >= 0) {
     data.reports[idx] = r;

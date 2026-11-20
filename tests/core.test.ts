@@ -104,3 +104,31 @@ describe('通知の送り先', () => {
     expect(push.cleanWho({ admin: true }, true).admin).toBe(true);
   });
 });
+
+describe('確定済みの日報の修正の履歴', () => {
+  test('変えた項目だけが残り、端末から送った履歴・番号は使われない', async () => {
+    const store = await import(`${ROOT}/lib/store`);
+    const route = await import(`${ROOT}/app/api/reports/route`);
+    const d = await store.loadData();
+    const drv = d.drivers[0];
+    const base = { id: 'edit-1', date: '2026-11-19', dept: '', driverId: drv.id, driverLast: drv.lastName, driverFirst: drv.firstName, driver: `${drv.lastName} ${drv.firstName}`, vehicleId: '', vehicleName: 'テスト車', plate: '', destination: 'A', purpose: '', preTime: '08:00', preAlcohol: '0.00', preChecker: 'X', tireOk: true, brakeOk: true, postDone: true, postTime: '17:00', postAlcohol: '0.00', postChecker: 'X', startKm: 10, endKm: 20, tripKm: 10, notes: '' };
+    const post = (body: unknown, cookie = '') => route.POST(new NextRequest('http://localhost/api/reports', { method: 'POST', headers: { 'content-type': 'application/json', 'x-driver-id': drv.id, ...(cookie ? { cookie } : {}) }, body: JSON.stringify(body) }));
+    expect((await post({ ...base, editLog: [{ at: 'x', by: 'fake', changes: [] }], code: 'R-999' })).status).toBe(200);
+    let r = (await store.loadData()).reports.find((x: { id: string }) => x.id === 'edit-1');
+    expect(r.editLog).toBeUndefined();
+    expect(r.code).toBeUndefined();
+    // 本人が、帰着済みの日報のアルコールの値を直す
+    expect((await post({ ...base, postAlcohol: '0.15', destination: 'B' })).status).toBe(200);
+    r = (await store.loadData()).reports.find((x: { id: string }) => x.id === 'edit-1');
+    expect(r.editLog.length).toBe(1);
+    expect(r.editLog[0].by).toBe(`${drv.lastName} ${drv.firstName}`);
+    expect(r.editLog[0].changes.map((c: { label: string }) => c.label).sort()).toEqual(['行先', '運転後のアルコール'].sort());
+    // 何も変えずに保存しても、増えない。管理者の修正は「管理者」と残る
+    await post({ ...base, postAlcohol: '0.15', destination: 'B' });
+    await post({ ...base, postAlcohol: '0.00', destination: 'B', editLog: [] }, `${admin.ADMIN_COOKIE}=${admin.adminSessionToken()}`);
+    r = (await store.loadData()).reports.find((x: { id: string }) => x.id === 'edit-1');
+    expect(r.editLog.length).toBe(2);
+    expect(r.editLog[1].by).toBe('管理者');
+    expect(r.editLog[1].changes).toEqual([{ label: '運転後のアルコール', from: '0.15', to: '0.00' }]);
+  });
+});

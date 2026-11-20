@@ -24,6 +24,9 @@ export type MaintRecord = {
   progressLog?: { at: string; progress: MaintProgress; by?: string }[]; // 進捗が変わるたびに残す経過（整備中→完了など）
 };
 
+// 確定済みの日報を直したときの記録（いつ・だれが・何を）
+export type ReportEdit = { at: string; by: string; changes: { label: string; from: string; to: string }[] };
+
 export type Report = {
   id: string;
   date: string;
@@ -69,6 +72,7 @@ export type Report = {
   maintRequestWatchAt?: string;
   // ダッシュボードから直接出した整備依頼（運転の記録ではない）。日報の一覧・集計・CSVには出さない
   maintOnly?: boolean;
+  editLog?: ReportEdit[]; // 帰着済みにしたあとの修正の履歴（サーバーが付ける。最新20件）
   code?: string; // 日報番号（R-101 など）。古い日報を保管へ移すときに、番号がずれないよう、残る日報にも書き込む。無いものは画面で数える
 };
 
