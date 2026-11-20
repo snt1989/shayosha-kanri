@@ -31,7 +31,7 @@ const emptyVehicle = (data: AppData): Vehicle => ({
 // よくあるサイズ（候補。ほかのサイズも自由に入力できる）
 
 type EditTab = 'basic' | 'tire' | 'battery' | 'photo' | 'shaken';
-type CardTab = 'main' | 'tire' | 'battery';
+type CardTab = 'main' | 'tire' | 'battery' | 'shaken';
 const EDIT_TABS: { key: EditTab; label: string }[] = [
   { key: 'basic', label: '🚗 基本・点検' },
   { key: 'tire', label: '🛞 タイヤ' },
@@ -349,6 +349,9 @@ export default function VehiclesTab({
                             🔋 バッテリー
                             {age && age.level !== 'ok' && <span className={`vtab-dot ${age.level}`} aria-label={age.level === 'due' ? '交換の目安' : 'そろそろ交換'} />}
                           </button>
+                          <button type="button" role="tab" aria-selected={tab === 'shaken'} className={`vtab${tab === 'shaken' ? ' on' : ''}`} onClick={() => pick('shaken')}>
+                            📄 車検証
+                          </button>
                         </div>
                         {tab === 'main' && (
                           <div className="emeta">
@@ -447,6 +450,79 @@ export default function VehiclesTab({
                             )}
                           </div>
                         )}
+                        {tab === 'shaken' && (
+                          <div className="vpane">
+                            <div className="vrow">
+                              <dl className="vdl">
+                                <dt>車検満了日</dt>
+                                <dd>
+                                  {v.shakenDate || '-'} {shakenBadge(v)}
+                                </dd>
+                                <dt>登録番号</dt>
+                                <dd>{v.plate || '-'}</dd>
+                                <dt>車名</dt>
+                                <dd>{v.maker || '-'}</dd>
+                                <dt>型式</dt>
+                                <dd>{v.modelType || '-'}</dd>
+                                <dt>車台番号</dt>
+                                <dd>{v.chassisNo || '-'}</dd>
+                                <dt>初度登録年月</dt>
+                                <dd>{v.firstRegistered ? v.firstRegistered.replace('-', '年') + '月' : '-'}</dd>
+                                <dt>燃料の種類</dt>
+                                <dd>{v.fuelType || '-'}</dd>
+                                <dt>乗車定員</dt>
+                                <dd>{v.capacity || '-'}</dd>
+                                <dt>車両総重量</dt>
+                                <dd>{v.grossWeight || '-'}</dd>
+                                <dt>総排気量</dt>
+                                <dd>{v.displacement || '-'}</dd>
+                              </dl>
+                            </div>
+                            {!readOnly ? (
+                              <div className="vshaken-btns">
+                                {v.shakenFileAt && (
+                                  <button
+                                    className="btn btn-sm btn-primary"
+                                    onClick={() => {
+                                      setShakenMissing(false);
+                                      setViewKind('cert');
+                                      setViewShaken(v);
+                                    }}
+                                  >
+                                    📎 車検証を見る
+                                  </button>
+                                )}
+                                {v.recordFileAt && (
+                                  <button
+                                    className="btn btn-sm"
+                                    onClick={() => {
+                                      setShakenMissing(false);
+                                      setViewKind('record');
+                                      setViewShaken(v);
+                                    }}
+                                  >
+                                    📎 記録事項を見る
+                                  </button>
+                                )}
+                                <button
+                                  className="btn btn-sm"
+                                  onClick={() => {
+                                    setOcrPreload(undefined);
+                                    setOcrTarget(v);
+                                  }}
+                                >
+                                  📷 車検証を読み取る・画像を保存
+                                </button>
+                                <button className="btn btn-sm" onClick={() => openEdit(v, 'shaken')}>
+                                  ✏️ 車検証の情報を編集
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="vempty">車検証の画像は、管理者と整備士だけが見られます。</div>
+                            )}
+                            {!readOnly && !v.shakenFileAt && <div className="vempty">車検証の画像は、まだ保存されていません。</div>}
+                          </div>
+                        )}
                       </>
                     );
                   })()}
@@ -460,36 +536,6 @@ export default function VehiclesTab({
                           <button className="btn btn-sm btn-primary" onClick={() => openEdit(v)}>
                             ✏️ 編集
                           </button>
-                          <button className="btn btn-sm" onClick={() => {
-                            setOcrPreload(undefined);
-                            setOcrTarget(v);
-                          }}>
-                            📷 車検証
-                          </button>
-                          {v.shakenFileAt && (
-                            <button
-                              className="btn btn-sm"
-                              onClick={() => {
-                                setShakenMissing(false);
-                                setViewKind('cert');
-                                setViewShaken(v);
-                              }}
-                            >
-                              📎 車検証を見る
-                            </button>
-                          )}
-                          {v.recordFileAt && (
-                            <button
-                              className="btn btn-sm"
-                              onClick={() => {
-                                setShakenMissing(false);
-                                setViewKind('record');
-                                setViewShaken(v);
-                              }}
-                            >
-                              📎 記録事項を見る
-                            </button>
-                          )}
                         </>
                       )}
                       <button className="btn btn-sm" onClick={() => setViewing({ vehicleId: v.id, kind: 'maint' })}>
