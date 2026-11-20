@@ -1,5 +1,6 @@
 'use client';
 
+import BackupPanel from './BackupPanel';
 import { useState } from 'react';
 import { AppData } from '@/lib/types';
 import { downloadCsv, downloadJson, logsToCsv } from '@/lib/csv';
@@ -48,12 +49,6 @@ export default function LogsTab({
 
   function exportLogsCsv() {
     downloadCsv(`操作ログ_${todayStr()}.csv`, logsToCsv(data.logs).replace(/^﻿/, ''));
-  }
-
-  function exportFullBackup() {
-    const { persistent, ...backup } = data;
-    void persistent;
-    downloadJson(`運行管理_全データバックアップ_${todayStr()}.json`, backup);
   }
 
   async function handleClear() {
@@ -151,9 +146,6 @@ export default function LogsTab({
             <button className="btn btn-sm" onClick={exportLogsCsv}>
               ⬇ ログCSV出力
             </button>
-            <button className="btn btn-sm" style={{ background: 'var(--sky-50, #f0f9ff)', borderColor: 'var(--sky-100, #bae6fd)', color: 'var(--sky-700)' }} onClick={exportFullBackup}>
-              📦 全データJSONバックアップ
-            </button>
             <button className="btn btn-sm btn-danger" onClick={handleClear} disabled={busy || data.logs.length === 0}>
               🗑 ログを消去
             </button>
@@ -164,7 +156,7 @@ export default function LogsTab({
           <div className="notice-box" style={{ marginBottom: 14 }}>
             現在このアプリのデータは永続化ストレージ（Upstash Redis）に接続されていません。
             サーバー再起動やデプロイでデータが消える可能性があるため、こまめに
-            「全データJSONバックアップ」で保存しておくことをおすすめします。
+            下の「いまの完全バックアップをダウンロード」で保存しておくことをおすすめします。
           </div>
         )}
 
@@ -201,6 +193,7 @@ export default function LogsTab({
           </div>
         )}
       </div>
+      <BackupPanel />
     </div>
   );
 }

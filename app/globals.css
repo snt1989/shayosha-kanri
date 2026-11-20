@@ -3182,3 +3182,8 @@ button.tire-now { cursor: pointer; }
 .tire-pick-btn.on.summer { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
 .tire-pick-btn.on.all { background: #d1fae5; border-color: #059669; color: #065f46; }
 .tire-pick-btn.on.unknown { background: var(--slate-100); border-color: var(--slate-500); }
+
+/* バックアップと復元 */
+.backup-list { display: grid; gap: 6px; }
+.backup-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--slate-200); border-radius: 10px; background: #fff; }
+.backup-confirm { margin-top: 12px; border-color: var(--red-600, #dc2626); }

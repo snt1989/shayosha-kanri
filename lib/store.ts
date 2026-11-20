@@ -153,3 +153,14 @@ export async function saveData(input: SaveInput): Promise<void> {
   }
   await writeLocal(data);
 }
+
+// バックアップの復元用：本体データを、そのまま書き込む（形の確認は呼び出し側で行う）
+export async function writeRawData(raw: Omit<AppData, 'persistent'>): Promise<void> {
+  if (hasUpstash()) {
+    const redis = await getRedis();
+    await redis.set(DATA_KEY, raw);
+    return;
+  }
+  await writeLocal(raw);
+}
+export const MAIN_DATA_KEY = DATA_KEY;
