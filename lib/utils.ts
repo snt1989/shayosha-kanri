@@ -201,3 +201,32 @@ export function tireBadge(tire?: string): { kind: TireKind; icon: string; short:
   if (k === 'all') return { kind: k, icon: '🌦️', short: '全', label: 'オールシーズン装着中' };
   return { kind: k, icon: '🛞', short: '?', label: tire ? `${tire}` : 'タイヤ種別 未設定' };
 }
+
+// バッテリー：交換からの経過。3年で「交換の目安」、2年で「そろそろ」（一般的な目安。使い方で変わる）
+export const BATTERY_WARN_MONTHS = 24;
+export const BATTERY_DUE_MONTHS = 36;
+export function batteryAge(replacedAt?: string, today = todayStr()): { months: number; text: string; level: 'ok' | 'warn' | 'due' } | null {
+  if (!replacedAt || !/^\d{4}-\d{2}-\d{2}$/.test(replacedAt) || replacedAt > today) return null;
+  let months = (Number(today.slice(0, 4)) - Number(replacedAt.slice(0, 4))) * 12 + (Number(today.slice(5, 7)) - Number(replacedAt.slice(5, 7)));
+  if (today.slice(8) < replacedAt.slice(8)) months -= 1;
+  months = Math.max(0, months);
+  const y = Math.floor(months / 12);
+  const m = months % 12;
+  const text = months === 0 ? '1か月未満' : `${y ? `${y}年` : ''}${m ? `${m}か月` : ''}`;
+  return { months, text, level: months >= BATTERY_DUE_MONTHS ? 'due' : months >= BATTERY_WARN_MONTHS ? 'warn' : 'ok' };
+}
+export function cleanBattery(b: unknown): { maker?: string; model?: string; replacedAt?: string; replacedKm?: number; note?: string } | undefined {
+  if (!b || typeof b !== 'object') return undefined;
+  const o = b as Record<string, unknown>;
+  const s = (v: unknown, n: number) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
+  const km = Math.round(Number(o.replacedKm));
+  const out = {
+    maker: s(o.maker, 30),
+    model: s(o.model, 30).replace(/[Ａ-Ｚａ-ｚ０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0)).toUpperCase(),
+    replacedAt: /^\d{4}-\d{2}-\d{2}$/.test(s(o.replacedAt, 10)) ? s(o.replacedAt, 10) : '',
+    replacedKm: Number.isFinite(km) && km > 0 && km < 10_000_000 ? km : 0,
+    note: s(o.note, 200),
+  };
+  if (!out.maker && !out.model && !out.replacedAt && !out.replacedKm && !out.note) return undefined;
+  return { ...(out.maker ? { maker: out.maker } : {}), ...(out.model ? { model: out.model } : {}), ...(out.replacedAt ? { replacedAt: out.replacedAt } : {}), ...(out.replacedKm ? { replacedKm: out.replacedKm } : {}), ...(out.note ? { note: out.note } : {}) };
+}

@@ -212,3 +212,8 @@ CDN から読み込み、**ブラウザ内だけで**画像からテキストを
 
 - **ダッシュボード**（`components/DashboardTab.tsx`、`DashSection.tsx`）: 役割（管理者・整備士・運転者）ごとに、区画のはじめの開け閉めを変える。開け閉めは localStorage `fleet:dash:sections:v1` に役割ごとに覚える。運転者には「○○さんの状況」を先頭に出す。
 - **CSS**: `app/globals.css` は入口だけ。中身は `app/styles/01-base.css` 〜 `07-tools.css` に、もとの順番のまま分けてある（ビルド後のCSSは分割前と同一）。順番は変えない。新しい指定は、当てはまるファイルの末尾に足す。
+
+## 車両台帳のタブ・バッテリー
+
+- 車両カード（`components/VehiclesTab.tsx`）は「概要／タイヤ／バッテリー」のタブ（`.vtabs`）。編集モーダルは「基本・点検／タイヤ／バッテリー／写真／車検証の情報」のタブ（`EDIT_TABS`）。
+- `Vehicle.battery`（`BatteryInfo`：maker・model・replacedAt・replacedKm・note）。保存時に `cleanBattery`（`lib/utils.ts`）で整える。経過は `batteryAge`（24か月で warn、36か月で due）。一覧表（`VehicleListTab`）に「バッテリー」列（はじめは非表示）。

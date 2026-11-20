@@ -7,7 +7,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useMobileLimit } from '@/lib/useLimit';
 import { AppData, Vehicle } from '@/lib/types';
 import { jpDate } from '@/lib/schedule-text';
-import { urgencyLevel, urgencyPill, daysUntil, genId, openMaintRequests, todayStr, tireSetsOf, tireInfoText, tireBadge, tireKind, dotText, TIRE_DOT_RE, normalizeDot, mechanicHeaders, mechanicQuery, normalizeTireSize } from '@/lib/utils';
+import { urgencyLevel, urgencyPill, daysUntil, genId, openMaintRequests, todayStr, tireSetsOf, tireInfoText, batteryAge, tireBadge, tireKind, dotText, TIRE_DOT_RE, normalizeDot, mechanicHeaders, mechanicQuery, normalizeTireSize } from '@/lib/utils';
 import { csvToVehicles, downloadCsv, vehiclesToCsv } from '@/lib/csv';
 import { normalizeAlertSettings } from '@/lib/alert-settings';
 import Modal from './Modal';
@@ -31,6 +31,17 @@ const emptyVehicle = (data: AppData): Vehicle => ({
 const TIRE_SIZES = ['145/80R12 80/78N', '155/65R14', '165/65R14', '165/70R14', '175/65R15', '185/65R15', '195/65R15', '195/60R16', '205/60R16', '195/80R15 107/105N', '195/70R15 106/104N', '215/60R17', '225/65R17', '205/55R16'];
 const TIRE_MAKERS = ['ブリヂストン', 'ヨコハマ', 'ダンロップ', 'トーヨー', 'ミシュラン', 'グッドイヤー', 'ピレリ', 'ファルケン', 'コンチネンタル', 'ハンコック', 'クムホ', 'ナンカン'];
 
+type EditTab = 'basic' | 'tire' | 'battery' | 'photo' | 'shaken';
+type CardTab = 'main' | 'tire' | 'battery';
+const EDIT_TABS: { key: EditTab; label: string }[] = [
+  { key: 'basic', label: '🚗 基本・点検' },
+  { key: 'tire', label: '🛞 タイヤ' },
+  { key: 'battery', label: '🔋 バッテリー' },
+  { key: 'photo', label: '📷 写真' },
+  { key: 'shaken', label: '📄 車検証の情報' },
+];
+const BATTERY_MAKERS = ['GSユアサ', 'パナソニック', '古河電池', 'エナジーウィズ', 'ボッシュ', 'ACデルコ', 'アトラス', '純正'];
+
 export default function VehiclesTab({
   data,
   onSave,
@@ -52,6 +63,9 @@ export default function VehiclesTab({
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<Vehicle | null>(null);
   const [saving, setSaving] = useState(false);
+  // 編集画面のタブ（基本・タイヤ・バッテリー・写真・車検証）と、カードごとの表示タブ（概要・タイヤ・バッテリー）
+  const [editTab, setEditTab] = useState<EditTab>('basic');
+  const [cardTab, setCardTab] = useState<Record<string, CardTab>>({});
   // QRコードステッカーの印刷画面（null＝閉じている。配列＝最初に選んでおく車両のid。空なら全車両）
   const [stickerIds, setStickerIds] = useState<string[] | null>(null);
   const [bulkRows, setBulkRows] = useState<Vehicle[] | null>(null);
@@ -84,15 +98,18 @@ export default function VehiclesTab({
   }, [data.vehicles, query]);
 
   function openNew() {
+    setEditTab('basic');
     setEditing(emptyVehicle(data));
   }
-  function openEdit(v: Vehicle) {
+  function openEdit(v: Vehicle, tab: EditTab = 'basic') {
+    setEditTab(tab);
     setEditing({ ...v, maintHistory: [...v.maintHistory] });
   }
 
   async function handleSubmit() {
     if (!editing) return;
     if (!editing.name || !editing.plate) {
+      setEditTab('basic');
       alert('車両呼称とナンバープレートは必須です。');
       return;
     }
@@ -105,6 +122,7 @@ export default function VehiclesTab({
     const sm = clean(sets.summer);
     const wn = clean(sets.winter);
     if ((sm.dot && !TIRE_DOT_RE.test(sm.dot)) || (wn.dot && !TIRE_DOT_RE.test(wn.dot))) {
+      setEditTab('tire');
       alert('タイヤのDOTは、タイヤ側面の「DOT」の最後の4桁（週2桁＋年2桁。例：2324）で入れてください。週は01〜53です。');
       return;
     }
@@ -319,41 +337,120 @@ export default function VehiclesTab({
                   {(() => {
                     const t = tireSetsOf(v);
                     const tk = tireKind(v.tire);
-                    const lines = [
-                      { ic: '☀️', label: '夏', info: tireInfoText(t.summer), on: tk === 'summer' || tk === 'all' },
-                      { ic: '❄️', label: '冬', info: tireInfoText(t.winter), on: tk === 'winter' || tk === 'all' },
-                    ].filter((x) => x.info);
-                    return lines.length ? (
-                      <div className="esub" style={{ marginBottom: 6 }}>
-                        {lines.map((x) => (
-                          <div key={x.label}>
-                            {x.ic} {x.label}タイヤ: {x.info}
-                            {x.on ? '（装着中）' : ''}
+                    const bat = v.battery;
+                    const age = batteryAge(bat?.replacedAt);
+                    const tab: CardTab = cardTab[v.id] || 'main';
+                    const pick = (k: CardTab) => setCardTab((cur) => ({ ...cur, [v.id]: k }));
+                    const tires = [
+                      { k: 'summer' as const, ic: '☀️', label: '夏タイヤ', info: t.summer, on: tk === 'summer' || tk === 'all' },
+                      { k: 'winter' as const, ic: '❄️', label: '冬タイヤ', info: t.winter, on: tk === 'winter' || tk === 'all' },
+                    ];
+                    return (
+                      <>
+                        <div className="vtabs" role="tablist" aria-label={`${v.name} の情報`}>
+                          <button type="button" role="tab" aria-selected={tab === 'main'} className={`vtab${tab === 'main' ? ' on' : ''}`} onClick={() => pick('main')}>
+                            概要
+                          </button>
+                          <button type="button" role="tab" aria-selected={tab === 'tire'} className={`vtab${tab === 'tire' ? ' on' : ''}`} onClick={() => pick('tire')}>
+                            🛞 タイヤ
+                          </button>
+                          <button type="button" role="tab" aria-selected={tab === 'battery'} className={`vtab${tab === 'battery' ? ' on' : ''}`} onClick={() => pick('battery')}>
+                            🔋 バッテリー
+                            {age && age.level !== 'ok' && <span className={`vtab-dot ${age.level}`} aria-label={age.level === 'due' ? '交換の目安' : 'そろそろ交換'} />}
+                          </button>
+                        </div>
+                        {tab === 'main' && (
+                          <div className="emeta">
+                            <div>
+                              <span className="k">残存整備距離</span>
+                              <span className="v">{remainOil.toLocaleString()} km</span>
+                            </div>
+                            <div>
+                              <span className="k">次回オイル交換目安</span>
+                              <span className="v">{v.oilKm.toLocaleString()} km</span>
+                            </div>
+                            <div>
+                              <span className="k">車検満了日</span>
+                              <span className="v">
+                                {v.shakenDate || '-'} {shakenBadge(v)}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="k">12ヶ月点検日</span>
+                              <span className="v">{v.checkDate || '-'}</span>
+                            </div>
                           </div>
-                        ))}
-                      </div>
-                    ) : null;
+                        )}
+                        {tab === 'tire' && (
+                          <div className="vpane">
+                            {tires.map((x) => (
+                              <div key={x.k} className={`vrow${x.on ? ' now' : ''}`}>
+                                <div className="vrow-head">
+                                  {x.ic} {x.label}
+                                  {x.on && <span className="pill pill-sky">装着中</span>}
+                                </div>
+                                {x.info.maker || x.info.size || x.info.dot || x.info.year ? (
+                                  <dl className="vdl">
+                                    <dt>メーカー</dt>
+                                    <dd>{x.info.maker || '-'}</dd>
+                                    <dt>サイズ</dt>
+                                    <dd>{x.info.size || '-'}</dd>
+                                    <dt>製造</dt>
+                                    <dd>{x.info.dot ? `${dotText(x.info.dot)}（DOT ${x.info.dot}）` : x.info.year ? `${x.info.year.replace('-', '年')}${x.info.year.includes('-') ? '月' : '年'}` : '-'}</dd>
+                                  </dl>
+                                ) : (
+                                  <div className="vempty">まだ入力されていません</div>
+                                )}
+                              </div>
+                            ))}
+                            {!readOnly && (
+                              <button className="btn btn-sm" onClick={() => openEdit(v, 'tire')}>
+                                ✏️ タイヤの情報を編集
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        {tab === 'battery' && (
+                          <div className="vpane">
+                            {bat ? (
+                              <div className="vrow">
+                                <dl className="vdl">
+                                  <dt>メーカー</dt>
+                                  <dd>{bat.maker || '-'}</dd>
+                                  <dt>形式</dt>
+                                  <dd>{bat.model || '-'}</dd>
+                                  <dt>交換日</dt>
+                                  <dd>
+                                    {bat.replacedAt || '-'}
+                                    {age && (
+                                      <span className={`pill ${age.level === 'due' ? 'pill-red' : age.level === 'warn' ? 'pill-amber' : 'pill-green'}`} style={{ marginLeft: 6 }}>
+                                        {age.text}経過{age.level === 'due' ? '・交換の目安' : age.level === 'warn' ? '・そろそろ' : ''}
+                                      </span>
+                                    )}
+                                  </dd>
+                                  <dt>交換時の走行</dt>
+                                  <dd>{bat.replacedKm ? `${bat.replacedKm.toLocaleString()} km（その後 ${Math.max(0, v.odometer - bat.replacedKm).toLocaleString()} km）` : '-'}</dd>
+                                  {bat.note && (
+                                    <>
+                                      <dt>メモ</dt>
+                                      <dd>{bat.note}</dd>
+                                    </>
+                                  )}
+                                </dl>
+                              </div>
+                            ) : (
+                              <div className="vempty">まだ入力されていません</div>
+                            )}
+                            {!readOnly && (
+                              <button className="btn btn-sm" onClick={() => openEdit(v, 'battery')}>
+                                ✏️ バッテリーの情報を編集
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    );
                   })()}
-                  <div className="emeta">
-                    <div>
-                      <span className="k">残存整備距離</span>
-                      <span className="v">{remainOil.toLocaleString()} km</span>
-                    </div>
-                    <div>
-                      <span className="k">次回オイル交換目安</span>
-                      <span className="v">{v.oilKm.toLocaleString()} km</span>
-                    </div>
-                    <div>
-                      <span className="k">車検満了日</span>
-                      <span className="v">
-                        {v.shakenDate || '-'} {shakenBadge(v)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="k">12ヶ月点検日</span>
-                      <span className="v">{v.checkDate || '-'}</span>
-                    </div>
-                  </div>
                   <div className="efoot">
                     <div className="eactions">
                       <button className="btn btn-sm" onClick={() => setStickerIds([v.id])}>
@@ -652,6 +749,15 @@ export default function VehiclesTab({
             </>
           }
         >
+          <div className="subtabbar vedit-tabs" role="tablist" aria-label="編集する項目">
+            {EDIT_TABS.map((t) => (
+              <button key={t.key} type="button" role="tab" aria-selected={editTab === t.key} className={`subtab ${editTab === t.key ? 'active' : ''}`} onClick={() => setEditTab(t.key)}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+          {editTab === 'basic' && (
+          <>
           <div className="section-heading">基本情報</div>
           <div className="field-row row2">
             <div className="field">
@@ -689,6 +795,10 @@ export default function VehiclesTab({
               <input type="number" inputMode="numeric" placeholder="0" value={editing.oilKm || ''} onChange={(e) => setEditing({ ...editing, oilKm: Number(e.target.value) })} />
             </div>
           </div>
+          </>
+          )}
+          {editTab === 'tire' && (
+          <>
           <div className="field">
             <label>いま履いているタイヤ</label>
             <div className="tire-pick" role="group" aria-label="いま履いているタイヤ">
@@ -757,9 +867,65 @@ export default function VehiclesTab({
           </datalist>
           <div style={{ fontSize: 11, color: 'var(--slate-500)', margin: '-4px 0 12px' }}>「タイヤ種別」は、いま付けているほうです。DOTは、タイヤ側面の「DOT」刻印の最後の4桁です。</div>
 
+          </>
+          )}
+          {editTab === 'battery' && (
+          <>
+          {(() => {
+            const bat = editing.battery || {};
+            const set = (patch: Partial<NonNullable<Vehicle['battery']>>) => setEditing({ ...editing, battery: { ...bat, ...patch } });
+            const age = batteryAge(bat.replacedAt);
+            return (
+              <>
+                <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 10 }}>すべて任意です。形式は、バッテリーの上面のラベルにあります（例：40B19L、Q-85）。</div>
+                <div className="field-row row2">
+                  <div className="field">
+                    <label>メーカー</label>
+                    <input list="battery-makers" value={bat.maker || ''} maxLength={30} placeholder="GSユアサ" onChange={(e) => set({ maker: e.target.value })} />
+                  </div>
+                  <div className="field">
+                    <label>形式</label>
+                    <input value={bat.model || ''} maxLength={30} placeholder="40B19L" onChange={(e) => set({ model: e.target.value })} />
+                  </div>
+                </div>
+                <div className="field-row row2">
+                  <div className="field">
+                    <label>交換した日</label>
+                    <input type="date" value={bat.replacedAt || ''} onChange={(e) => set({ replacedAt: e.target.value })} />
+                  </div>
+                  <div className="field">
+                    <label>交換したときの走行（km）</label>
+                    <input type="number" inputMode="numeric" placeholder="0" value={bat.replacedKm || ''} onChange={(e) => set({ replacedKm: Number(e.target.value) })} />
+                  </div>
+                </div>
+                {age && (
+                  <div className={`notice-box${age.level === 'ok' ? ' notice-ok' : ''}`} style={{ marginBottom: 12 }}>
+                    交換から {age.text} たっています。
+                    {age.level === 'due' ? '3年をこえています。交換の目安です。' : age.level === 'warn' ? '2年をこえています。そろそろ点検・交換を考える時期です。' : ''}
+                  </div>
+                )}
+                <div className="field">
+                  <label>メモ</label>
+                  <input value={bat.note || ''} maxLength={200} placeholder="例：アイドリングストップ車用。保証3年" onChange={(e) => set({ note: e.target.value })} />
+                </div>
+                <datalist id="battery-makers">
+                  {BATTERY_MAKERS.map((m) => (
+                    <option key={m} value={m} />
+                  ))}
+                </datalist>
+              </>
+            );
+          })()}
+          </>
+          )}
+          {editTab === 'photo' && (
+          <>
           <div className="section-heading">車両の写真</div>
           <PhotoField ids={editing.photos || []} max={MAX_VEHICLE_PHOTOS} label="写真（任意）" onChange={(photos) => setEditing({ ...editing, photos })} />
-
+          </>
+          )}
+          {editTab === 'shaken' && (
+          <>
           <div className="section-heading" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             車検証の情報
             <button type="button" className="btn btn-sm" onClick={() => setShowEditOcr(true)}>
@@ -800,6 +966,8 @@ export default function VehiclesTab({
               <input value={editing.displacement || ''} placeholder="例：2.76L" onChange={(e) => setEditing({ ...editing, displacement: e.target.value })} />
             </div>
           </div>
+          </>
+          )}
         </Modal>
       )}
 

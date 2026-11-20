@@ -82,6 +82,9 @@ export const MAINT_URGENCIES = ['通常', '早めに', '至急（使用不可）
 // year は（旧）製造年（2024 か 2024-05 の形）。DOT を入れていないものだけ、表示に使う
 export type TireInfo = { maker?: string; size?: string; dot?: string; year?: string };
 
+// バッテリーの情報。model は形式（例 40B19L）。replacedAt は交換した日、replacedKm はそのときの走行距離。
+export type BatteryInfo = { maker?: string; model?: string; replacedAt?: string; replacedKm?: number; note?: string };
+
 export type Vehicle = {
   id: string;
   name: string;
@@ -95,6 +98,7 @@ export type Vehicle = {
   photos?: string[]; // 車両の写真のid（最大6枚。小さく縮めて保存。本体は /api/photos/{id}）
   tireSummer?: TireInfo; // 夏タイヤのメーカー・製造年
   tireWinter?: TireInfo; // 冬タイヤ（スタッドレス）のメーカー・製造年
+  battery?: BatteryInfo; // バッテリー（メーカー・形式・交換日など）
   tireMaker?: string; // （旧）タイヤのメーカー。夏・冬に分ける前の項目。tireSetsOf で読む
   tireYear?: string; // （旧）タイヤの製造年
   maintHistory: MaintRecord[];

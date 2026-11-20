@@ -168,3 +168,26 @@ describe('写真の保存（Blob が無いときは、これまでどおり Redi
     expect((await up.POST(new NextRequest('http://localhost/api/photos', { method: 'POST', body: JSON.stringify({ image: 'data:image/png;base64,AAAA' }) }))).status).toBe(400);
   });
 });
+
+describe('バッテリーの情報', () => {
+  test('経過の計算と、目安', () => {
+    expect(utils.batteryAge('2026-11-20', '2026-11-20').text).toBe('1か月未満');
+    expect(utils.batteryAge('2024-11-21', '2026-11-20')).toEqual({ months: 23, text: '1年11か月', level: 'ok' });
+    expect(utils.batteryAge('2024-11-20', '2026-11-20').level).toBe('warn');
+    expect(utils.batteryAge('2023-05-01', '2026-11-20')).toEqual({ months: 42, text: '3年6か月', level: 'due' });
+    expect(utils.batteryAge('', '2026-11-20')).toBeNull();
+    expect(utils.batteryAge('2027-01-01', '2026-11-20')).toBeNull();
+  });
+  test('保存するのは決まった項目だけ。空なら持たない', async () => {
+    expect(utils.cleanBattery({})).toBeUndefined();
+    expect(utils.cleanBattery({ maker: ' GSユアサ ', model: '４０b１９l', replacedAt: '2025/1/1', replacedKm: -5, evil: 'x' })).toEqual({ maker: 'GSユアサ', model: '40B19L' });
+    const store = await import(`${ROOT}/lib/store`);
+    const route = await import(`${ROOT}/app/api/vehicles/route`);
+    const v = (await store.loadData()).vehicles[0];
+    const post = (body: unknown) => route.POST(new NextRequest('http://localhost/api/vehicles', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }));
+    await post({ ...v, battery: { maker: 'パナソニック', model: 'q-85', replacedAt: '2025-04-01', replacedKm: 30000, note: 'IS車用' } });
+    expect((await store.loadData()).vehicles[0].battery).toEqual({ maker: 'パナソニック', model: 'Q-85', replacedAt: '2025-04-01', replacedKm: 30000, note: 'IS車用' });
+    await post({ ...v, battery: { maker: '' } });
+    expect((await store.loadData()).vehicles[0].battery).toBeUndefined();
+  });
+});

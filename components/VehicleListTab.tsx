@@ -5,7 +5,7 @@ import { photoUrl } from '@/lib/image';
 import { AppData, Vehicle } from '@/lib/types';
 import { DEFAULT_ALERT_SETTINGS, normalizeAlertSettings } from '@/lib/alert-settings';
 import { downloadCsv, vehiclesToCsv } from '@/lib/csv';
-import { daysUntil, openMaintRequests, tireBadge, tireInfoText, tireKind, tireSetsOf, todayStr } from '@/lib/utils';
+import { daysUntil, openMaintRequests, tireBadge, tireInfoText, tireKind, tireSetsOf, todayStr, batteryAge } from '@/lib/utils';
 
 type SortKey = 'name' | 'shaken' | 'check' | 'oil' | 'odometer';
 type Filter = '' | 'shaken' | 'check' | 'oil' | 'request' | 'winter' | 'summer';
@@ -19,7 +19,7 @@ const SORTS: { key: SortKey; label: string }[] = [
 ];
 
 // 表に出す項目（「車両」の列は常に出す）。チェックで出し入れでき、選んだ内容はこの端末に残る
-type ColKey = 'photo' | 'model' | 'chassis' | 'shaken' | 'check' | 'odo' | 'oil' | 'tire' | 'req';
+type ColKey = 'photo' | 'model' | 'chassis' | 'shaken' | 'check' | 'odo' | 'oil' | 'tire' | 'battery' | 'req';
 const COLS: { key: ColKey; label: string; on: boolean }[] = [
   { key: 'photo', label: '写真', on: false },
   { key: 'model', label: '型式', on: true },
@@ -29,6 +29,7 @@ const COLS: { key: ColKey; label: string; on: boolean }[] = [
   { key: 'odo', label: '走行距離', on: true },
   { key: 'oil', label: 'オイル交換', on: true },
   { key: 'tire', label: 'タイヤ', on: true },
+  { key: 'battery', label: 'バッテリー', on: false },
   { key: 'req', label: '整備依頼', on: true },
 ];
 const COLS_KEY = 'fleet:vlist:cols';
@@ -216,6 +217,7 @@ export default function VehicleListTab({ data, onOpenLedger }: { data: AppData; 
                   {show('odo') && <th style={{ textAlign: 'right' }}>走行（km）</th>}
                   {show('oil') && <th style={{ textAlign: 'right' }}>オイル交換</th>}
                   {show('tire') && <th>タイヤ</th>}
+                  {show('battery') && <th>バッテリー</th>}
                   {show('req') && <th>整備依頼</th>}
                 </tr>
               </thead>
@@ -271,6 +273,25 @@ export default function VehicleListTab({ data, onOpenLedger }: { data: AppData; 
                     </td>
                     )}
                     {show('tire') && <td style={{ fontSize: 12 }}>{tireCell(v)}</td>}
+                    {show('battery') && (
+                      <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+                        {v.battery ? (
+                          <>
+                            {[v.battery.maker, v.battery.model].filter(Boolean).join(' ') || '-'}
+                            {(() => {
+                              const age = batteryAge(v.battery?.replacedAt);
+                              return age ? (
+                                <div>
+                                  {v.battery?.replacedAt} <span className={`pill ${age.level === 'due' ? 'pill-red' : age.level === 'warn' ? 'pill-amber' : 'pill-green'}`}>{age.text}</span>
+                                </div>
+                              ) : null;
+                            })()}
+                          </>
+                        ) : (
+                          <span style={{ color: 'var(--slate-400)' }}>-</span>
+                        )}
+                      </td>
+                    )}
                     {show('req') && <td>{req > 0 ? <span className="pill pill-red">{req}件</span> : <span style={{ color: 'var(--slate-400)' }}>-</span>}</td>}
                   </tr>
                 ))}
