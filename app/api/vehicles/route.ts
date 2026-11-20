@@ -48,10 +48,14 @@ export const POST = withWriteLock(async function POST(req: NextRequest) {
     const keepRec = data.vehicles[idx].recordFileAt;
     if (keepRec) v.recordFileAt = keepRec;
     else delete v.recordFileAt;
+    const keepEtc = data.vehicles[idx].etcFileAt;
+    if (keepEtc) v.etcFileAt = keepEtc;
+    else delete v.etcFileAt;
     data.vehicles[idx] = v;
   } else {
     delete v.shakenFileAt;
     delete v.recordFileAt;
+    delete v.etcFileAt;
     data.vehicles.push(v);
   }
 

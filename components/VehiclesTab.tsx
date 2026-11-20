@@ -1,5 +1,7 @@
 'use client';
 
+import { isPdfFile, readPdf } from '@/lib/pdf';
+import { uploadShakenImage } from '@/lib/image';
 import { BatteryFields, EtcFields, TIRE_DOT_MESSAGE, TireFields, cleanTires } from './VehicleInfoFields';
 import PhotoField, { PhotoThumbs } from './PhotoField';
 import VehicleStickerModal from './VehicleStickerModal';
@@ -41,6 +43,9 @@ const EDIT_TABS: { key: EditTab; label: string }[] = [
   { key: 'shaken', label: '📄 車検証の情報' },
 ];
 
+const DOC_LABEL = { cert: '車検証', record: '検査証記録事項', etc: 'ETC車載器セットアップ証明書' } as const;
+const docFileAt = (v: Vehicle, k: 'cert' | 'record' | 'etc') => (k === 'record' ? v.recordFileAt : k === 'etc' ? v.etcFileAt : v.shakenFileAt);
+
 export default function VehiclesTab({
   data,
   onSave,
@@ -78,7 +83,7 @@ export default function VehiclesTab({
   // 保存した車検証の画像を見る（管理者のみ）
   const [viewShaken, setViewShaken] = useState<Vehicle | null>(null);
   // 見ている画像の種類：車検証、または検査証記録事項
-  const [viewKind, setViewKind] = useState<'cert' | 'record'>('cert');
+  const [viewKind, setViewKind] = useState<'cert' | 'record' | 'etc'>('cert');
   const [shakenMissing, setShakenMissing] = useState(false);
   // 各車両の「整備記録」「運転記録」を一覧で見る画面
   const [viewing, setViewing] = useState<{ vehicleId: string; kind: 'maint' | 'drive' } | null>(null);
@@ -132,11 +137,38 @@ export default function VehiclesTab({
     await onDelete(id);
   }
 
+  const [etcBusy, setEtcBusy] = useState<string | null>(null);
+  // ETC車載器セットアップ証明書（写真またはPDF）を保存する。PDFは1ページ目を画像にして保存する
+  async function uploadEtcDoc(v: Vehicle, file: File | null) {
+    if (!file) return;
+    setEtcBusy(v.id);
+    try {
+      let dataUrl = '';
+      if (isPdfFile(file)) {
+        dataUrl = (await readPdf(file)).image;
+      } else {
+        dataUrl = await new Promise<string>((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(String(r.result));
+          r.onerror = () => reject(new Error('read'));
+          r.readAsDataURL(file);
+        });
+      }
+      const ok = await uploadShakenImage(v.id, dataUrl, 'etc');
+      if (!ok) alert('保存できませんでした。管理者・整備士のログインが切れていないか確認してください。');
+      await onRefresh?.();
+    } catch {
+      alert('ファイルを開けませんでした。写真（画像）かPDFをお試しください。');
+    } finally {
+      setEtcBusy(null);
+    }
+  }
+
   async function deleteShakenFile(v: Vehicle) {
-    const label = viewKind === 'record' ? '検査証記録事項' : '車検証';
+    const label = DOC_LABEL[viewKind];
     if (!confirm(`「${v.name}」の${label}の画像を削除しますか？（車両の登録内容は消えません）`)) return;
     try {
-      await fetch(`/api/vehicles/${encodeURIComponent(v.id)}/shaken${viewKind === 'record' ? '?kind=record' : ''}`, { method: 'DELETE', headers: mechanicHeaders() });
+      await fetch(`/api/vehicles/${encodeURIComponent(v.id)}/shaken${viewKind === 'cert' ? '' : `?kind=${viewKind}`}`, { method: 'DELETE', headers: mechanicHeaders() });
     } finally {
       setViewShaken(null);
       await onRefresh?.();
@@ -144,7 +176,7 @@ export default function VehiclesTab({
   }
 
   const shakenUrl = viewShaken
-    ? `/api/vehicles/${encodeURIComponent(viewShaken.id)}/shaken?${viewKind === 'record' ? 'kind=record&' : ''}${mechanicQuery() ? `mech=${mechanicQuery()}&` : ''}t=${encodeURIComponent((viewKind === 'record' ? viewShaken.recordFileAt : viewShaken.shakenFileAt) || '')}`
+    ? `/api/vehicles/${encodeURIComponent(viewShaken.id)}/shaken?${viewKind === 'cert' ? '' : `kind=${viewKind}&`}${mechanicQuery() ? `mech=${mechanicQuery()}&` : ''}t=${encodeURIComponent(docFileAt(viewShaken, viewKind) || '')}`
     : '';
 
   function shakenBadge(v: Vehicle) {
@@ -502,10 +534,40 @@ export default function VehiclesTab({
                             ) : (
                               <div className="vempty">まだ入力されていません</div>
                             )}
-                            {!readOnly && (
-                              <button className="btn btn-sm" onClick={() => openEdit(v, 'etc')}>
-                                ✏️ ETCの情報を編集
-                              </button>
+                            {!readOnly ? (
+                              <div className="vshaken-btns">
+                                {v.etcFileAt && (
+                                  <button
+                                    className="btn btn-sm btn-primary"
+                                    onClick={() => {
+                                      setShakenMissing(false);
+                                      setViewKind('etc');
+                                      setViewShaken(v);
+                                    }}
+                                  >
+                                    📎 セットアップ証明書を見る
+                                  </button>
+                                )}
+                                <label className="btn btn-sm" style={{ cursor: etcBusy === v.id ? 'wait' : 'pointer' }}>
+                                  {etcBusy === v.id ? '保存中…' : v.etcFileAt ? '📷 証明書を入れ替える' : '📷 セットアップ証明書を保存（写真・PDF）'}
+                                  <input
+                                    type="file"
+                                    accept="image/*,application/pdf,.pdf"
+                                    hidden
+                                    disabled={etcBusy === v.id}
+                                    onChange={(e) => {
+                                      const f = e.target.files?.[0] || null;
+                                      e.target.value = '';
+                                      void uploadEtcDoc(v, f);
+                                    }}
+                                  />
+                                </label>
+                                <button className="btn btn-sm" onClick={() => openEdit(v, 'etc')}>
+                                  ✏️ ETCの情報を編集
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="vempty">セットアップ証明書の画像は、管理者と整備士だけが見られます。</div>
                             )}
                           </div>
                         )}
@@ -766,11 +828,12 @@ export default function VehiclesTab({
 
       {viewShaken && (
         <Modal
-          title={`${viewKind === 'record' ? '検査証記録事項' : '車検証'}：${viewShaken.name}`}
+          title={`${DOC_LABEL[viewKind]}：${viewShaken.name}`}
           onClose={() => setViewShaken(null)}
           wide
           footer={
             <>
+              {viewKind !== 'etc' && (
               <button
                 className="btn btn-primary"
                 onClick={() => {
@@ -781,13 +844,14 @@ export default function VehiclesTab({
               >
                 🤖 この画像から読み取る
               </button>
+              )}
               <button className="btn btn-danger" onClick={() => deleteShakenFile(viewShaken)}>
                 画像を削除
               </button>
               <a
                 className="btn"
-                href={`/api/vehicles/${encodeURIComponent(viewShaken.id)}/shaken?${viewKind === 'record' ? 'kind=record&' : ''}${mechanicQuery() ? `mech=${mechanicQuery()}` : ''}`}
-                download={`${viewKind === 'record' ? '検査証記録事項' : '車検証'}_${viewShaken.plate || viewShaken.id}.jpg`}
+                href={`/api/vehicles/${encodeURIComponent(viewShaken.id)}/shaken?${viewKind === 'cert' ? '' : `kind=${viewKind}&`}${mechanicQuery() ? `mech=${mechanicQuery()}` : ''}`}
+                download={`${DOC_LABEL[viewKind]}_${viewShaken.plate || viewShaken.id}.jpg`}
               >
                 ⬇️ ダウンロード
               </a>
@@ -802,12 +866,12 @@ export default function VehiclesTab({
           ) : (
             <>
               <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 8 }}>
-                保存日時：{new Date((viewKind === 'record' ? viewShaken.recordFileAt : viewShaken.shakenFileAt) || '').toLocaleString('ja-JP')}　※ 管理者と整備士だけが見られます。写真をタップすると拡大します。
+                保存日時：{new Date(docFileAt(viewShaken, viewKind) || '').toLocaleString('ja-JP')}　※ 管理者と整備士だけが見られます。写真をタップすると拡大します。
               </div>
               <a href={shakenUrl} target="_blank" rel="noreferrer">
                 <img
                   src={shakenUrl}
-                  alt={viewKind === 'record' ? '保存した検査証記録事項' : '保存した車検証'}
+                  alt={`保存した${DOC_LABEL[viewKind]}`}
                   className="photo-preview"
                   onError={() => setShakenMissing(true)}
                 />

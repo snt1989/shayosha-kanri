@@ -32,10 +32,10 @@ export function compressToJpeg(dataUrl: string, maxEdge = 1600, maxChars = 700_0
 }
 
 // 車検証の画像をサーバーに保存する（管理者・整備士）。成功したら true。
-export async function uploadShakenImage(vehicleId: string, dataUrl: string, kind: 'cert' | 'record' = 'cert'): Promise<boolean> {
+export async function uploadShakenImage(vehicleId: string, dataUrl: string, kind: 'cert' | 'record' | 'etc' = 'cert'): Promise<boolean> {
   try {
     const image = await compressToJpeg(dataUrl);
-    const res = await fetch(`/api/vehicles/${encodeURIComponent(vehicleId)}/shaken${kind === 'record' ? '?kind=record' : ''}`, {
+    const res = await fetch(`/api/vehicles/${encodeURIComponent(vehicleId)}/shaken${kind === 'cert' ? '' : `?kind=${kind}`}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...mechanicHeaders() },
       body: JSON.stringify({ image }),

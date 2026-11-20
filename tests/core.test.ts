@@ -419,3 +419,29 @@ describe('ETC', () => {
     expect(utils.etcExpiry('', '2026-11-20')).toBeNull();
   });
 });
+
+describe('ETC証明書の画像', () => {
+  test('保存・車両の更新後も印が残る・削除できる', async () => {
+    const store = await import(`${ROOT}/lib/store`);
+    const vroute = await import(`${ROOT}/app/api/vehicles/route`);
+    const sroute = await import(`${ROOT}/app/api/vehicles/[id]/shaken/route`);
+    const admin = await import(`${ROOT}/lib/admin`);
+    const cookie = `${admin.ADMIN_COOKIE}=${admin.adminSessionToken()}`;
+    const v = (await store.loadData()).vehicles[0];
+    const img = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
+    const send = (route: any, method: string, url: string, body?: unknown, withCookie = true) =>
+      route[method](new NextRequest(url, { method, headers: { 'content-type': 'application/json', ...(withCookie ? { cookie } : {}) }, body: body ? JSON.stringify(body) : undefined }), { params: Promise.resolve({ id: v.id }) });
+    expect((await send(sroute, 'POST', `http://localhost/api/vehicles/${v.id}/shaken?kind=etc`, { image: img }, false)).status).toBe(401);
+    expect((await send(sroute, 'POST', `http://localhost/api/vehicles/${v.id}/shaken?kind=etc`, { image: img })).status).toBe(200);
+    expect((await store.loadData()).vehicles[0].etcFileAt).toBeTruthy();
+    expect((await send(sroute, 'GET', `http://localhost/api/vehicles/${v.id}/shaken?kind=etc`)).status).toBe(200);
+    expect((await send(sroute, 'GET', `http://localhost/api/vehicles/${v.id}/shaken`)).status).toBe(404);
+    const cur = (await store.loadData()).vehicles[0];
+    const { etcFileAt: _drop, ...stale } = cur;
+    void _drop;
+    await vroute.POST(new NextRequest('http://localhost/api/vehicles', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...stale, note: '更新' }) }));
+    expect((await store.loadData()).vehicles[0].etcFileAt).toBeTruthy();
+    expect((await send(sroute, 'DELETE', `http://localhost/api/vehicles/${v.id}/shaken?kind=etc`)).status).toBe(200);
+    expect((await store.loadData()).vehicles[0].etcFileAt).toBeUndefined();
+  });
+});

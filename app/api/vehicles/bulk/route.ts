@@ -14,6 +14,7 @@ export const POST = withWriteLock(async function POST(req: NextRequest) {
   const data = await loadData();
   // 車検証の画像の印は、一括編集やCSV取込で消えないよう、今保存されているものを引き継ぐ
   const flags = new Map(data.vehicles.map((v) => [v.id, v.shakenFileAt]));
+  const etcFlags = new Map(data.vehicles.map((v) => [v.id, v.etcFileAt]));
   const recFlags = new Map(data.vehicles.map((v) => [v.id, v.recordFileAt]));
   // 写真は一括編集では触らない。いま保存されているものを引き継ぐ（CSV取込でも消えない）
   const photoMap = new Map(data.vehicles.map((v) => [v.id, v.photos]));
@@ -28,6 +29,9 @@ export const POST = withWriteLock(async function POST(req: NextRequest) {
     const keepRec = recFlags.get(v.id);
     if (keepRec) nv.recordFileAt = keepRec;
     else delete nv.recordFileAt;
+    const keepEtc = etcFlags.get(v.id);
+    if (keepEtc) nv.etcFileAt = keepEtc;
+    else delete nv.etcFileAt;
     return nv;
   });
   pushLog(data, {

@@ -23,6 +23,7 @@ export const DELETE = withWriteLock(async function DELETE(
   }
   if (target?.shakenFileAt) await kvDel(`fleet:shaken:v1:${id}`);
   if (target?.recordFileAt) await kvDel(`fleet:shaken:v1:${id}:record`);
+  if (target?.etcFileAt) await kvDel(`fleet:shaken:v1:${id}:etc`);
   for (const pid of target?.photos || []) await deletePhoto(pid);
   pushLog(data, {
     actor: isAdminReq ? 'admin' : 'user',

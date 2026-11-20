@@ -10,9 +10,14 @@ export const dynamic = 'force-dynamic';
 
 // 車検証には所有者・使用者・車台番号などが載っているため、保存・閲覧・削除は管理者のみ。
 // 画像は2種類：車検証（自動車検査証。kind=cert、既定）と、検査証記録事項（kind=record）
-const kindOf = (req: NextRequest): 'cert' | 'record' => (new URL(req.url).searchParams.get('kind') === 'record' ? 'record' : 'cert');
-const keyOf = (id: string, kind: 'cert' | 'record' = 'cert') => (kind === 'record' ? `fleet:shaken:v1:${id}:record` : `fleet:shaken:v1:${id}`);
-const LABEL = { cert: '車検証', record: '検査証記録事項' } as const;
+type Kind = 'cert' | 'record' | 'etc';
+const kindOf = (req: NextRequest): Kind => {
+  const k = new URL(req.url).searchParams.get('kind');
+  return k === 'record' || k === 'etc' ? k : 'cert';
+};
+const keyOf = (id: string, kind: Kind = 'cert') => (kind === 'cert' ? `fleet:shaken:v1:${id}` : `fleet:shaken:v1:${id}:${kind}`);
+const LABEL = { cert: '車検証', record: '検査証記録事項', etc: 'ETC車載器セットアップ証明書' } as const;
+const FLAG = { cert: 'shakenFileAt', record: 'recordFileAt', etc: 'etcFileAt' } as const;
 const PREFIX = 'data:image/jpeg;base64,';
 const MAX_CHARS = 900_000;
 
@@ -60,8 +65,7 @@ export const POST = withWriteLock(async function POST(req: NextRequest, { params
   const kind = kindOf(req);
   const savedAt = new Date().toISOString();
   await kvSet<Stored>(keyOf(id, kind), { image, savedAt });
-  if (kind === 'record') v.recordFileAt = savedAt;
-  else v.shakenFileAt = savedAt;
+  v[FLAG[kind]] = savedAt;
   pushLog(data, { actor: isAdminCookieValid(req.cookies.get(ADMIN_COOKIE)?.value) ? 'admin' : 'user', action: `${LABEL[kind]}の画像を保存`, target: v.name, detail: v.plate });
   await persist(data);
   return NextResponse.json({ success: true, savedAt });
@@ -75,8 +79,7 @@ export const DELETE = withWriteLock(async function DELETE(req: NextRequest, { pa
   const data = await loadData();
   const v = data.vehicles.find((x) => x.id === id);
   if (v) {
-    if (kind === 'record') delete v.recordFileAt;
-    else delete v.shakenFileAt;
+    delete v[FLAG[kind]];
     pushLog(data, { actor: 'admin', action: `${LABEL[kind]}の画像を削除`, target: v.name, detail: v.plate });
     await persist(data);
   }
