@@ -13,6 +13,9 @@ const SRC: Record<string, string> = {
   jmaw8: 'https://www.jma.go.jp/bosai/warning/data/r8/030000.json',
   jmaconst: 'https://www.jma.go.jp/bosai/warning/r8/const/warning.json',
   area: 'https://www.jma.go.jp/bosai/common/const/area.json',
+  mlit: 'https://www.road-info-prvs.mlit.go.jp/roadinfo/pc/',
+  jartic: 'https://www.jartic.or.jp/',
+  nexco: 'https://www.drivetraffic.jp/',
 };
 export async function GET(req: NextRequest) {
   const k = req.nextUrl.searchParams.get('raw') || '';
