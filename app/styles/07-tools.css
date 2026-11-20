@@ -73,3 +73,8 @@
 .veh-with-note { font-size: 11.5px; color: var(--slate-500); margin: 2px 0 8px; }
 .veh-with-btns { display: flex; gap: 8px; flex-wrap: wrap; }
 .veh-with-pane { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--slate-200); }
+
+/* 車両の備考 */
+.entity-card .emeta .vnote { grid-column: 1 / -1; }
+.entity-card .emeta .vnote .v { white-space: pre-wrap; overflow-wrap: anywhere; font-weight: 500; }
+.vq-note { margin-top: 8px; font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: 8px; padding: 6px 10px; }

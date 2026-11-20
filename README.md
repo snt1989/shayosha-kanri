@@ -218,3 +218,4 @@ CDN から読み込み、**ブラウザ内だけで**画像からテキストを
 - 車両カード（`components/VehiclesTab.tsx`）は「概要／タイヤ／バッテリー」のタブ（`.vtabs`）。編集モーダルは「基本・点検／タイヤ／バッテリー／写真／車検証の情報」のタブ（`EDIT_TABS`）。
 - `Vehicle.battery`（`BatteryInfo`：maker・model・replacedAt・replacedKm・note）。保存時に `cleanBattery`（`lib/utils.ts`）で整える。経過は `batteryAge`（24か月で warn、36か月で due）。一覧表（`VehicleListTab`）に「バッテリー」列（はじめは非表示）。
 - タイヤの品番は `TireInfo.model`。タイヤ・バッテリーの入力欄は `components/VehicleInfoFields.tsx`（`TireFields`・`BatteryFields`・`cleanTires`）にまとめ、車両台帳の編集画面と、整備記録の登録画面（`MaintenanceTab` の「車両情報も一緒に登録する」。開いた区画だけを車両に反映）の両方で使う。
+- 車両の備考は `Vehicle.note`（500文字まで。カードの概要・QRの車両画面・一覧表の「備考」列に出る）。

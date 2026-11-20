@@ -370,6 +370,12 @@ export default function VehiclesTab({
                               <span className="k">12ヶ月点検日</span>
                               <span className="v">{v.checkDate || '-'}</span>
                             </div>
+                            {v.note && (
+                              <div className="vnote">
+                                <span className="k">備考</span>
+                                <span className="v">{v.note}</span>
+                              </div>
+                            )}
                           </div>
                         )}
                         {tab === 'tire' && (
@@ -765,6 +771,18 @@ export default function VehiclesTab({
           <div className="field">
             <label>型式</label>
             <input value={editing.modelType} onChange={(e) => setEditing({ ...editing, modelType: e.target.value })} />
+          </div>
+
+          <div className="field">
+            <label>備考（任意）</label>
+            <textarea
+              rows={3}
+              maxLength={500}
+              style={{ resize: 'vertical', minHeight: 70, lineHeight: 1.5 }}
+              value={editing.note || ''}
+              placeholder="例：スペアキーは事務所の金庫。左後ろのドアに傷あり。ETC・ドラレコ付き"
+              onChange={(e) => setEditing({ ...editing, note: e.target.value })}
+            />
           </div>
 
           <div className="section-heading">点検・車検</div>

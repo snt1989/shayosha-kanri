@@ -98,6 +98,7 @@ export type Vehicle = {
   photos?: string[]; // 車両の写真のid（最大6枚。小さく縮めて保存。本体は /api/photos/{id}）
   tireSummer?: TireInfo; // 夏タイヤのメーカー・製造年
   tireWinter?: TireInfo; // 冬タイヤ（スタッドレス）のメーカー・製造年
+  note?: string; // 備考（自由に書けるメモ。鍵の置き場所・傷・装備など。500文字まで）
   battery?: BatteryInfo; // バッテリー（メーカー・形式・交換日など）
   tireMaker?: string; // （旧）タイヤのメーカー。夏・冬に分ける前の項目。tireSetsOf で読む
   tireYear?: string; // （旧）タイヤの製造年

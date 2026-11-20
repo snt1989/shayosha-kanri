@@ -54,6 +54,7 @@ export default function VehicleQuickModal({
           {oilLeft !== null && <span className={`pill ${oilLeft < 0 ? 'pill-red' : oilLeft <= 1000 ? 'pill-amber' : 'pill-slate'}`}>オイル {oilLeft < 0 ? `${(-oilLeft).toLocaleString()}km超過` : `残り${oilLeft.toLocaleString()}km`}</span>}
           {reqs.length > 0 && <span className="pill pill-red">整備依頼 {reqs.length}件</span>}
         </div>
+        {v.note && <div className="vq-note">📝 {v.note}</div>}
       </div>
       <div className="vq-actions">
         {trip ? (
