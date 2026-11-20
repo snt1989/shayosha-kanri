@@ -237,3 +237,4 @@ CDN から読み込み、**ブラウザ内だけで**画像からテキストを
 - 下段は、社内で共有する注意地点（`fleet:traffic-spots:v1`。最大300件。バックアップに入る）。登録は運転者・整備士・管理者、削除は本人か管理者。
 - 岩手県の情報は `lib/traffic-iwate.ts`（岩手県警察「速度取締り指針」令和8年9月版を読み取ってまとめたもの＋オービスの参考地点）と `components/IwateTrafficPanel.tsx`。**指針は半年ごと（3月・9月）に更新されるので、新しい版が出たら `traffic-iwate.ts` を書き直す**（出典：https://www.pref.iwate.jp/kenkei/kotsu/anzen/3000502.html ）。
 - 「交通・取締り」のマップ：`components/TrafficMap.tsx`（Leaflet＋国土地理院の地図。`next/dynamic` で ssr:false）。地名→位置は `/api/geocode`（国土地理院の住所検索をサーバーから引き、`fleet:geo:v1` に保存して使い回す。岩手県の地名だけ）。規制・交通情報は `components/IwateRoadInfo.tsx`（`IWATE_CLOSURES` は季節ごとに見直す。`IWATE_LIVE_LINKS` は公式ページへのリンク）。
+- マップの見た目：国土地理院の淡色地図（標準・写真に切替）、種類別のピン、`leaflet.markercluster` でまとめ表示（丸のふちを種類の色で塗り分け）、一覧（PCは横、スマホは開閉）、地域ボタン、全画面。

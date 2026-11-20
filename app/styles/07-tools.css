@@ -220,29 +220,65 @@
 
 /* 取締り情報：タブ・マップ・規制 */
 .tr-tabs { margin-top: 10px; }
-.tm-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
-.tm-chip { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 12.5px; font-weight: 700; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--slate-300); background: #fff; color: var(--slate-500); cursor: pointer; }
-.tm-chip.on { border-color: var(--c); color: var(--slate-800); background: color-mix(in srgb, var(--c) 10%, #fff); }
-.tm-chip b { font-size: 13px; }
-.tm-sw { width: 10px; height: 10px; border-radius: 50%; background: var(--c); opacity: 0.35; }
-.tm-chip.on .tm-sw { opacity: 1; }
-.tm-map { height: 460px; border-radius: 12px; border: 1px solid var(--slate-200); overflow: hidden; z-index: 0; background: #e5e7eb; }
+.tm-wrap { position: relative; }
+.tm-wrap.full { position: fixed; inset: 0; z-index: 1000; background: #fff; padding: 10px; display: flex; flex-direction: column; padding-top: max(10px, env(safe-area-inset-top)); }
+.tm-top { display: grid; gap: 8px; margin-bottom: 8px; }
+.tm-layers { display: flex; flex-wrap: wrap; gap: 6px; }
+.tm-chip { display: inline-flex; align-items: center; gap: 5px; font: inherit; font-size: 12.5px; font-weight: 700; padding: 5px 11px 5px 6px; border-radius: 999px; border: 2px solid var(--slate-200); background: #fff; color: var(--slate-400); cursor: pointer; }
+.tm-chip-ic { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; background: var(--slate-100); filter: grayscale(1); opacity: 0.6; }
+.tm-chip.on { border-color: var(--c); color: var(--slate-800); }
+.tm-chip.on .tm-chip-ic { background: var(--c); filter: none; opacity: 1; }
+.tm-chip b { font-size: 13px; color: var(--c); }
+.tm-chip:not(.on) b { color: var(--slate-400); }
+.tm-tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tm-seg { display: inline-flex; border: 1px solid var(--slate-300); border-radius: 8px; overflow: hidden; background: #fff; }
+.tm-seg button { font: inherit; font-size: 12.5px; font-weight: 700; padding: 6px 10px; border: 0; border-right: 1px solid var(--slate-200); background: #fff; color: var(--slate-700); cursor: pointer; white-space: nowrap; }
+.tm-seg button:last-child { border-right: 0; }
+.tm-seg button:hover { background: var(--slate-50); }
+.tm-seg button.on { background: #0f172a; color: #fff; }
+.tm-body { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.tm-body.with-list { grid-template-columns: minmax(0, 1fr) 300px; }
+.tm-wrap.full .tm-body { flex: 1; min-height: 0; }
+.tm-map { height: 560px; border-radius: 12px; border: 1px solid var(--slate-300); overflow: hidden; z-index: 0; background: #eef2f6; }
+.tm-wrap.full .tm-map { height: 100%; }
 .tm-loading { display: flex; align-items: center; justify-content: center; color: var(--slate-500); font-size: 13px; }
-.tm-pop { font-size: 12.5px; line-height: 1.5; }
+.tm-list { height: 560px; overflow: auto; border: 1px solid var(--slate-200); border-radius: 12px; background: #fff; }
+.tm-wrap.full .tm-list { height: 100%; }
+.tm-list-g { border-bottom: 1px solid var(--slate-100); }
+.tm-list-h { position: sticky; top: 0; z-index: 1; font-size: 12.5px; font-weight: 800; padding: 7px 10px; background: #fff; border-bottom: 2px solid var(--c); color: var(--slate-800); }
+.tm-li { display: grid; gap: 1px; width: 100%; text-align: left; font: inherit; padding: 7px 10px 7px 12px; border: 0; border-left: 4px solid var(--c); border-bottom: 1px solid var(--slate-100); background: #fff; cursor: pointer; }
+.tm-li:hover { background: var(--slate-50); }
+.tm-li strong { font-size: 13px; color: var(--slate-800); overflow-wrap: anywhere; }
+.tm-li small { font-size: 11.5px; color: var(--slate-500); overflow-wrap: anywhere; }
+/* 地図の印（しずく形のピン） */
+.tm-pin-wrap { background: none; border: 0; }
+.tm-pin { width: 34px; height: 34px; border-radius: 50% 50% 50% 0; background: var(--c); transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); }
+.tm-pin span { transform: rotate(45deg); font-size: 16px; line-height: 1; }
+.tm-cl { background: none; }
+.tm-cl span { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #0f172a; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); }
+.tm-cl b { width: 28px; height: 28px; border-radius: 50%; background: #fff; color: #0f172a; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
+.tm-pop { font-size: 12.5px; line-height: 1.55; }
 .tm-pop b { font-size: 13px; }
-.tm-sub { color: #64748b; font-size: 11.5px; }
-.tm-x, .tm-spot { display: flex; align-items: center; justify-content: center; font-size: 18px; background: #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35); }
-.tm-x { border: 2px solid #7c3aed; }
-.tm-spot { border: 2px solid #0369a1; }
+.tm-pop-h { display: block; width: fit-content; font-size: 11.5px; font-weight: 800; color: #fff; background: var(--c); border-radius: 6px; padding: 1px 8px; margin-bottom: 4px; }
+.tm-sub { color: #64748b; font-size: 11.5px; margin-top: 2px; }
+.leaflet-popup-content { margin: 10px 12px; }
+.leaflet-popup-content a { display: inline-block; margin-top: 4px; }
+@media (max-width: 900px) {
+  .tm-body.with-list { grid-template-columns: 1fr; }
+  .tm-list { height: auto; max-height: 340px; }
+  .tm-wrap.full .tm-body.with-list { grid-template-rows: 1fr 30%; }
+}
+@media (max-width: 640px) {
+  .tm-map { height: 420px; }
+  .tr-tabs { flex-wrap: nowrap; overflow-x: auto; }
+  .tr-tabs .subtab { flex: none; }
+  .tm-tools { gap: 5px; }
+  .tm-seg button { padding: 6px 8px; font-size: 12px; }
+  .tm-chip { font-size: 12px; }
+}
 .rd-closures { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
 .rd-closure { border: 1px solid #ddd6fe; border-left: 6px solid #7c3aed; background: #faf5ff; border-radius: 10px; padding: 9px 12px; display: grid; gap: 3px; }
 .rd-c-head { font-weight: 800; font-size: 14px; }
 .rd-c-sec { font-size: 12.5px; }
 .rd-c-period { font-size: 13px; font-weight: 700; color: #5b21b6; }
 .rd-c-note { font-size: 12px; color: var(--slate-600); }
-@media (max-width: 640px) {
-  .tm-map { height: 380px; }
-  .tr-tabs { flex-wrap: nowrap; overflow-x: auto; }
-  .tr-tabs .subtab { flex: none; }
-  .tm-bar .btn { margin-left: 0 !important; }
-}
