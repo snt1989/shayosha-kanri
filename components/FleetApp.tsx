@@ -2,6 +2,7 @@
 
 import { forgetPushAdmin, syncPushIdentity } from './usePush';
 import PinPrompt from './PinPrompt';
+import { OutboxItem, applyOutbox, enqueue, isNetworkError, loadDataCache, loadOutbox, saveDataCache, saveOutbox } from '@/lib/outbox';
 import type { PinInfo } from './PinSettings';
 import { useEffect, useRef, useState } from 'react';
 import { AppData, Driver, EmpIdRule, FuelLog, Masters, Rental, RentalTrip, Report, Reservation, Vehicle } from '@/lib/types';
@@ -55,6 +56,13 @@ export default function FleetApp() {
   const [error, setError] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
   const [isAdmin, setIsAdmin] = useState(false);
+  // 電波の悪い場所での入力：未送信の日報と、圏外で控えを表示しているか（その控えの日時）
+  const [outbox, setOutbox] = useState<OutboxItem[]>([]);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const [flushing, setFlushing] = useState(false);
+  const flushingRef = useRef(false);
+  const cachedAtRef = useRef<string | null>(null);
+  cachedAtRef.current = cachedAt;
   const [adminConfigured, setAdminConfigured] = useState(true);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [quickReportTrigger, setQuickReportTrigger] = useState<number | null>(null);
@@ -152,9 +160,18 @@ export default function FleetApp() {
     try {
       const d = await jsonFetch('/api/data');
       setData(d);
+      setCachedAt(null);
+      saveDataCache(d);
       setSyncStatus('idle');
     } catch (e) {
-      setError('データの読み込みに失敗しました。ページを再読み込みしてください。');
+      // 圏外などで読めないときは、前回読み込めた控えを表示する（出発・帰着の登録は、端末に保存して後で送る）
+      const cache = isNetworkError(e) ? loadDataCache() : null;
+      if (cache) {
+        setData(cache.data);
+        setCachedAt(cache.at);
+      } else {
+        setError('データの読み込みに失敗しました。ページを再読み込みしてください。');
+      }
       setSyncStatus('error');
     } finally {
       setLoading(false);
@@ -168,6 +185,8 @@ export default function FleetApp() {
     try {
       const d = await jsonFetch('/api/data');
       setData(d);
+      setCachedAt(null);
+      saveDataCache(d);
     } catch {
       // 表示中のデータはそのまま維持し、同期エラー表示のみ行う
       setSyncStatus('error');
@@ -201,9 +220,51 @@ export default function FleetApp() {
     try {
       return await withSync(() => jsonFetch('/api/reports', { method: 'POST', headers: { 'x-driver-id': currentDriver?.id || '' }, body: JSON.stringify(r) }));
     } catch (e) {
+      // 通信できなかったとき（圏外など）は、端末に保存して、電波が戻ったら送る。サーバーが断ったとき（入力の誤りなど）は、そのまま知らせる
+      if (isNetworkError(e)) {
+        const q = enqueue(loadOutbox(), r, currentDriver?.id || '');
+        if (saveOutbox(q.items)) {
+          setOutbox(q.items);
+          return { success: true, queued: true, id: q.report.id };
+        }
+        throw new Error('通信できず、端末にも保存できませんでした。電波の良い場所で、もう一度お試しください。');
+      }
       handleAdminApiError(e);
       throw e;
     }
+  }
+
+  // 未送信の日報を、古い順に送る。通信できなければ、そこで止めて次の機会を待つ。サーバーに断られたものは、理由を付けて残す。
+  async function flushOutbox() {
+    if (flushingRef.current) return;
+    let items = loadOutbox();
+    if (items.length === 0) return setOutbox([]);
+    flushingRef.current = true;
+    setFlushing(true);
+    let sent = 0;
+    try {
+      for (const it of [...items].sort((a, b) => a.at.localeCompare(b.at))) {
+        try {
+          await jsonFetch('/api/reports', { method: 'POST', headers: { 'x-driver-id': it.driverId }, body: JSON.stringify(it.report) });
+          items = loadOutbox().filter((x) => !(x.report.id === it.report.id && x.at === it.at));
+          sent++;
+        } catch (e) {
+          if (isNetworkError(e)) break;
+          items = loadOutbox().map((x) => (x.report.id === it.report.id && x.at === it.at ? { ...x, error: e instanceof Error ? e.message : '送信できませんでした。' } : x));
+        }
+        saveOutbox(items);
+        setOutbox(items);
+      }
+    } finally {
+      flushingRef.current = false;
+      setFlushing(false);
+    }
+    if (sent > 0) await refreshData();
+  }
+  function discardOutboxItem(id: string) {
+    const items = loadOutbox().filter((x) => x.report.id !== id);
+    saveOutbox(items);
+    setOutbox(items);
   }
   async function deleteReport(id: string) {
     try {
@@ -420,6 +481,25 @@ export default function FleetApp() {
   }, [pendingSite, data, currentDriverId]);
 
   const loaded = Boolean(data);
+  // 未送信の日報：起動したとき・電波が戻ったとき・30秒ごとに、送ってみる
+  useEffect(() => {
+    setOutbox(loadOutbox());
+    const go = () => {
+      flushOutbox();
+      if (cachedAtRef.current) refreshData();
+    };
+    window.addEventListener('online', go);
+    const t = setInterval(() => loadOutbox().length > 0 && flushOutbox(), 30000);
+    return () => {
+      window.removeEventListener('online', go);
+      clearInterval(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (loaded && !cachedAt) flushOutbox();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, cachedAt]);
   // 暗証番号：設定している人の一覧を読み、この端末が確認済みでない名前のログインは外す（あとから暗証番号が付いた場合など）
   useEffect(() => {
     if (!loaded) return;
@@ -570,7 +650,9 @@ export default function FleetApp() {
   // 整備士だけでログインしている（運転者も管理者もいない）ときは、整備に関係のあるページだけにする
   const mechanicOnly = Boolean(activeMechanic) && !currentDriver && !isAdmin;
   // 整備士だけのときは、帰着登録が済んでいない日報（運転中・出発のみ）は出さない
-  const viewData: AppData = mechanicOnly ? { ...data, reports: data.reports.filter((r) => r.postDone || r.maintOnly) } : data;
+  // 未送信の日報を重ねて表示する
+  const shown = applyOutbox(data, outbox);
+  const viewData: AppData = mechanicOnly ? { ...shown, reports: shown.reports.filter((r) => r.postDone || r.maintOnly) } : shown;
   const visibleTab: Tab = mechanicOnly && tab !== 'dashboard' && !MECHANIC_TABS.includes(tab as TabKey) ? 'dashboard' : tab;
 
   return (
@@ -608,6 +690,44 @@ export default function FleetApp() {
       </div>
 
       <main className="main">
+        {(cachedAt || outbox.length > 0) && (
+          <div className="outbox-banner" role="status">
+            {cachedAt && (
+              <div>
+                📡 <strong>通信できません。</strong>
+                {new Date(cachedAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })} に読み込んだ内容を表示しています。出発登録・帰着登録は、この端末に保存し、電波が戻ると自動で送ります（ほかの操作は、電波のある場所で行ってください）。
+              </div>
+            )}
+            {outbox.length > 0 && (
+              <div className="outbox-list">
+                <div className="outbox-head">
+                  <strong>📤 未送信の日報が {outbox.length}件あります</strong>
+                  <button className="btn btn-sm" onClick={flushOutbox} disabled={flushing}>
+                    {flushing ? '送信中…' : 'いま送信する'}
+                  </button>
+                </div>
+                {outbox.map((it) => (
+                  <div key={it.report.id} className={`outbox-item${it.error ? ' err' : ''}`}>
+                    <span style={{ flex: 1 }}>
+                      {it.report.date} {it.report.driver}（{it.report.vehicleName}）{it.report.postDone ? '帰着登録' : '出発登録'}
+                      {it.error ? `：送れませんでした（${it.error}）` : '：電波が戻ると送ります'}
+                    </span>
+                    {it.error && (
+                      <button
+                        className="btn btn-sm btn-danger"
+                        onClick={() => {
+                          if (confirm('この未送信の日報を、送らずに消します。よろしいですか？')) discardOutboxItem(it.report.id);
+                        }}
+                      >
+                        消す
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {visibleTab === 'dashboard' && (
           <DashboardTab
             data={viewData}

@@ -192,3 +192,10 @@ CDN から読み込み、**ブラウザ内だけで**画像からテキストを
 
 - `components/AlcoholRecordBook.tsx`: 運転日報のページから開く。月・運転者で絞り、印刷（A4横。`.print-sheet` を `@media print` で出す）とCSV出力。保管分（`/api/reports/archive`）も合わせて読む。
 - `lib/report-edit.ts`: 帰着済みの日報を直すと、サーバー（`/api/reports`）が `Report.editLog` に「いつ・だれが・どの項目を・何から何へ」を足す（最新20件）。端末から送られた `editLog`・`code` は使わない。
+
+## オフライン対応（出発登録・帰着登録）
+
+- `lib/outbox.ts`（端末側）: `/api/reports` への保存が通信エラーで失敗したら、localStorage `fleet:outbox:v1` に入れる（新規は端末で id を付けるので、送り直しても二重にならない）。
+  `components/FleetApp.tsx` が、起動時・`online` イベント・30秒ごとに古い順で送る。サーバーが断ったもの（4xx）は理由つきで残す。
+- 最後に読み込めた `/api/data` を `fleet:data:cache:v1` に控え（日報は未帰着＋新しい50件、写真・操作ログは除く）、圏外で開いたときに表示する。
+- `public/sw.js`（v4）: トップの画面を控えて、圏外のときに返す（無ければ `offline.html`）。`/api/` には触らない。

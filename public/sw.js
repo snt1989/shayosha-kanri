@@ -2,11 +2,12 @@
 //
 // 方針
 // - データ（/api/）には一切さわらない。入力した内容は必ずサーバーに保存し、常に最新を表示する。
-// - 画面は通信できるときは常にサーバーから取得し、圏外のときだけ「オフラインです」を出す。
+// - 画面は通信できるときは常にサーバーから取得する。圏外のときは、前回開いたときの画面（アプリの入れ物）を出す。
+//   それも無いときだけ「オフラインです」を出す。圏外での出発登録・帰着登録は、画面側が端末に保存して、後で送る（lib/outbox.ts）。
 // - 変更されない静的ファイル（/_next/static/ とアイコン）だけ端末に残して、起動を速くする。
 // 仕組みを変えたら VERSION を上げる（古い保存分は自動で消える）。
 
-const VERSION = 'v3';
+const VERSION = 'v4';
 const CACHE = `fleet-static-${VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -36,7 +37,18 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/api/')) return;
 
   if (req.mode === 'navigate') {
-    event.respondWith(fetch(req).catch(() => caches.match(OFFLINE_URL)));
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          // トップの画面だけ、圏外のときのために控える
+          if (res.ok && url.pathname === '/') {
+            const copy = res.clone();
+            caches.open(CACHE).then((cache) => cache.put('/', copy)).catch(() => undefined);
+          }
+          return res;
+        })
+        .catch(async () => (url.pathname === '/' ? await caches.match('/') : null) || caches.match(OFFLINE_URL))
+    );
     return;
   }
 

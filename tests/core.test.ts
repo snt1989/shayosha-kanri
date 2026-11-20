@@ -132,3 +132,21 @@ describe('確定済みの日報の修正の履歴', () => {
     expect(r.editLog[1].changes).toEqual([{ label: '運転後のアルコール', from: '0.15', to: '0.00' }]);
   });
 });
+
+describe('未送信の日報（オフライン）', () => {
+  test('新規には id を付け、同じ日報は置きかえ、表示に重ねる', async () => {
+    const ob = await import(`${ROOT}/lib/outbox`);
+    const mk = (id: string, extra = {}) => ({ id, date: '2026-11-20', driver: 'A', vehicleName: 'V', postDone: false, ...extra });
+    const a = ob.enqueue([], mk(''), 'd1', '2026-11-20T00:00:00Z');
+    expect(a.report.id.startsWith('r')).toBe(true);
+    const b = ob.enqueue(a.items, { ...a.report, postDone: true }, 'd1', '2026-11-20T01:00:00Z');
+    expect(b.items.length).toBe(1);
+    expect(b.items[0].report.postDone).toBe(true);
+    const c = ob.enqueue(b.items, mk('srv-1', { postDone: true }), 'd1');
+    const shown = ob.applyOutbox({ reports: [mk('srv-1'), mk('srv-2')] }, c.items);
+    expect(shown.reports.length).toBe(3);
+    expect(shown.reports.find((r: { id: string }) => r.id === 'srv-1').postDone).toBe(true);
+    expect(ob.isNetworkError(new TypeError('Failed to fetch'))).toBe(true);
+    expect(ob.isNetworkError(Object.assign(new Error('x'), { status: 409 }))).toBe(false);
+  });
+});
