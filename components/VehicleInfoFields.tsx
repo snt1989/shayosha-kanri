@@ -199,11 +199,21 @@ export function EtcFields({ etc, onChange }: { etc: EtcInfo | undefined; onChang
           <div className="field-row row2">
             <div className="field">
               <label>車載器の管理番号</label>
-              <input value={e.unitNo || ''} maxLength={30} placeholder="車載器本体のラベルの番号" onChange={(ev) => set({ unitNo: ev.target.value })} />
+              <input value={e.unitNo || ''} maxLength={30} placeholder="00002-00079518-000920" onChange={(ev) => set({ unitNo: ev.target.value })} />
             </div>
             <div className="field">
-              <label>取り付けた日</label>
+              <label>型式登録番号</label>
+              <input value={e.typeNo || ''} maxLength={20} placeholder="0500" onChange={(ev) => set({ typeNo: ev.target.value })} />
+            </div>
+          </div>
+          <div className="field-row row2">
+            <div className="field">
+              <label>セットアップ（取り付け）した日</label>
               <input type="date" value={e.installedAt || ''} onChange={(ev) => set({ installedAt: ev.target.value })} />
+            </div>
+            <div className="field">
+              <label>取扱店</label>
+              <input value={e.dealer || ''} maxLength={40} placeholder="スーパーオートバックス盛岡" onChange={(ev) => set({ dealer: ev.target.value })} />
             </div>
           </div>
           <div className="field-row row2">

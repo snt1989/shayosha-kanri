@@ -1,5 +1,6 @@
 'use client';
 
+import EtcDocReadModal from './EtcDocReadModal';
 import { isPdfFile, readPdf } from '@/lib/pdf';
 import { uploadShakenImage } from '@/lib/image';
 import { BatteryFields, EtcFields, TIRE_DOT_MESSAGE, TireFields, cleanTires } from './VehicleInfoFields';
@@ -138,6 +139,7 @@ export default function VehiclesTab({
   }
 
   const [etcBusy, setEtcBusy] = useState<string | null>(null);
+  const [etcRead, setEtcRead] = useState<Vehicle | null>(null);
   // ETC車載器セットアップ証明書（写真またはPDF）を保存する。PDFは1ページ目を画像にして保存する
   async function uploadEtcDoc(v: Vehicle, file: File | null) {
     if (!file) return;
@@ -157,6 +159,7 @@ export default function VehiclesTab({
       const ok = await uploadShakenImage(v.id, dataUrl, 'etc');
       if (!ok) alert('保存できませんでした。管理者・整備士のログインが切れていないか確認してください。');
       await onRefresh?.();
+      if (ok) setEtcRead(v);
     } catch {
       alert('ファイルを開けませんでした。写真（画像）かPDFをお試しください。');
     } finally {
@@ -508,8 +511,12 @@ export default function VehiclesTab({
                                       <dd>{[etc.maker, etc.model].filter(Boolean).join(' ') || '-'}</dd>
                                       <dt>管理番号</dt>
                                       <dd>{etc.unitNo || '-'}</dd>
-                                      <dt>取り付け日</dt>
+                                      <dt>型式登録番号</dt>
+                                      <dd>{etc.typeNo || '-'}</dd>
+                                      <dt>セットアップ日</dt>
                                       <dd>{etc.installedAt || '-'}</dd>
+                                      <dt>取扱店</dt>
+                                      <dd>{etc.dealer || '-'}</dd>
                                       <dt>ETCカード</dt>
                                       <dd>{etc.cardLabel || '-'}</dd>
                                       <dt>カードの期限</dt>
@@ -546,6 +553,11 @@ export default function VehiclesTab({
                                     }}
                                   >
                                     📎 セットアップ証明書を見る
+                                  </button>
+                                )}
+                                {v.etcFileAt && (
+                                  <button className="btn btn-sm btn-primary" onClick={() => setEtcRead(v)}>
+                                    🤖 証明書から読み取って登録
                                   </button>
                                 )}
                                 <label className="btn btn-sm" style={{ cursor: etcBusy === v.id ? 'wait' : 'pointer' }}>
@@ -833,6 +845,17 @@ export default function VehiclesTab({
           wide
           footer={
             <>
+              {viewKind === 'etc' && (
+                <button
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setEtcRead(viewShaken);
+                    setViewShaken(null);
+                  }}
+                >
+                  🤖 この証明書から読み取って登録
+                </button>
+              )}
               {viewKind !== 'etc' && (
               <button
                 className="btn btn-primary"
@@ -880,6 +903,7 @@ export default function VehiclesTab({
           )}
         </Modal>
       )}
+      {etcRead && <EtcDocReadModal vehicle={data.vehicles.find((x) => x.id === etcRead.id) || etcRead} onClose={() => setEtcRead(null)} onSave={async (nv) => { await onSave(nv); await onRefresh?.(); }} />}
       {showShakenOcr && <VehicleOcrModal data={data} onClose={() => setShowShakenOcr(false)} onSave={onSave} onFileSaved={onRefresh} />}
       {ocrTarget && (
         <VehicleOcrModal

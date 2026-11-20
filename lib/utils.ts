@@ -243,7 +243,7 @@ export function etcExpiry(expiry?: string, today = todayStr()): { text: string; 
   if (d <= 60) return { text: `あと${d}日`, level: 'warn' };
   return { text: '有効', level: 'ok' };
 }
-export function cleanEtc(e: unknown): { kind?: 'none' | 'etc' | 'etc2'; maker?: string; model?: string; unitNo?: string; installedAt?: string; cardLabel?: string; cardExpiry?: string; note?: string } | undefined {
+export function cleanEtc(e: unknown): { kind?: 'none' | 'etc' | 'etc2'; maker?: string; model?: string; typeNo?: string; dealer?: string; unitNo?: string; installedAt?: string; cardLabel?: string; cardExpiry?: string; note?: string } | undefined {
   if (!e || typeof e !== 'object') return undefined;
   const o = e as Record<string, unknown>;
   const s = (v: unknown, n: number) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
@@ -253,6 +253,8 @@ export function cleanEtc(e: unknown): { kind?: 'none' | 'etc' | 'etc2'; maker?: 
     kind,
     maker: s(o.maker, 30),
     model: half(s(o.model, 30)).toUpperCase(),
+    typeNo: half(s(o.typeNo, 20)),
+    dealer: s(o.dealer, 40),
     unitNo: half(s(o.unitNo, 30)),
     installedAt: /^\d{4}-\d{2}-\d{2}$/.test(s(o.installedAt, 10)) ? s(o.installedAt, 10) : '',
     cardLabel: s(o.cardLabel, 30),

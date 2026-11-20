@@ -33,6 +33,34 @@ const PROMPT = `これは日本の「自動車検査証（車検証）」また�
 }
 和暦は西暦に直してください（令和元年=2019年、平成元年=1989年）。所有者・使用者の氏名や住所など、上の項目以外は出力しないでください。`;
 
+const ETC_PROMPT = `これは日本の「ETC車載器セットアップ証明書」の画像です。次の項目を読み取り、JSONだけを出力してください（説明文やコードブロックは付けない）。読み取れない項目は空文字にしてください。推測で埋めないでください。
+{
+ "plate": "「1. 車両情報」の自動車登録番号又は車両番号。例: 盛岡 400 す 3834",
+ "unitNo": "「2. 車載器」の車載器管理番号。3つに分かれた数字を、ハイフンでつなぐ。例: 00002-00079518-000920",
+ "typeNo": "「2. 車載器」の型式登録番号。例: 0500",
+ "setupDate": "セットアップ完了の日付。西暦 YYYY-MM-DD",
+ "dealer": "取扱店の名前。例: スーパーオートバックス盛岡"
+}
+和暦は西暦に直してください（令和元年=2019年）。所有者・使用者の氏名や住所など、上の項目以外は出力しないでください。`;
+
+type EtcFields = { plate?: string; unitNo?: string; typeNo?: string; setupDate?: string; dealer?: string };
+
+function sanitizeEtc(o: Record<string, unknown>): EtcFields {
+  const out: EtcFields = {};
+  const plate = clean(o.plate, 30);
+  if (plate) out.plate = plate;
+  const unit = clean(o.unitNo, 40).replace(/[ー－―‐−]/g, '-').replace(/\s+/g, '');
+  if (/^\d{3,6}-\d{5,10}-\d{3,8}$/.test(unit)) out.unitNo = unit;
+  else if (/^\d{14,24}$/.test(unit)) out.unitNo = unit;
+  const typeNo = clean(o.typeNo, 10);
+  if (/^\d{3,6}$/.test(typeNo)) out.typeNo = typeNo;
+  const d = clean(o.setupDate, 12);
+  if (/^20\d{2}-\d{2}-\d{2}$/.test(d)) out.setupDate = d;
+  const dealer = clean(o.dealer, 40);
+  if (dealer) out.dealer = dealer;
+  return out;
+}
+
 type Fields = {
   plate?: string;
   modelType?: string;
@@ -109,7 +137,7 @@ export async function POST(req: NextRequest) {
             role: 'user',
             content: [
               { type: 'image', source: { type: 'base64', media_type: m[1], data: m[2] } },
-              { type: 'text', text: PROMPT },
+              { type: 'text', text: body?.kind === 'etc' ? ETC_PROMPT : PROMPT },
             ],
           },
         ],
@@ -132,5 +160,5 @@ export async function POST(req: NextRequest) {
   } catch {
     parsed = {};
   }
-  return NextResponse.json({ success: true, fields: sanitize(parsed) });
+  return NextResponse.json({ success: true, fields: body?.kind === 'etc' ? sanitizeEtc(parsed) : sanitize(parsed) });
 }

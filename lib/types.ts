@@ -92,7 +92,7 @@ export type TireInfo = { maker?: string; model?: string; size?: string; dot?: st
 export type BatteryInfo = { maker?: string; model?: string; replacedAt?: string; replacedKm?: number; note?: string };
 
 // ETC。kind：none＝付いていない／etc＝ETC／etc2＝ETC2.0。cardLabel はETCカードの識別（カード名や下4桁。全桁は入れない）。cardExpiry は有効期限（YYYY-MM）
-export type EtcInfo = { kind?: 'none' | 'etc' | 'etc2'; maker?: string; model?: string; unitNo?: string; installedAt?: string; cardLabel?: string; cardExpiry?: string; note?: string };
+export type EtcInfo = { kind?: 'none' | 'etc' | 'etc2'; maker?: string; model?: string; typeNo?: string; dealer?: string; unitNo?: string; installedAt?: string; cardLabel?: string; cardExpiry?: string; note?: string };
 export const ETC_KINDS: { key: NonNullable<EtcInfo['kind']>; label: string }[] = [
   { key: 'etc', label: 'ETC' },
   { key: 'etc2', label: 'ETC2.0' },
