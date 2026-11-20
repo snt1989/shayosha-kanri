@@ -65,6 +65,8 @@ export type Report = {
   maintRequestPhotos?: string[]; // 依頼に添付した写真のid（最大3枚）
   // 整備台帳で対応を記録すると true（対応待ち → 対応済）
   maintRequestDone?: boolean;
+  // 依頼の項目（整備種別）が複数あるとき、もう終わった項目。全部そろうと、依頼が対応済になる
+  maintRequestDoneTypes?: string[];
   maintRequestDoneAt?: string;
   maintRequestScheduledDate?: string; // 修理予定日（YYYY-MM-DD）。整備士・管理者が決めると、お知らせと通知が出る
   // 経過観察中（依頼は残したまま、様子を見ている状態）

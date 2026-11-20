@@ -1,5 +1,6 @@
 'use client';
 
+import ReqTypes from './ReqTypes';
 import { useState } from 'react';
 import { useMobileLimit } from '@/lib/useLimit';
 import { AppData, Driver, MAINT_URGENCIES, Report, Reservation, cardKindIcon } from '@/lib/types';
@@ -211,7 +212,7 @@ export default function DashboardTab({
                   <span>🔧</span>
                   <div style={{ flex: 1 }}>
                     <strong>{r.vehicleName}</strong>
-                    <span className="req-plate">{r.plate ? `（${r.plate}）` : ''}</span>— {r.maintRequestType || '整備'}
+                    <span className="req-plate">{r.plate ? `（${r.plate}）` : ''}</span>— <ReqTypes r={r} />
                     <span className={`pill ${urgencyPill(r.maintRequestUrgency)}`} style={{ marginLeft: 6 }}>
                         {r.maintRequestUrgency || MAINT_URGENCIES[0]}
                       </span>

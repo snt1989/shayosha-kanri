@@ -219,3 +219,8 @@ CDN から読み込み、**ブラウザ内だけで**画像からテキストを
 - `Vehicle.battery`（`BatteryInfo`：maker・model・replacedAt・replacedKm・note）。保存時に `cleanBattery`（`lib/utils.ts`）で整える。経過は `batteryAge`（24か月で warn、36か月で due）。一覧表（`VehicleListTab`）に「バッテリー」列（はじめは非表示）。
 - タイヤの品番は `TireInfo.model`。タイヤ・バッテリーの入力欄は `components/VehicleInfoFields.tsx`（`TireFields`・`BatteryFields`・`cleanTires`）にまとめ、車両台帳の編集画面と、整備記録の登録画面（`MaintenanceTab` の「車両情報も一緒に登録する」。開いた区画だけを車両に反映）の両方で使う。
 - 車両の備考は `Vehicle.note`（500文字まで。カードの概要・QRの車両画面・一覧表の「備考」列に出る）。
+
+## 整備依頼の項目ごとの完了
+
+- 項目（整備種別）が複数ある依頼は、`Report.maintRequestDoneTypes` に終わった項目を持つ。`POST /api/reports/{id}/maint-request` に `{ doneTypes: [...] }` を送ると、その項目だけ完了になり、全部そろうと `maintRequestDone` になる（`{ done: false }` で戻すと、項目の印も消える）。
+- 整備台帳（`MaintenanceTab`）では、依頼に結びついた記録を「完了」で保存すると、その記録の整備種別のうち依頼に残っている項目だけを送る。表示は `components/ReqTypes.tsx`、状態は `requestTypeState`（`lib/utils.ts`）。

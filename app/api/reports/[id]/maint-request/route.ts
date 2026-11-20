@@ -4,6 +4,7 @@ import { pushLog } from '@/lib/log';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
 import { removeScheduleNotice } from '@/lib/maint-schedule';
 import { withWriteLock } from '@/lib/lock';
+import { requestTypeState } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,7 @@ export const dynamic = 'force-dynamic';
 // 日報本体は変更せずこのフィールドだけを更新する専用のAPIにしている。
 export const POST = withWriteLock(async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const body = (await req.json()) as { done?: boolean; watch?: boolean };
+  const body = (await req.json()) as { done?: boolean; watch?: boolean; doneTypes?: string[] };
   const { done } = body;
 
   const data = await loadData();
@@ -23,7 +24,25 @@ export const POST = withWriteLock(async function POST(req: NextRequest, { params
 
   const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
   let action: string;
-  if (typeof body.watch === 'boolean' && done === undefined) {
+  const st = requestTypeState(r);
+  const picked = Array.isArray(body.doneTypes) ? st.all.filter((t) => body.doneTypes!.includes(t)) : null;
+  const doneNow = picked ? st.all.filter((t) => st.done.includes(t) || picked.includes(t)) : [];
+  if (picked && done === undefined && typeof body.watch !== 'boolean' && doneNow.length < st.all.length) {
+    // 項目が複数ある依頼の、終わった項目だけを完了にする。残りがあるあいだは、対応待ちのまま
+    if (picked.length === 0) return NextResponse.json({ success: false, message: '完了にする項目を選んでください。' }, { status: 400 });
+    r.maintRequestDoneTypes = doneNow;
+    r.maintRequestDone = false;
+    r.maintRequestDoneAt = '';
+    action = `整備依頼の一部を完了にした（${picked.join('、')}／残り ${st.all.filter((t) => !doneNow.includes(t)).join('、')}）`;
+  } else if (picked && done === undefined && typeof body.watch !== 'boolean') {
+    // これで全部の項目が終わった
+    r.maintRequestDoneTypes = st.all;
+    r.maintRequestDone = true;
+    r.maintRequestDoneAt = today;
+    r.maintRequestWatch = false;
+    r.maintRequestWatchAt = '';
+    action = '整備依頼を対応済にした（全項目が完了）';
+  } else if (typeof body.watch === 'boolean' && done === undefined) {
     // 経過観察は完了と同じ扱い：対応待ちから外れる（経過観察の印は残す）。解除は印を外すだけ
     if (body.watch) {
       r.maintRequestDone = true;
@@ -39,6 +58,9 @@ export const POST = withWriteLock(async function POST(req: NextRequest, { params
     const isDone = Boolean(done);
     r.maintRequestDone = isDone;
     r.maintRequestDoneAt = isDone ? new Date().toISOString().slice(0, 10) : '';
+    // 対応済にしたら全項目が完了。対応待ちに戻したら、項目ごとの完了も消す
+    if (isDone && st.all.length > 1) r.maintRequestDoneTypes = st.all;
+    else delete r.maintRequestDoneTypes;
     // 完了にしたら経過観察は終わり。対応待ちに戻したときも、観察中の印は外す
     r.maintRequestWatch = false;
     r.maintRequestWatchAt = '';

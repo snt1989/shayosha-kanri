@@ -3,7 +3,7 @@
 import { AppData, Vehicle } from '@/lib/types';
 import { computeAlerts } from '@/lib/alerts';
 import { DEFAULT_ALERT_SETTINGS, normalizeAlertSettings } from '@/lib/alert-settings';
-import { openMaintRequests, splitMaintTypes } from '@/lib/utils';
+import { openMaintRequests, requestTypeState } from '@/lib/utils';
 import { useMobileLimit } from '@/lib/useLimit';
 
 export type MaintPrefill = { vehicleId: string; type: string; note: string };
@@ -28,7 +28,7 @@ export default function AlertsPanel({
   const pending = openMaintRequests(data.reports);
   // 同じ車両で、その種類（車検・オイル交換）の依頼がすでに対応待ちなら、そのアラートは出さない（依頼の種別は複数のこともある）
   const requested = (vehicleId: string, keyword: string) =>
-    pending.some((r) => r.vehicleId === vehicleId && splitMaintTypes(r.maintRequestType).some((t) => t.includes(keyword)));
+    pending.some((r) => r.vehicleId === vehicleId && requestTypeState(r).left.some((t) => t.includes(keyword)));
   const shakenAlerts = all.shaken.filter(({ v }) => !requested(v.id, '車検'));
   const oilAlerts = all.oil.filter((v) => !requested(v.id, 'オイル'));
   const total = shakenAlerts.length + oilAlerts.length + licenseAlerts.length + ngAlcohol.length;

@@ -293,8 +293,9 @@ export default function FleetApp() {
   async function deleteReservation(id: string) {
     return reservationRequest(`/api/reservations/${id}`, { method: 'DELETE' });
   }
-  async function resolveMaintRequest(id: string, done: boolean) {
-    return withSync(() => jsonFetch(`/api/reports/${id}/maint-request`, { method: 'POST', body: JSON.stringify({ done }) }));
+  // doneTypes を渡すと、項目が複数ある依頼の「終わった項目だけ」を完了にする（全部そろえば対応済になる）
+  async function resolveMaintRequest(id: string, done: boolean, doneTypes?: string[]) {
+    return withSync(() => jsonFetch(`/api/reports/${id}/maint-request`, { method: 'POST', body: JSON.stringify(doneTypes ? { doneTypes } : { done }) }));
   }
   async function watchMaintRequest(id: string, watch: boolean) {
     return withSync(() => jsonFetch(`/api/reports/${id}/maint-request`, { method: 'POST', body: JSON.stringify({ watch }) }));

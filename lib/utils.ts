@@ -230,3 +230,10 @@ export function cleanBattery(b: unknown): { maker?: string; model?: string; repl
   if (!out.maker && !out.model && !out.replacedAt && !out.replacedKm && !out.note) return undefined;
   return { ...(out.maker ? { maker: out.maker } : {}), ...(out.model ? { model: out.model } : {}), ...(out.replacedAt ? { replacedAt: out.replacedAt } : {}), ...(out.replacedKm ? { replacedKm: out.replacedKm } : {}), ...(out.note ? { note: out.note } : {}) };
 }
+
+// 整備依頼の項目（複数あるとき）。done＝もう終わった項目、left＝まだ残っている項目
+export function requestTypeState(r: { maintRequestType?: string; maintRequestDoneTypes?: string[] }): { all: string[]; done: string[]; left: string[] } {
+  const all = splitMaintTypes(r.maintRequestType);
+  const done = all.filter((t) => (r.maintRequestDoneTypes || []).includes(t));
+  return { all, done, left: all.filter((t) => !done.includes(t)) };
+}

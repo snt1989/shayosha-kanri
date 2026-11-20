@@ -1,9 +1,10 @@
 'use client';
 
+import ReqTypes from './ReqTypes';
 import { BatteryFields, TIRE_DOT_MESSAGE, TireFields, cleanTires } from './VehicleInfoFields';
 import { useMemo, useState } from 'react';
 import { AppData, MAINT_PROGRESS, MAINT_URGENCIES, MaintProgress, MaintRecord, Report, Vehicle } from '@/lib/types';
-import { isRequestOpen, splitMaintTypes, maintTypesOf, urgencyLevel, urgencyPill, canEditMaintRequest, openMaintRequests, todayStr } from '@/lib/utils';
+import { isRequestOpen, splitMaintTypes, requestTypeState, maintTypesOf, urgencyLevel, urgencyPill, canEditMaintRequest, openMaintRequests, todayStr } from '@/lib/utils';
 import MaintRequestModal, { MaintRequestInput } from './MaintRequestModal';
 import PhotoField, { PhotoThumbs } from './PhotoField';
 import { jpDate } from '@/lib/schedule-text';
@@ -49,7 +50,14 @@ function progressLogText(log: NonNullable<MaintRecord['progressLog']>): string {
 function progressOf(m: MaintRecord, reports: Report[]): MaintProgress {
   const r = m.requestId ? reports.find((x) => x.id === m.requestId) : undefined;
   // 経過観察は完了と同じ扱い（対応待ちには数えない）。依頼が済んでいても、経過観察で記録したものは経過観察のまま表示する
-  if (r) return r.maintRequestWatch ? 'watch' : r.maintRequestDone ? 'done' : 'pending';
+  if (r) {
+    if (r.maintRequestWatch) return 'watch';
+    if (r.maintRequestDone) return 'done';
+    // 項目が複数ある依頼で、この記録の項目がもう完了になっていれば、依頼に残りがあっても、この記録は完了
+    const mine = maintTypesOf(m).filter((t) => splitMaintTypes(r.maintRequestType).includes(t));
+    if ((m.progress || 'done') === 'done' && mine.length > 0 && mine.every((t) => (r.maintRequestDoneTypes || []).includes(t))) return 'done';
+    return 'pending';
+  }
   return m.progress || 'done';
 }
 
@@ -71,7 +79,7 @@ export default function MaintenanceTab({
 }: {
   data: AppData;
   onSave: (v: Vehicle) => Promise<unknown>;
-  onResolveRequest: (reportId: string, done: boolean) => Promise<unknown>;
+  onResolveRequest: (reportId: string, done: boolean, doneTypes?: string[]) => Promise<unknown>;
   onWatchRequest: (reportId: string, watch: boolean) => Promise<unknown>;
   // 整備士としてログイン中の名前（管理者だけのときは null）
   mechanic: string | null;
@@ -162,8 +170,8 @@ export default function MaintenanceTab({
       requestId: r.id,
       rec: {
         date: todayStr(),
-        type: splitMaintTypes(r.maintRequestType).filter((t) => typeOptions.includes(t)).join('、'),
-        types: splitMaintTypes(r.maintRequestType).filter((t) => typeOptions.includes(t)),
+        type: requestTypeState(r).left.filter((t) => typeOptions.includes(t)).join('、'),
+        types: requestTypeState(r).left.filter((t) => typeOptions.includes(t)),
         km: r.endKm || v.odometer || 0,
         request: `${r.maintRequestNote ? r.maintRequestNote + '' : ''}（${r.driver} ${r.date}）`,
         note: '',
@@ -288,7 +296,15 @@ export default function MaintenanceTab({
       // 依頼に結びついた記録は、進捗を依頼の状態にも反映する（対応待ち／経過観察中／対応済）
       const linked = linkId && !reopened ? data.reports.find((x) => x.id === linkId) : undefined;
       if (linked) {
-        if (progress === 'done') {
+        const st = requestTypeState(linked);
+        if (progress === 'done' && st.all.length > 1 && !linked.maintRequestDone) {
+          // 項目が複数ある依頼：今回終わった項目だけを完了にする。全部そろえば、依頼が対応済になる
+          // 終わった項目＝この記録で選んだ整備種別のうち、依頼に残っている項目
+          let fin = chosenTypes.filter((t) => st.left.includes(t));
+          // いまは選べない種別（マスタから消えたもの）だけが残るときは、それも一緒に完了にする
+          if (fin.length > 0 && st.left.filter((t) => typeOptions.includes(t)).every((t) => fin.includes(t))) fin = st.left;
+          if (fin.length > 0) await onResolveRequest(linked.id, true, fin);
+        } else if (progress === 'done') {
           if (!linked.maintRequestDone || linked.maintRequestWatch) await onResolveRequest(linked.id, true);
         } else if (progress === 'watch') {
           // 経過観察も対応済として閉じる（経過観察の印は残る）
@@ -351,7 +367,7 @@ export default function MaintenanceTab({
                   <span>🔧</span>
                   <div style={{ flex: 1 }}>
                     <strong>{r.vehicleName}</strong>
-                    <span className="req-plate">{r.plate ? `（${r.plate}）` : ''}</span>— {r.maintRequestType || '整備'}
+                    <span className="req-plate">{r.plate ? `（${r.plate}）` : ''}</span>— <ReqTypes r={r} />
                     <span className={`pill ${urgencyPill(r.maintRequestUrgency)}`} style={{ marginLeft: 6 }}>
                         {r.maintRequestUrgency || MAINT_URGENCIES[0]}
                       </span>
@@ -652,6 +668,43 @@ export default function MaintenanceTab({
                   );
                 })}
               </div>
+              {(() => {
+                // 項目が複数ある依頼への対応：選んだ整備種別だけが完了になり、残りは対応待ちのまま残る
+                const linkId = editing.requestId || editing.rec.requestId;
+                const req = linkId ? data.reports.find((x) => x.id === linkId && x.maintRequest) : undefined;
+                if (!req || req.maintRequestDone) return null;
+                const st = requestTypeState(req);
+                if (st.all.length < 2) return null;
+                const chosen = maintTypesOf(editing.rec);
+                const isDone = (editing.rec.progress || 'done') === 'done';
+                const finNow = st.left.filter((t) => chosen.includes(t));
+                const remain = st.left.filter((t) => !chosen.includes(t));
+                return (
+                  <div className="req-partial" role="status">
+                    <div className="req-partial-title">この依頼には、項目が {st.all.length}つ あります。終わった項目だけを、上の「整備種別」で選んでください。</div>
+                    <div className="req-partial-list">
+                      {st.done.map((t) => (
+                        <span key={t} className="req-type done">✓ {t}（以前に完了）</span>
+                      ))}
+                      {finNow.map((t) => (
+                        <span key={t} className="req-type now">{isDone ? `✓ ${t}（今回、完了にする）` : `${t}（今回の記録）`}</span>
+                      ))}
+                      {remain.map((t) => (
+                        <span key={t} className="req-type left">⏳ {t}（残す）</span>
+                      ))}
+                    </div>
+                    <div className="req-partial-note">
+                      {!isDone
+                        ? '進捗が「完了」のときだけ、項目が完了になります。'
+                        : remain.length > 0
+                          ? `保存すると、依頼は「対応待ち」のまま残ります（残り：${remain.join('、')}）。`
+                          : finNow.length > 0
+                            ? '保存すると、全部の項目が終わり、依頼が「対応済」になります。'
+                            : '依頼の項目が選ばれていません。このまま保存しても、依頼は変わりません。'}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           <div className="field-row">
             <div className="field">

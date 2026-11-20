@@ -42,6 +42,13 @@ export const POST = withWriteLock(async function POST(req: NextRequest, { params
 
   const before = `${r.maintRequestType || ''}/${r.maintRequestUrgency || ''}/${r.maintRequestNote || ''}/${r.vehicleName}`;
   r.maintRequestType = String(b.type ?? r.maintRequestType ?? '').trim().slice(0, 80);
+  // 項目を変えたら、終わった項目の印は、残っている項目のぶんだけにする（全部が済になってしまうときは、印を消す）
+  if (r.maintRequestDoneTypes) {
+    const all = r.maintRequestType.split('、').map((x) => x.trim()).filter(Boolean);
+    const kept = r.maintRequestDoneTypes.filter((t) => all.includes(t));
+    if (kept.length > 0 && kept.length < all.length) r.maintRequestDoneTypes = kept;
+    else delete r.maintRequestDoneTypes;
+  }
   r.maintRequestUrgency = (MAINT_URGENCIES as readonly string[]).includes(String(b.urgency)) ? String(b.urgency) : r.maintRequestUrgency || MAINT_URGENCIES[0];
   r.maintRequestNote = note;
   // 修理予定日が決まっているときは、お知らせの内容（種類など）も合わせて直す

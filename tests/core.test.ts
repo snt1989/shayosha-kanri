@@ -198,3 +198,40 @@ describe('タイヤの品番', () => {
     expect(utils.tireInfoText({ model: 'NEWNO' })).toBe('NEWNO');
   });
 });
+
+describe('整備依頼：項目が複数あるとき、終わったものだけ完了', () => {
+  test('一部だけ完了 → 対応待ちのまま。全部そろうと対応済。戻すと印が消える', async () => {
+    const store = await import(`${ROOT}/lib/store`);
+    const route = await import(`${ROOT}/app/api/reports/[id]/maint-request/route`);
+    const d = await store.loadData();
+    const rep = { id: 'req-multi', date: '2026-11-20', driver: 'A B', driverLast: 'A', driverFirst: 'B', vehicleId: d.vehicles[0].id, vehicleName: 'V', plate: '', destination: '', purpose: '', preTime: '', postDone: true, maintOnly: true, maintRequest: true, maintRequestType: 'オイル交換、タイヤ交換、バッテリー交換', maintRequestUrgency: '通常', maintRequestNote: '' };
+    await store.saveData({ reports: [rep, ...d.reports], vehicles: d.vehicles, drivers: d.drivers, masters: d.masters, logs: d.logs });
+    const post = (body: unknown) => route.POST(new NextRequest('http://localhost/x', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }), { params: Promise.resolve({ id: 'req-multi' }) });
+    const get = async () => (await store.loadData()).reports.find((x: { id: string }) => x.id === 'req-multi');
+    expect((await post({ doneTypes: [] })).status).toBe(400);
+    expect((await post({ doneTypes: ['オイル交換', '関係ない項目'] })).status).toBe(200);
+    let r = await get();
+    expect(r.maintRequestDone).toBeFalsy();
+    expect(r.maintRequestDoneTypes).toEqual(['オイル交換']);
+    expect(utils.isRequestOpen(r)).toBe(true);
+    expect(utils.requestTypeState(r).left).toEqual(['タイヤ交換', 'バッテリー交換']);
+    await post({ doneTypes: ['バッテリー交換'] });
+    r = await get();
+    expect(r.maintRequestDoneTypes).toEqual(['オイル交換', 'バッテリー交換']);
+    expect(utils.isRequestOpen(r)).toBe(true);
+    await post({ doneTypes: ['タイヤ交換'] });
+    r = await get();
+    expect(r.maintRequestDone).toBe(true);
+    expect(utils.isRequestOpen(r)).toBe(false);
+    // 対応待ちに戻すと、項目ごとの完了も消える
+    await post({ done: false });
+    r = await get();
+    expect(r.maintRequestDone).toBe(false);
+    expect(r.maintRequestDoneTypes).toBeUndefined();
+    // これまでどおりの「まとめて対応済」も使える
+    await post({ done: true });
+    r = await get();
+    expect(r.maintRequestDone).toBe(true);
+    expect(r.maintRequestDoneTypes.length).toBe(3);
+  });
+});
