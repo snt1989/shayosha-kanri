@@ -318,3 +318,20 @@ describe('取締り・オービス情報（社内の注意地点）', () => {
     expect((await (await route.GET()).json()).spots.length).toBe(0);
   });
 });
+
+describe('岩手県の取締り情報', () => {
+  test('17の部署ぶんがあり、道路ごとにまとめられる', async () => {
+    const iw = await import(`${ROOT}/lib/traffic-iwate`);
+    expect(iw.IWATE_UNITS.length).toBe(17);
+    for (const u of iw.IWATE_UNITS) {
+      expect(u.routes.length).toBeGreaterThan(0);
+      expect(u.pdf.startsWith('https://www.pref.iwate.jp/kenkei/')).toBe(true);
+    }
+    const roads = iw.iwateByRoad();
+    expect(roads[0].road).toBe('東北自動車道');
+    const r4 = roads.find((g: { road: string }) => g.road === '国道4号');
+    expect(r4.items.length).toBe(9);
+    expect(roads.find((g: { road: string }) => g.road === '一関大東線').items.length).toBe(2);
+    expect(iw.IWATE_ORBIS.filter((o: { fixed: boolean }) => o.fixed).length).toBe(7);
+  });
+});

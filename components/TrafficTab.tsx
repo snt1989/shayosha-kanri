@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { Driver } from '@/lib/types';
+import IwateTrafficPanel from './IwateTrafficPanel';
 import { PREFECTURES, SPOT_KINDS, SpotKind, TrafficSpot, spotKind, spotMapUrl, trafficLinks } from '@/lib/traffic';
 
 const PREF_KEY = 'fleet:traffic:pref';
@@ -9,7 +10,7 @@ const empty = { kind: 'orbis' as SpotKind, name: '', road: '', limit: '', note: 
 
 // 「取締り・オービス」のページ。公式・公開の情報へのリンクと、社内で共有する注意地点の一覧。
 export default function TrafficTab({ currentDriver, mechanic, isAdmin, onRequestDriverLogin }: { currentDriver: Driver | null; mechanic: string | null; isAdmin: boolean; onRequestDriverLogin: () => void }) {
-  const [pref, setPref] = useState('東京都');
+  const [pref, setPref] = useState('岩手県');
   const [spots, setSpots] = useState<TrafficSpot[] | null>(null);
   const [filter, setFilter] = useState<SpotKind | ''>('');
   const [query, setQuery] = useState('');
@@ -92,7 +93,7 @@ export default function TrafficTab({ currentDriver, mechanic, isAdmin, onRequest
         <div style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 10 }}>
           安全運転のための情報です。出発の前に確かめてください。<strong>運転中は、スマホを操作しないでください。</strong>
         </div>
-        <label className="alc-pick" style={{ marginBottom: 10 }}>
+        <label className="alc-pick" style={{ marginBottom: 8 }}>
           都道府県
           <select value={pref} onChange={(e) => changePref(e.target.value)}>
             {PREFECTURES.map((p) => (
@@ -102,6 +103,15 @@ export default function TrafficTab({ currentDriver, mechanic, isAdmin, onRequest
             ))}
           </select>
         </label>
+        {pref === '岩手県' && <div style={{ fontSize: 12.5, color: 'var(--slate-600)' }}>岩手県は、下に、取締りの重点路線とオービスの場所をまとめてあります（外のページを開かなくても読めます）。</div>}
+      </div>
+
+      {pref === '岩手県' && <IwateTrafficPanel />}
+
+      <div className="card" style={{ marginBottom: 14 }}>
+        <h3 className="card-title" style={{ marginBottom: 8 }}>
+          🔗 公式・公開の情報を開く（{pref}）
+        </h3>
         <div className="tr-links">
           {trafficLinks(pref).map((l) => (
             <a key={l.label} className="tr-link" href={l.url} target="_blank" rel="noopener noreferrer">
