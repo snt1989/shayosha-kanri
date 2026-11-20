@@ -1,0 +1,682 @@
+/* ===== スマホのメニュー整理：下のバーは毎日使う4つ＋「メニュー」。残りとログインはメニューにまとめる ===== */
+.tab2-menu,
+.mobile-status,
+.menu-sheet-wrap {
+  display: none;
+}
+@media (max-width: 640px) {
+  /* 上のログインボタンの横スクロール列はやめて、1行の状態表示にする */
+  .headerbtns {
+    display: none;
+  }
+  .tab2.tab2-more {
+    display: none;
+  }
+  .tab2.tab2-menu {
+    display: flex;
+  }
+  .tabs2 {
+    overflow-x: visible;
+    justify-content: space-between;
+  }
+  .tab2 {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 6px 2px;
+    font-size: 10.5px;
+    letter-spacing: -0.02em;
+  }
+  .mobile-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+  .mobile-status .sync-chip {
+    flex-shrink: 0;
+    padding: 6px 10px;
+  }
+  .mobile-status-btn {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
+  }
+  /* メニュー：現場管理アプリのように、左から出るパネル（濃い色の背景・アイコン付きの項目・今いる画面を強調） */
+  .menu-sheet-wrap {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: rgba(15, 23, 42, 0.45);
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+  .menu-sheet {
+    display: flex;
+    flex-direction: column;
+    width: min(300px, 84vw);
+    height: 100%;
+    background: #0c3d5e;
+    color: #e0f2fe;
+    box-shadow: 8px 0 30px rgba(0, 0, 0, 0.3);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    animation: drawer-in 0.18s ease-out;
+  }
+  @keyframes drawer-in {
+    from { transform: translateX(-24px); opacity: 0.4; }
+    to { transform: none; opacity: 1; }
+  }
+  .drawer-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 14px 12px 18px;
+  }
+  .drawer-brand .logo2 {
+    flex-shrink: 0;
+  }
+  .drawer-name {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 0.01em;
+  }
+  .drawer-x {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #bae6fd;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    font-size: 18px;
+    line-height: 1;
+  }
+  .drawer-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 12px 6px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+  }
+  .drawer-avatar {
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #38bdf8;
+    color: #0c4a6e;
+    font-weight: 800;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .drawer-user-name {
+    font-size: 14px;
+    font-weight: 800;
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .drawer-user-sub {
+    font-size: 11px;
+    color: #bae6fd;
+    margin-top: 2px;
+    line-height: 1.5;
+  }
+  .drawer-nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: 2px 10px 16px;
+  }
+  .menu-sheet-section {
+    font-size: 11px;
+    font-weight: 800;
+    color: #7dd3fc;
+    margin: 14px 8px 6px;
+    letter-spacing: 0.06em;
+  }
+  .menu-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 12px;
+    margin-bottom: 2px;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #e0f2fe;
+    text-align: left;
+  }
+  .menu-row:active {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .menu-row.active {
+    background: #0284c7;
+    color: #fff;
+    font-weight: 800;
+  }
+  .menu-row-ic {
+    font-size: 20px;
+    width: 26px;
+    text-align: center;
+  }
+  .menu-row-label {
+    flex: 1;
+  }
+  .menu-row-go {
+    color: #7dd3fc;
+    font-size: 12px;
+  }
+  .menu-row.active .menu-row-go {
+    color: #fff;
+  }
+  .menu-row .adminbadge {
+    font-size: 9px;
+    font-weight: 800;
+    background: rgba(251, 191, 36, 0.22);
+    color: #fcd34d;
+    padding: 2px 6px;
+    border-radius: 999px;
+  }
+  .drawer-foot {
+    flex: none;
+    padding: 10px 14px 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+  }
+  .drawer-close {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #bae6fd;
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+}
+
+/* 設定：メニューの並び替え */
+.menu-order-list { margin-top: 12px; }
+.menu-order-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  background: var(--slate-50);
+  border: 1px solid var(--slate-200);
+  border-radius: 10px;
+}
+.menu-order-row.in-bar { background: var(--sky-100); border-color: var(--sky-600); }
+.menu-order-no { width: 18px; text-align: center; font-size: 12px; font-weight: 800; color: var(--slate-500); }
+.menu-order-ic { font-size: 20px; width: 26px; text-align: center; }
+.menu-order-label { flex: 1; min-width: 0; font-weight: 700; font-size: 14px; }
+.menu-order-row .pill { flex-shrink: 0; white-space: nowrap; font-size: 10px; padding: 2px 6px; }
+.menu-order-row .btn { flex-shrink: 0; }
+.menu-order-divider { font-size: 11px; font-weight: 700; color: var(--slate-500); margin: 10px 2px 6px; text-align: center; }
+.menu-order-row .btn { min-width: 40px; }
+.pill-sky { background: var(--sky-100); color: var(--sky-700); }
+
+/* 種類のドロップダウン（チェックを入れる） */
+.check-dropdown { position: relative; }
+.check-dropdown-summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 9px 32px 9px 12px;
+  border: 1px solid var(--slate-300, #cbd5e1);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 14px;
+  min-height: 40px;
+  position: relative;
+}
+.check-dropdown-summary::-webkit-details-marker { display: none; }
+.check-dropdown-summary::after { content: '▾'; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--slate-500); }
+.check-dropdown[open] .check-dropdown-summary { border-color: var(--sky-600); }
+.check-dropdown-list {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: #fff;
+  border: 1px solid var(--slate-200);
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.15);
+  padding: 4px;
+}
+.check-dropdown-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+.check-dropdown-item:hover { background: var(--slate-50); }
+.check-dropdown-item input { width: 18px; height: 18px; }
+
+/* 整備台帳の一覧：1行を短くして見やすくする */
+.ledger-table td { vertical-align: top; }
+.ledger-row { cursor: pointer; }
+.ledger-row:hover { background: var(--slate-50, #f8fafc); }
+.ledger-content { min-width: 220px; max-width: 420px; }
+.ledger-sub { font-size: 11.5px; color: var(--slate-500); margin-top: 2px; }
+.ledger-sub b { color: var(--slate-600); font-weight: 600; margin-right: 2px; }
+.clamp-1, .clamp-2 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+.clamp-1 { -webkit-line-clamp: 1; }
+.clamp-2 { -webkit-line-clamp: 2; }
+
+/* スマホ：一覧のお知らせ・依頼の行を、文章を横いっぱいに、ボタンは下の段に並べる */
+@media (max-width: 640px) {
+  .alert-item {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 8px;
+  }
+  .alert-item > div {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+  }
+  .alert-item > .alert-actions {
+    flex: 1 1 100%;
+  }
+  .alert-item > .alert-actions .btn {
+    flex: 1 1 calc(50% - 6px);
+    min-height: 40px;
+    justify-content: center;
+  }
+  .alert-item > .btn {
+    flex: 1 1 100%;
+    min-height: 40px;
+    justify-content: center;
+  }
+  .alert-item > .pill {
+    margin-left: 28px;
+  }
+}
+
+/* スマホ：全ページを見やすく */
+@media (max-width: 640px) {
+  /* 上の集計タイルは、ダッシュボードだけに出す（ほかのページでは画面の上を取りすぎるため） */
+  .statbar-dash-only {
+    display: none;
+  }
+  /* ログイン状態の表示：「…」で切れず、2行までに折り返す */
+  .mobile-status-btn {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.35;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  /* 検索・絞り込み・ボタンの並び：絞り込みは2列、検索とボタンは横いっぱい */
+  .toolbar2 .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .toolbar2 .actions > input,
+  .toolbar2 .actions > .search,
+  .toolbar2 .actions > div {
+    grid-column: 1 / -1;
+    min-width: 0;
+    width: 100%;
+  }
+  .toolbar2 .actions > select,
+  .toolbar2 .actions > .btn {
+    width: 100%;
+    min-width: 0;
+  }
+  .toolbar2 .actions > .btn {
+    min-height: 40px;
+    justify-content: center;
+  }
+  /* 表のカード：項目名と値の行を、少しゆったりと */
+  table.data-table:not(.reorder-table) td {
+    padding: 7px 0;
+  }
+  /* 整備台帳：内容の欄は左寄せで、長い文を読みやすく */
+  .ledger-table td.ledger-content {
+    text-align: left;
+  }
+  .ledger-table td.ledger-content::before {
+    display: block;
+    float: none;
+    max-width: none;
+    margin-bottom: 2px;
+  }
+  .ledger-content {
+    min-width: 0;
+    max-width: none;
+  }
+  /* 押しやすさ：ボタンの高さを確保 */
+  .btn-sm {
+    min-height: 36px;
+  }
+  /* 画面の下のバーに隠れないよう、ページの下に余白 */
+  .main {
+    padding-bottom: 96px;
+  }
+}
+
+/* スマホ（特にiPhone）：日付・時刻の入力欄が、右にはみ出さないようにする */
+@media (max-width: 640px) {
+  .field input[type='date'],
+  .field input[type='time'],
+  .field input[type='month'],
+  .field input[type='datetime-local'],
+  input[type='date'],
+  input[type='time'],
+  input[type='month'],
+  input[type='datetime-local'] {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    text-align: left;
+    line-height: 1.3;
+  }
+  /* iPhoneで、日付・時刻の中の文字が中央に寄ったり、枠からはみ出したりするのを防ぐ */
+  input[type='date']::-webkit-date-and-time-value,
+  input[type='time']::-webkit-date-and-time-value,
+  input[type='month']::-webkit-date-and-time-value,
+  input[type='datetime-local']::-webkit-date-and-time-value {
+    text-align: left;
+    min-width: 0;
+    margin: 0;
+  }
+  .field,
+  .field-row > *,
+  .field-row-4 > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .modal-box,
+  .modal-box-wide,
+  .modal-box-xwide {
+    /* hidden にすると、このボックス自体がスクロール枠になり、下のボタン・上の見出しの固定（sticky）が効かなくなる */
+    overflow-x: clip;
+  }
+  .modal-box input,
+  .modal-box select,
+  .modal-box textarea {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* 整備依頼・整備記録の添付写真 */
+.photo-field { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.photo-item { position: relative; width: 84px; height: 84px; }
+.photo-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; border: 1px solid var(--slate-300); cursor: zoom-in; display: block; }
+.photo-remove { position: absolute; top: -6px; right: -6px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: #334155; color: #fff; font-size: 14px; line-height: 1; cursor: pointer; }
+.photo-add { height: 84px; min-width: 84px; padding: 0 12px; border: 1px dashed var(--slate-400, #94a3b8); border-radius: 8px; background: transparent; color: var(--slate-600); cursor: pointer; font-size: 13px; }
+.photo-thumbs { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: middle; }
+.photo-thumbs img { width: 36px; height: 36px; object-fit: cover; border-radius: 6px; border: 1px solid var(--slate-300); cursor: zoom-in; }
+.photo-lightbox { position: fixed; inset: 0; z-index: 400; background: rgba(15, 23, 42, 0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px; }
+.photo-lightbox img { max-width: 100%; max-height: 80vh; border-radius: 8px; background: #fff; }
+
+/* スマホ：整備台帳の1件を、見出し（日付・進捗）→ 車両・種別 → 内容 → 走行・実施先 → ボタン の順に詰めて見やすくする */
+@media (max-width: 640px) {
+  table.data-table.ledger-table tr.ledger-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 10px;
+    row-gap: 2px;
+    padding: 12px 14px;
+  }
+  table.data-table.ledger-table tr.ledger-row > td {
+    display: block;
+    padding: 2px 0;
+    border: 0;
+    text-align: left;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  table.data-table.ledger-table tr.ledger-row > td::before {
+    display: none;
+  }
+  /* 1段目：実施日（左）／進捗（右） */
+  table.data-table.ledger-table tr.ledger-row > td:nth-child(1) { grid-column: 1; grid-row: 1; font-weight: 700; font-size: 15px; }
+  table.data-table.ledger-table tr.ledger-row > td:nth-child(4) { grid-column: 2; grid-row: 1; text-align: right; }
+  /* 2段目：車両（左）／整備種別（右） */
+  table.data-table.ledger-table tr.ledger-row > td:nth-child(2) { grid-column: 1; grid-row: 2; font-weight: 600; }
+  table.data-table.ledger-table tr.ledger-row > td:nth-child(3) { grid-column: 2; grid-row: 2; text-align: right; }
+  /* 3段目：内容（横いっぱい） */
+  table.data-table.ledger-table tr.ledger-row > td:nth-child(5) {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    margin: 6px 0 2px;
+    padding: 8px 10px;
+    background: var(--slate-50, #f8fafc);
+    border-radius: 8px;
+    line-height: 1.55;
+  }
+  table.data-table.ledger-table tr.ledger-row > td:nth-child(5):not(:has(*)) { display: none; }
+  /* 4段目：走行km・費用（左）／実施先・整備士（右）。項目名は小さく上に */
+  table.data-table.ledger-table tr.ledger-row > td:nth-child(6) { grid-column: 1; grid-row: 4; font-size: 13px; }
+  table.data-table.ledger-table tr.ledger-row > td:nth-child(7) { grid-column: 2; grid-row: 4; font-size: 13px; }
+  table.data-table.ledger-table tr.ledger-row > td:nth-child(6)::before,
+  table.data-table.ledger-table tr.ledger-row > td:nth-child(7)::before {
+    display: block;
+    float: none;
+    max-width: none;
+    margin: 0 0 1px;
+    font-size: 11px;
+  }
+  /* 5段目：ボタン */
+  table.data-table.ledger-table tr.ledger-row > td:nth-child(8) {
+    grid-column: 1 / -1;
+    grid-row: 5;
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  table.data-table.ledger-table tr.ledger-row > td:nth-child(8) .btn { flex: 1; min-height: 40px; justify-content: center; }
+  /* 写真は少し大きめに、改行して並べる */
+  .photo-thumbs { display: flex; margin: 6px 0 0; gap: 6px; }
+  .photo-thumbs img { width: 52px; height: 52px; }
+}
+
+/* スマホ：給油台帳・レンタカーの1件を、見出し→車両・内容→項目→ボタンの順に詰めて表示する */
+@media (max-width: 640px) {
+  .filter-row { display: grid !important; grid-template-columns: 1fr 1fr; }
+  .filter-row > select { width: 100%; min-width: 0; }
+  table.data-table.fuel-table tbody tr,
+  table.data-table.rental-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 10px;
+    row-gap: 2px;
+    padding: 12px 14px;
+  }
+  table.data-table.fuel-table td,
+  table.data-table.rental-table td {
+    display: block;
+    padding: 2px 0;
+    border: 0;
+    text-align: left;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  table.data-table.fuel-table td::before,
+  table.data-table.rental-table td::before { display: none; }
+  table.data-table.fuel-table td .cell-sub,
+  table.data-table.rental-table td .cell-sub { display: block; }
+  /* 項目名を小さく上に出す欄 */
+  table.data-table.fuel-table td:nth-child(3)::before,
+  table.data-table.fuel-table td:nth-child(4)::before,
+  table.data-table.fuel-table td:nth-child(6)::before,
+  table.data-table.fuel-table td:nth-child(7)::before,
+  table.data-table.fuel-table td:nth-child(8)::before,
+  table.data-table.fuel-table td:nth-child(9)::before {
+    display: block;
+    float: none;
+    max-width: none;
+    margin: 0 0 1px;
+    font-size: 11px;
+  }
+  /* 給油台帳 */
+  table.data-table.fuel-table td:nth-child(1) { grid-column: 1; grid-row: 1; font-weight: 700; font-size: 15px; }
+  table.data-table.fuel-table td:nth-child(5) { grid-column: 2; grid-row: 1; text-align: right; font-weight: 700; font-size: 15px; }
+  table.data-table.fuel-table td:nth-child(2) { grid-column: 1 / -1; grid-row: 2; font-weight: 600; margin-bottom: 4px; }
+  table.data-table.fuel-table td:nth-child(4) { order: 1; font-size: 13px; }
+  table.data-table.fuel-table td:nth-child(3) { order: 2; font-size: 13px; }
+  table.data-table.fuel-table td:nth-child(6) { order: 3; font-size: 13px; }
+  table.data-table.fuel-table td:nth-child(8) { order: 4; font-size: 13px; }
+  table.data-table.fuel-table td:nth-child(7) { order: 5; font-size: 13px; }
+  table.data-table.fuel-table td:nth-child(9) { order: 6; font-size: 13px; }
+  table.data-table.fuel-table td:nth-child(10) { grid-column: 1 / -1; grid-row: 6; font-size: 13px; margin-top: 4px; padding: 6px 8px; background: var(--slate-50, #f8fafc); border-radius: 8px; }
+  table.data-table.fuel-table td.cell-empty { display: none; }
+  table.data-table.fuel-table td:nth-child(11) { grid-column: 1 / -1; grid-row: 7; margin-top: 6px; }
+  /* レンタカー */
+  table.data-table.rental-table td:nth-child(1) { grid-column: 1; grid-row: 1; font-weight: 700; font-size: 15px; }
+  table.data-table.rental-table td:nth-child(4) { grid-column: 2; grid-row: 1; text-align: right; font-weight: 700; font-size: 15px; }
+  table.data-table.rental-table td:nth-child(2) { grid-column: 1 / -1; grid-row: 2; font-weight: 600; margin: 2px 0 4px; }
+  table.data-table.rental-table td:nth-child(3) { grid-column: 1 / -1; grid-row: 3; font-size: 13px; }
+  table.data-table.rental-table td:nth-child(3) .cell-sub { display: inline; margin-left: 8px; }
+  table.data-table.rental-table td:nth-child(5) { grid-column: 1 / -1; grid-row: 4; margin-top: 6px; }
+  /* ボタンは横いっぱいに並べる */
+  table.data-table.fuel-table td:nth-child(11) .eactions,
+  table.data-table.rental-table td:nth-child(5) .eactions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: stretch; }
+  table.data-table.fuel-table td:nth-child(11) .btn,
+  table.data-table.rental-table td:nth-child(5) .btn { flex: 1 1 0; min-height: 40px; justify-content: center; }
+  .pill-row { gap: 6px !important; }
+}
+@media (max-width: 640px) {
+  table.data-table.fuel-table:not(.reorder-table) td:first-child,
+  table.data-table.rental-table:not(.reorder-table) td:first-child,
+  table.data-table.ledger-table:not(.reorder-table) td:first-child {
+    border-bottom: 0;
+    padding-top: 2px;
+  }
+}
+
+/* スマホ：カレンダー・運転日報・使い方・車両台帳をさらに見やすく */
+@media (max-width: 640px) {
+  /* カレンダー：横にスクロールせず、7日が画面に収まるように。予定は色の帯で示し、詳細は日付を押して下に出す */
+  .cal-grid {
+    min-width: 0;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 3px;
+  }
+  .cal-cell {
+    min-height: 58px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .cal-day { font-size: 12px; text-align: center; }
+  .cal-grid .cal-chip {
+    font-size: 0;
+    line-height: 0;
+    padding: 0;
+    height: 5px;
+    border-radius: 3px;
+  }
+  .cal-more { font-size: 10px; text-align: center; }
+  .cal-head { font-size: 11px; }
+
+  /* 運転日報：1件を、日付とステータス／運転者・車両／行先／確認項目／ボタン の順にまとめる */
+  table.data-table.reports-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 10px;
+    row-gap: 2px;
+    padding: 12px 14px;
+  }
+  table.data-table.reports-table td {
+    display: block;
+    padding: 2px 0;
+    border: 0;
+    text-align: left;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  table.data-table.reports-table td::before { display: none; }
+  table.data-table.reports-table:not(.reorder-table) td:first-child { border-bottom: 0; padding-top: 2px; }
+  table.data-table.reports-table td .cell-sub { display: block; }
+  table.data-table.reports-table td[data-empty] { display: none; }
+  table.data-table.reports-table td:nth-child(1) { grid-column: 1; grid-row: 1; font-weight: 700; font-size: 15px; }
+  table.data-table.reports-table td:nth-child(9) { grid-column: 2; grid-row: 1; text-align: right; }
+  table.data-table.reports-table td:nth-child(9) .cell-sub-pill { display: inline-block; margin-top: 4px; }
+  table.data-table.reports-table td:nth-child(2) { grid-column: 1; grid-row: 2; font-weight: 600; margin-top: 4px; }
+  table.data-table.reports-table td:nth-child(3) { grid-column: 2; grid-row: 2; margin-top: 4px; font-size: 13px; }
+  table.data-table.reports-table td:nth-child(4) {
+    grid-column: 1 / -1; grid-row: 3; margin: 6px 0 2px; padding: 8px 10px;
+    background: var(--slate-50, #f8fafc); border-radius: 8px; font-size: 13px; line-height: 1.5;
+  }
+  table.data-table.reports-table td:nth-child(5),
+  table.data-table.reports-table td:nth-child(6),
+  table.data-table.reports-table td:nth-child(7),
+  table.data-table.reports-table td:nth-child(8) { font-size: 13px; }
+  table.data-table.reports-table td:nth-child(5)::before,
+  table.data-table.reports-table td:nth-child(6)::before,
+  table.data-table.reports-table td:nth-child(7)::before,
+  table.data-table.reports-table td:nth-child(8)::before {
+    display: block; float: none; max-width: none; margin: 0 0 2px; font-size: 11px;
+  }
+  table.data-table.reports-table td:nth-child(5) { grid-column: 1; grid-row: 4; }
+  table.data-table.reports-table td:nth-child(6) { grid-column: 2; grid-row: 4; }
+  table.data-table.reports-table td:nth-child(7) { grid-column: 1; grid-row: 5; }
+  table.data-table.reports-table td:nth-child(8) { grid-column: 2; grid-row: 5; }
+  table.data-table.reports-table td:nth-child(10) { grid-column: 1 / -1; grid-row: 6; display: flex; gap: 8px; margin-top: 6px; }
+  table.data-table.reports-table td:nth-child(10) .btn { flex: 1; min-height: 40px; justify-content: center; }
+
+  /* 使い方：分類のボタンは横に1列で流し、画面の上を取りすぎないようにする */
+  .help-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-right: -4px;
+    padding-bottom: 6px;
+  }
+  .help-chip { white-space: nowrap; flex: 0 0 auto; }
+  .help-item summary { padding: 10px 12px; font-size: 14px; line-height: 1.5; }
+
+  /* 車両台帳：カードのボタンは2列で揃える */
+  .efoot .eactions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+  .efoot .eactions .btn { width: 100%; min-height: 40px; justify-content: center; }
+}
+
+.show-more { display: none; }
+@media (max-width: 640px) {
+  .show-more { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 4px; }
+  .show-more .btn { width: 100%; min-height: 44px; justify-content: center; }
+  .show-more .btn-sm { min-height: 36px; }
+}
+
+/* スマホ：1画面〜1.5画面に収まるよう、説明文など画面の上を取る部分を省く（くわしい説明は「使い方」にあります） */
+@media (max-width: 640px) {
+  .dash-intro { display: none; }
+  .card > .card-title + div[style*='font-size: 12px'],
+  .toolbar2 .card-title + div[style*='font-size: 12px'] { display: none; }
+  .card { padding: 14px; margin-bottom: 12px; }
+}
+@media (max-width: 640px) {
+  .empty-state { padding: 12px 8px; font-size: 13px; }
+  .alert-item { padding: 10px 12px; font-size: 13px; }
+  .alert-item > .btn { min-height: 36px; }
+  .alert-item > .alert-actions .btn { min-height: 36px; }
+}
+@media (max-width: 640px) {
+  /* 依頼のボタンは、編集・削除・登録を1行に並べる */
+  .alert-item > .alert-actions { flex-wrap: nowrap !important; }
+  .alert-item > .alert-actions .btn { flex: 1 1 auto; padding-left: 8px; padding-right: 8px; white-space: nowrap; }
+  .alert-item > .alert-actions .btn-primary { flex: 2 1 auto; }
+  /* 整備台帳：車両名が折り返さないよう、左の列を広めに */
+  table.data-table.ledger-table tr.ledger-row { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+}

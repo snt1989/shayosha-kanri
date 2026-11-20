@@ -207,3 +207,8 @@ CDN から読み込み、**ブラウザ内だけで**画像からテキストを
 - 以前の写真（Redis に本体があるもの）は、表示されたときに、順に Blob へ移る。Blob への保存に失敗したら、Redis に保存する。
 - ストアは **private** で作る（`BLOB_ACCESS=public` を入れたときだけ public として扱う）。写真は、これまでどおり `/api/photos/{id}` 経由でだけ見せる。
 - 車検証・検査証記録事項の画像（`fleet:shaken:v1:…`）は対象外（Redis のまま）。いまの保存先は `GET /api/health` の `photos`（`blob`／`kv`）で確かめられる。
+
+## 画面の整理
+
+- **ダッシュボード**（`components/DashboardTab.tsx`、`DashSection.tsx`）: 役割（管理者・整備士・運転者）ごとに、区画のはじめの開け閉めを変える。開け閉めは localStorage `fleet:dash:sections:v1` に役割ごとに覚える。運転者には「○○さんの状況」を先頭に出す。
+- **CSS**: `app/globals.css` は入口だけ。中身は `app/styles/01-base.css` 〜 `07-tools.css` に、もとの順番のまま分けてある（ビルド後のCSSは分割前と同一）。順番は変えない。新しい指定は、当てはまるファイルの末尾に足す。

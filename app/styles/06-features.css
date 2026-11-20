@@ -1,0 +1,432 @@
+/* AIアシスタント */
+.header-actions { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.assistant-note { font-size: 12px; color: var(--slate-500); background: var(--slate-50, #f8fafc); border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; line-height: 1.6; }
+.assistant-log { display: flex; flex-direction: column; gap: 8px; min-height: 120px; }
+.assistant-suggest { display: flex; flex-wrap: wrap; gap: 6px; }
+.assistant-suggest > div { width: 100%; }
+.assistant-msg { max-width: 92%; padding: 8px 12px; border-radius: 12px; font-size: 14px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.assistant-msg.user { align-self: flex-end; background: #0284c7; color: #fff; border-bottom-right-radius: 4px; }
+.assistant-msg.assistant { align-self: flex-start; background: var(--slate-100, #f1f5f9); color: var(--slate-800, #1e293b); border-bottom-left-radius: 4px; }
+.assistant-msg.error { align-self: stretch; max-width: 100%; background: #fef2f2; color: #b91c1c; }
+.assistant-form { display: flex; gap: 8px; align-items: flex-end; width: 100%; }
+.assistant-form textarea { flex: 1; min-width: 0; resize: none; font-size: 16px; font-family: inherit; border: 1px solid var(--slate-300); border-radius: 8px; padding: 8px 10px; background: #fff; }
+.assistant-form .btn { min-height: 44px; flex-shrink: 0; }
+
+/* 整備依頼者への連絡ボタン */
+.contact-row { margin-top: 6px; }
+.contact-btns { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.contact-btns .btn { text-decoration: none; }
+.contact-none { font-size: 11px; color: var(--slate-500); }
+
+/* 整備依頼の緊急度の色分け：至急＝赤、早めに＝橙、通常＝青 */
+.alert-item.u-urgent { background: var(--red-50); border-color: var(--red-100); border-left: 5px solid var(--red-600); color: var(--red-600); }
+.alert-item.u-soon { background: #fff7ed; border-color: #fed7aa; border-left: 5px solid #ea580c; color: #c2410c; }
+.alert-item.u-normal { background: var(--sky-50); border-color: var(--sky-100); border-left: 5px solid var(--sky-600); color: var(--sky-700); }
+.alert-item.u-soon .pill-amber { background: #ffedd5; color: #c2410c; }
+
+/* スマホ上部のモヤモヤ対策：ヘッダーを不透明の白にし、ステータスバーの領域（safe-area）までヘッダーの白で塗る */
+.appbar2 {
+  background: #fff;
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+}
+@media (max-width: 640px) {
+  .appbar2 {
+    /* 最上段に白い余白を足す（上端のぼやけが、ヘッダーの文字やボタンにかからないように） */
+    padding-top: calc(20px + env(safe-area-inset-top, 0px));
+    box-shadow: none;
+  }
+}
+
+/* お知らせの表示期限 */
+.notice-expire { margin-top: 4px; font-size: 11px; color: var(--slate-500); }
+.notice-item.is-expired { border-style: dashed; }
+.notice-item.is-expired .notice-head, .notice-item.is-expired .notice-body, .notice-item.is-expired .notice-expire { opacity: 0.6; }
+.notice-expired-head { margin: 14px 0 6px; font-size: 12px; font-weight: 700; color: var(--slate-500); }
+
+/* 整備種別（複数選択）とその表示 */
+.type-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.type-pills { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+
+/* 設定：アラートの出す時期 */
+.alert-setting-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.alert-setting-row input { width: 120px; }
+.alert-setting-default { color: var(--slate-500); font-size: 12px; }
+.alert-setting-hint { margin-top: 4px; font-size: 11.5px; color: var(--slate-500); line-height: 1.6; }
+.alert-setting-hint span { display: block; }
+
+/* 事故・トラブルのボタン */
+.bell-btn.incident-btn { border-color: var(--red-600); background: var(--red-50); }
+.bell-btn.incident-btn:hover { background: var(--red-100); }
+.incident-tels { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 14px; }
+.incident-tels .btn { text-decoration: none; }
+.incident-steps-title, .incident-form-title { font-weight: 800; font-size: 13px; margin: 6px 0; }
+.incident-form-title { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--slate-200); }
+.incident-steps { margin: 0 0 4px; padding-left: 20px; font-size: 13px; line-height: 1.7; color: var(--slate-700); }
+.incident-hint { font-size: 11.5px; color: var(--slate-500); margin: 6px 0 10px; }
+.incident-done { border-color: var(--green-600, #16a34a); }
+.incident-memo { width: 100%; margin-top: 6px; }
+
+/* iPhone：画面の最上端に、白の固定の帯を置く。Safari は上端にある固定の要素の色をもとに上端の色を決めるため、ぼやけを減らす試み */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: max(env(safe-area-inset-top, 0px), 1px);
+  background: #fff;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.incident-ins { border: 1px solid var(--sky-100); background: var(--sky-50); border-radius: 10px; padding: 10px 12px; margin: 0 0 10px; font-size: 13px; }
+.incident-ins-title { font-weight: 800; font-size: 12px; margin-bottom: 6px; color: var(--sky-700); }
+.incident-ins dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; }
+.incident-ins dt { color: var(--slate-500); font-size: 12px; }
+.incident-ins dd { margin: 0; font-weight: 700; }
+.incident-ins-no { font-size: 15px; letter-spacing: 0.04em; }
+
+/* スマホ：ヘッダーのボタン（🚨・🤖・🔔）が画面の外にはみ出して消えないよう、タイトル側を縮める。バッジは出さない */
+@media (max-width: 640px) {
+  .brandrow {
+    gap: 8px;
+  }
+  .brandrow .brand2 {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .brandrow .brand2 .titles2 {
+    min-width: 0;
+  }
+  .brandrow .brand2 .titles2 h1 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .brandrow .brand2 .badge2 {
+    display: none;
+  }
+  .header-actions {
+    gap: 6px;
+  }
+  .header-actions .bell-btn {
+    width: 34px;
+    height: 34px;
+  }
+}
+
+/* AIロボ：現場管理アプリと同じ、画面の右下に浮かぶロボットのボタン（指で長押ししてそのまま動かすと、好きな場所に移せる） */
+.ai-fab {
+  position: fixed;
+  right: 14px;
+  bottom: 18px;
+  width: auto;
+  height: auto;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.22));
+  animation: ai-bob 2.6s ease-in-out infinite;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.ai-fab:hover {
+  animation-play-state: paused;
+  transform: scale(1.08);
+}
+.ai-fab .ai-tag {
+  margin-top: -2px;
+  background: var(--sky-600);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 9px;
+  border-radius: 99px;
+  border: 2px solid #fff;
+  letter-spacing: 0.05em;
+}
+@keyframes ai-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes ai-blink { 0%, 92%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
+@keyframes ai-wave { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-22deg); } }
+.ai-eyes { transform-box: fill-box; transform-origin: center; animation: ai-blink 4.2s infinite; }
+.ai-arm-r { transform-box: fill-box; transform-origin: 20% 90%; animation: ai-wave 1.8s ease-in-out infinite; }
+.ai-ant { animation: ai-blink 2s infinite; transform-box: fill-box; transform-origin: center; }
+@media (prefers-reduced-motion: reduce) {
+  .ai-fab, .ai-eyes, .ai-arm-r, .ai-ant { animation: none; }
+}
+@media (max-width: 640px) {
+  /* 下のバーの上に置く。タグは出さず、少し小さくして、記事のじゃまにならないようにする。開いている間は隠す */
+  .ai-fab {
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    right: 8px;
+    opacity: 0.92;
+  }
+  .ai-fab svg { width: 44px; height: 48px; }
+  .ai-fab .ai-tag { display: none; }
+  .ai-fab.is-open { display: none; }
+}
+
+/* スマホ：ログインは、画面の上の「🪪 …さん ▾」から開く（メニューには入れない） */
+@media (max-width: 640px) {
+  .menu-sheet-wrap.login-wrap {
+    align-items: flex-end;
+    justify-content: stretch;
+  }
+  .login-sheet {
+    width: 100%;
+    background: #fff;
+    border-radius: 16px 16px 0 0;
+    padding: 12px 14px calc(16px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -8px 30px rgba(15, 23, 42, 0.25);
+  }
+  .login-sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+  .login-sheet .menu-row {
+    background: var(--slate-50);
+    border: 1px solid var(--slate-200);
+    color: var(--slate-800);
+    margin-bottom: 6px;
+    min-height: 52px;
+    font-weight: 700;
+  }
+  .login-sheet .menu-row-go {
+    color: var(--slate-500);
+  }
+}
+
+/* 整備依頼の修理予定日 */
+.req-schedule { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
+.req-schedule-edit { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.req-schedule-edit input[type='date'] { width: auto; min-width: 0; padding: 4px 8px; font-size: 13px; }
+.req-schedule-msg { font-size: 12px; color: var(--slate-600); }
+.req-schedule-hint { flex-basis: 100%; font-size: 11px; color: var(--slate-500); }
+
+/* ダッシュボードの整備依頼：スマホでは1件を短く表示し、「▼ 詳細・操作」で開く */
+.req-toggle, .req-short-date { display: none; }
+@media (max-width: 640px) {
+  .alert-item.req-item { padding: 8px 10px; gap: 8px; align-items: flex-start; }
+  .req-item .req-plate, .req-item .req-by { display: none; }
+  .req-item .req-note { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .req-item .req-short-date { display: inline; font-weight: 700; }
+  .req-item .req-more { display: none !important; }
+  .req-item .req-toggle {
+    display: inline-block; margin-top: 4px; padding: 3px 0; border: 0; background: none;
+    color: inherit; font-size: 12px; font-weight: 700; text-decoration: underline; cursor: pointer;
+  }
+  .req-item.req-open .req-plate, .req-item.req-open .req-by { display: inline; }
+  .req-item.req-open .req-note { white-space: normal; overflow: visible; }
+  .req-item.req-open .req-short-date { display: none; }
+  .req-item.req-open .req-more { display: block !important; }
+  .req-item.req-open .alert-actions.req-more { display: flex !important; }
+}
+
+/* アプリの更新のお知らせ（新しい版が出たときに、全画面で出す） */
+.update-overlay {
+  position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center; justify-content: center;
+  padding: 16px; background: rgba(15, 23, 42, 0.55);
+}
+.update-box {
+  width: 100%; max-width: 380px; background: #fff; border-radius: 18px; padding: 24px 20px 18px;
+  text-align: center; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+.update-icon { font-size: 40px; line-height: 1; }
+.update-box h2 { margin: 10px 0 4px; font-size: 18px; color: var(--slate-800); }
+.update-lead { margin: 0 0 12px; font-size: 13px; color: var(--slate-500); }
+.update-what { text-align: left; background: var(--sky-50); border: 1px solid var(--sky-100); border-radius: 10px; padding: 10px 12px; margin-bottom: 14px; font-size: 12px; color: var(--slate-700); }
+.update-what ul { margin: 6px 0 0; padding-left: 18px; }
+.update-what li { margin-bottom: 3px; }
+.update-btn { width: 100%; min-height: 46px; font-size: 15px; }
+.update-later { margin-top: 10px; border: 0; background: none; color: var(--slate-500); font-size: 12px; text-decoration: underline; cursor: pointer; padding: 6px; }
+
+/* 車両編集：夏・冬タイヤの入力を、1セットずつのカードにまとめて短くする */
+.tire-set { border: 1px solid var(--slate-200); border-radius: 12px; padding: 8px 10px 4px; margin-bottom: 10px; background: var(--slate-50, #f8fafc); }
+.tire-set.winter { background: #f0f9ff; border-color: #bae6fd; }
+.tire-set-title { font-size: 13px; font-weight: 700; color: var(--slate-800); margin-bottom: 6px; }
+.tire-set-title span { font-weight: 400; font-size: 11px; color: var(--slate-500); margin-left: 4px; }
+.tire-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 8px; }
+.tire-grid .field { margin-bottom: 8px; min-width: 0; }
+.tire-grid .field label { font-size: 11px; margin-bottom: 2px; }
+.tire-grid .field input { min-width: 0; width: 100%; }
+.tire-dot-note { align-self: end; font-size: 11px; color: var(--slate-500); margin-bottom: 12px; line-height: 1.3; }
+
+/* 車両編集：短い項目は、スマホでも2列に並べる */
+@media (max-width: 640px) {
+  .field-row.row2 { flex-direction: row; gap: 8px; }
+  .field-row.row2 > .field { flex: 1 1 0; min-width: 0; }
+  .field-row.row2 .field label { font-size: 12px; }
+}
+
+/* 車両一覧：1つの表で見比べる。スマホは横にスクロールし、車両の列は左に固定する */
+.vlist-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.vlist-table { min-width: 880px; }
+.vlist-table td, .vlist-table th { vertical-align: top; }
+.vlist-table .vl-sticky { position: sticky; left: 0; z-index: 1; background: #fff; box-shadow: 1px 0 0 var(--slate-200); min-width: 110px; }
+.vlist-table thead .vl-sticky { background: var(--slate-50); z-index: 2; }
+@media (max-width: 640px) {
+  .vlist-table .vl-sticky { min-width: 108px; max-width: 130px; }
+}
+
+/* 車両一覧はスマホでも「表」のまま、横にスクロールして見る（ほかの表のようなカード表示にはしない） */
+@media (max-width: 640px) {
+  .vlist-wrap { overflow-x: auto; }
+  .vlist-wrap table.data-table.vlist-table.vlist-table { display: table; width: auto; min-width: 880px; }
+  .vlist-wrap table.data-table.vlist-table.vlist-table tbody { display: table-row-group; width: auto; }
+  .vlist-wrap table.data-table.vlist-table.vlist-table thead { display: table-header-group; }
+  .vlist-wrap table.data-table.vlist-table.vlist-table tr {
+    display: table-row; background: none; border: 0; border-radius: 0; padding: 0; margin: 0;
+  }
+  .vlist-wrap table.data-table.vlist-table.vlist-table th { white-space: nowrap; }
+  .vlist-wrap table.data-table.vlist-table.vlist-table td {
+    display: table-cell; overflow: visible; padding: 8px 10px; border-bottom: 1px solid var(--slate-100);
+    text-align: left; font-size: 13px; float: none;
+  }
+  .vlist-wrap table.data-table.vlist-table.vlist-table td::before { content: none; display: none; }
+  .vlist-wrap table.data-table.vlist-table.vlist-table td[style*='text-align: right'] { text-align: right; }
+}
+
+/* メニューのパネルの中で、その場で並び替える */
+.drawer-reorder-btn { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.3); color: #e0f2fe; border-radius: 999px; padding: 4px 12px; font-size: 12px; font-weight: 700; cursor: pointer; letter-spacing: 0; }
+.drawer-reorder-hint { font-size: 11px; color: #bae6fd; padding: 6px 10px 0; line-height: 1.5; }
+.menu-row.reorder-row { cursor: default; }
+.menu-row.reorder-row.in-bar { background: rgba(56,189,248,.14); }
+.reorder-arrow { flex: none; width: 40px; height: 36px; border-radius: 8px; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.1); color: #fff; font-size: 17px; font-weight: 800; cursor: pointer; }
+.reorder-arrow:disabled { opacity: .3; cursor: default; }
+
+/* 車両一覧：表に出す項目の選択 */
+.vlist-cols { border: 1px solid var(--slate-200); background: var(--slate-50); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+.vlist-cols-title { font-size: 12px; color: var(--slate-500); margin-bottom: 6px; }
+.vlist-cols-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 4px 12px; margin-bottom: 8px; }
+.vlist-cols-grid .checkbox-field { margin: 0; font-size: 13px; }
+
+/* 整備士向けのお知らせ：既読の状況 */
+.mech-read { margin-top: 6px; padding: 6px 8px; background: var(--slate-50); border-radius: 8px; font-size: 12px; color: var(--slate-600); line-height: 1.6; }
+.mech-read-names { color: var(--slate-500); }
+.mech-unread-names { color: var(--amber-600, #d97706); font-weight: 700; }
+
+/* ヘッダーの「事故・故障」ボタン：絵だけでなく文字つきで、何のボタンか一目でわかるように */
+.incident-pill { display: inline-flex; align-items: center; gap: 4px; height: 36px; padding: 0 12px; border: 0; border-radius: 999px; background: #dc2626; color: #fff; font-size: 13px; font-weight: 800; white-space: nowrap; cursor: pointer; box-shadow: 0 2px 6px rgba(220, 38, 38, .35); }
+.incident-pill:hover { background: #b91c1c; }
+@media (max-width: 640px) {
+  .incident-pill { height: 34px; padding: 0 10px; font-size: 12px; }
+}
+/* 電話ボタン：大きく、名前と番号を2段で */
+.incident-tels { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.incident-tel { display: flex; align-items: center; gap: 8px; text-align: left; min-height: 52px; padding: 8px 10px; text-decoration: none; }
+.incident-tel-ic { font-size: 22px; flex: none; }
+.incident-tel-tx { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.incident-tel-tx strong { font-size: 13px; }
+.incident-tel-tx small { font-size: 12px; opacity: .85; }
+.incident-tel.incident-tow { grid-column: 1 / -1; min-height: 64px; background: #f59e0b; border-color: #d97706; color: #1f2937; }
+.incident-tel.incident-tow .incident-tel-ic { font-size: 30px; }
+.incident-tel.incident-tow strong { font-size: 15px; }
+.incident-tel.incident-tow small { font-size: 14px; font-weight: 700; }
+@media (max-width: 420px) { .incident-tels { grid-template-columns: 1fr; } }
+
+/* 車両のQRコードを読み取ったときの画面 */
+.vq-head { margin-bottom: 12px; }
+.vq-name { font-size: 20px; font-weight: 800; color: var(--slate-800); }
+.vq-sub { font-size: 13px; color: var(--slate-500); margin-top: 2px; }
+.vq-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.vq-actions { display: grid; gap: 10px; }
+.vq-btn { display: flex; align-items: center; gap: 12px; text-align: left; min-height: 64px; padding: 10px 14px; }
+.vq-btn > span:last-child { display: flex; flex-direction: column; line-height: 1.35; }
+.vq-btn strong { font-size: 16px; }
+.vq-btn small { font-size: 12px; font-weight: 400; opacity: .9; }
+.vq-ic { font-size: 28px; flex: none; }
+
+/* 車両のQRコードステッカー（大きさは mm。画面のプレビューと印刷で同じ） */
+.sticker { box-sizing: border-box; border: 0.4mm solid #111827; border-radius: 3mm; background: #fff; color: #111827; overflow: hidden; display: flex; flex-direction: column; break-inside: avoid; page-break-inside: avoid; font-family: inherit; }
+.sticker-m { width: 91mm; height: 55mm; }
+.sticker-s { width: 60mm; height: 38mm; }
+.sticker-top { background: #0369a1; color: #fff; font-weight: 800; text-align: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.sticker-m .sticker-top { font-size: 3.4mm; padding: 1mm 0; }
+.sticker-s .sticker-top { font-size: 2.6mm; padding: 0.7mm 0; }
+.sticker-body { flex: 1; display: flex; align-items: center; gap: 3mm; min-height: 0; }
+.sticker-m .sticker-body { padding: 2mm 3mm; }
+.sticker-s .sticker-body { padding: 1.4mm 2mm; gap: 2mm; }
+.sticker-qr { flex: none; background: #fff; }
+.sticker-qr svg { display: block; width: 100%; height: 100%; }
+.sticker-m .sticker-qr { width: 33mm; height: 33mm; }
+.sticker-s .sticker-qr { width: 24mm; height: 24mm; }
+.sticker-info { min-width: 0; flex: 1; line-height: 1.25; }
+.sticker-name { font-weight: 800; word-break: break-all; }
+.sticker-plate { color: #374151; }
+.sticker-how { color: #374151; margin-top: 1.5mm; }
+.sticker-m .sticker-name { font-size: 6mm; }
+.sticker-m .sticker-plate { font-size: 3.4mm; }
+.sticker-m .sticker-how { font-size: 2.8mm; }
+.sticker-s .sticker-name { font-size: 4.2mm; }
+.sticker-s .sticker-plate { font-size: 2.6mm; }
+.sticker-s .sticker-how { font-size: 2.1mm; }
+.sticker-foot { background: #dc2626; color: #fff; text-align: center; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.sticker-m .sticker-foot { font-size: 3.4mm; padding: 1mm 0; }
+.sticker-s .sticker-foot { font-size: 2.5mm; padding: 0.7mm 0; }
+.sticker-preview { display: flex; flex-wrap: wrap; gap: 8px; max-height: 340px; overflow: auto; padding: 6px; background: var(--slate-100); border-radius: 10px; }
+.sticker-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 4px 10px; max-height: 160px; overflow: auto; }
+.sticker-pick .checkbox-field { margin: 0; font-size: 13px; }
+/* 画面には出さない。印刷のときだけ、ステッカーだけを並べて出す */
+.sticker-print-sheet { display: none; }
+@media print {
+  @page { size: A4; margin: 8mm; }
+  body > *:not(.sticker-print-sheet):not(.print-sheet) { display: none !important; }
+  .print-sheet { display: block !important; }
+  .sticker-print-sheet { display: flex !important; flex-wrap: wrap; gap: 4mm; align-content: flex-start; }
+  body { background: #fff !important; }
+}
+
+/* ラベル屋さん用の案内 */
+.sticker-label-box { border: 1px solid var(--slate-200); background: var(--slate-50); border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; }
+.sticker-label-box summary { cursor: pointer; font-weight: 700; font-size: 13px; }
+.sticker-label-body { font-size: 12px; color: var(--slate-600); padding-top: 8px; }
+.sticker-label-body p { margin: 0 0 8px; }
+.sticker-label-body ol { margin: 0; padding-left: 18px; line-height: 1.7; }
+
+/* 設定の「保険情報」 */
+.ins-status { display: block; width: fit-content; max-width: 100%; white-space: normal; line-height: 1.5; padding: 6px 12px; font-size: 13px; }
+.ins-group { border-top: 1px solid var(--slate-200); padding-top: 10px; margin-top: 10px; }
+.ins-group-title { font-weight: 800; font-size: 13px; margin-bottom: 6px; color: var(--slate-700); }
+.ins-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0 12px; }
+.ins-preview { background: var(--sky-50); border: 1px solid var(--sky-100); border-radius: 10px; padding: 10px 12px; margin-top: 8px; font-size: 13px; }
+.ins-preview dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; }
+.ins-preview dt { color: var(--slate-500); font-size: 12px; }
+.ins-preview dd { margin: 0; font-weight: 700; }
+.ins-preview .ins-no { font-size: 15px; letter-spacing: 0.04em; }
+
+/* 保険情報：証券の読み込み */
+.ins-read { background: var(--slate-50); border: 1px dashed var(--slate-300); border-radius: 10px; padding: 10px 12px; margin-bottom: 4px; }
+.ins-read-preview { display: block; max-width: 100%; max-height: 220px; margin-top: 8px; border: 1px solid var(--slate-200); border-radius: 8px; object-fit: contain; background: #fff; }
+.ins-read-badge { margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: var(--sky-100); color: var(--sky-700); font-size: 10px; font-weight: 800; }
+
+/* いま履いているタイヤ（スタッドレス／ノーマル）を、色と絵と文字で一目でわかるように */
+.tire-now { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 800; white-space: nowrap; border: 2px solid transparent; font-family: inherit; line-height: 1.3; }
+button.tire-now { cursor: pointer; }
+.tire-now.winter { background: #0369a1; color: #fff; }
+.tire-now.summer { background: #fbbf24; color: #1f2937; }
+.tire-now.all { background: #059669; color: #fff; }
+.tire-now.unknown { background: var(--slate-100); color: var(--slate-600); }
+.tire-now.sel { border-color: #111827; box-shadow: 0 0 0 2px #fff inset; }
+.tire-now-sm { padding: 1px 7px; font-size: 11px; margin-left: 6px; vertical-align: middle; }
+.tire-summary { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.entity-card .ehead .tire-now, .ehead .tire-now { flex: none; align-self: flex-start; }
+/* 編集画面：大きなボタンで選ぶ */
+.tire-pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.tire-pick-btn { display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 8px 12px; border: 2px solid var(--slate-200); border-radius: 12px; background: #fff; font-size: 14px; font-weight: 700; color: var(--slate-700); cursor: pointer; text-align: left; font-family: inherit; }
+.tire-pick-ic { font-size: 22px; }
+.tire-pick-now { margin-left: auto; flex: none; white-space: nowrap; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: #111827; color: #fff; }
+.tire-pick-btn > span:nth-child(2) { min-width: 0; }
+@media (max-width: 480px) { .tire-pick { grid-template-columns: 1fr; } }
+.tire-pick-btn.on.winter { background: #e0f2fe; border-color: #0369a1; color: #075985; }
+.tire-pick-btn.on.summer { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+.tire-pick-btn.on.all { background: #d1fae5; border-color: #059669; color: #065f46; }
+.tire-pick-btn.on.unknown { background: var(--slate-100); border-color: var(--slate-500); }

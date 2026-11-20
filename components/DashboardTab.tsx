@@ -13,6 +13,7 @@ import RequestSchedule from './RequestSchedule';
 import { jpDate } from '@/lib/schedule-text';
 import ContactRequester from './ContactRequester';
 import { PhotoThumbs } from './PhotoField';
+import DashSection from './DashSection';
 
 export default function DashboardTab({
   data,
@@ -77,8 +78,64 @@ export default function DashboardTab({
     .filter((n) => !n.returnedAt && n.endDate >= today)
     .sort((a, b) => a.startDate.localeCompare(b.startDate));
 
+  // 役割ごとに、ダッシュボードの出し方を変える（管理者：すべて開く／整備士：整備依頼を中心に／運転者：自分に関係するものを先に）
+  const role = isAdmin ? 'admin' : mechanic && !currentDriver ? 'mechanic' : currentDriver ? 'driver' : 'guest';
+  const openBy = (...roles: string[]) => roles.includes(role);
+  const myName = currentDriver ? `${currentDriver.lastName} ${currentDriver.firstName}` : '';
+  const isMine = (r: Report) => Boolean(currentDriver && (r.driverId ? r.driverId === currentDriver.id : r.driver.replace(/\s/g, '') === myName.replace(/\s/g, '')));
+  const myOpen = openReports.filter(isMine);
+  const myReqs = maintRequests.filter(isMine);
+  const myLoans = currentDriver ? loans.filter((l) => !l.returnedAt && l.borrowerId === currentDriver.id) : [];
+
   return (
     <div>
+      {currentDriver && (
+        <div className="card dash-me" style={{ marginBottom: 14 }}>
+          <h3 className="card-title">🪪 {myName} さんの状況</h3>
+          {myOpen.length + myReqs.length + myLoans.length === 0 ? (
+            <div className="dash-me-ok">✅ いま、あなたが対応するものはありません</div>
+          ) : (
+            <div className="alert-list">
+              {myOpen.map((r) => (
+                <div key={r.id} className={`alert-item ${r.date < today ? 'danger' : 'warn'}`}>
+                  <span>🚗</span>
+                  <div style={{ flex: 1 }}>
+                    <strong>帰着登録がまだです</strong>　{r.date} {r.vehicleName}
+                    {r.destination ? ` — ${r.destination}` : ''}
+                  </div>
+                  <button className="btn btn-sm btn-primary" onClick={() => onReturnCheckin(r.id)}>
+                    帰着登録する
+                  </button>
+                </div>
+              ))}
+              {myReqs.map((r) => (
+                <div key={r.id} className="alert-item info">
+                  <span>🔧</span>
+                  <div style={{ flex: 1 }}>
+                    <strong>整備依頼を出しています</strong>　{r.vehicleName}
+                    {r.maintRequestType ? `（${r.maintRequestType}）` : ''}
+                    {r.maintRequestScheduledDate ? `　修理予定 ${jpDate(r.maintRequestScheduledDate)}` : '　修理予定日は、まだ決まっていません'}
+                  </div>
+                </div>
+              ))}
+              {myLoans.map((l) => {
+                const c = cards.find((x) => x.id === l.cardId);
+                const late = isOverdue(l, today);
+                return (
+                  <div key={l.id} className={`alert-item ${late ? 'danger' : 'warn'}`}>
+                    <span>{c ? cardKindIcon(c) : '💳'}</span>
+                    <div style={{ flex: 1 }}>
+                      <strong>カードを借りています</strong>　{c?.name || 'カード'}
+                      {l.dueDate ? `（返却予定 ${l.dueDate}${late ? '・期限超過' : ''}）` : ''}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="card dash-intro" style={{ marginBottom: 14 }}>
         <h3 className="card-title" style={{ marginBottom: 4 }}>
           📊 ダッシュボード
@@ -93,11 +150,13 @@ export default function DashboardTab({
       {isAdmin && <IncidentsPanel />}
 
       {!hideOpenReports && (
-      <div className="card" style={{ marginBottom: 14 }}>
-        <h3 className="card-title">
-          🚙 帰着登録が済んでいない日報
-          {openReports.length > 0 && <span className="pill pill-amber" style={{ marginLeft: 8 }}>{openReports.length}件</span>}
-        </h3>
+      <DashSection
+        id="open-reports"
+        role={role}
+        defaultOpen={openBy('admin', 'guest') || openReports.length > myOpen.length}
+        title="🚙 帰着登録が済んでいない日報"
+        badge={openReports.length > 0 && <span className="pill pill-amber" style={{ marginLeft: 8 }}>{openReports.length}件</span>}
+      >
         {openReports.length === 0 ? (
           <div className="empty-state">帰着未登録の日報はありません</div>
         ) : (
@@ -124,14 +183,16 @@ export default function DashboardTab({
           {openLim.more}
           </div>
         )}
-      </div>
+      </DashSection>
       )}
 
-      <div className="card" style={{ marginBottom: 14 }}>
-        <h3 className="card-title">
-          🔧 整備依頼（対応待ち）
-          {maintRequests.length > 0 && <span className="pill pill-red" style={{ marginLeft: 8 }}>{maintRequests.length}件</span>}
-        </h3>
+      <DashSection
+        id="maint-requests"
+        role={role}
+        defaultOpen
+        title="🔧 整備依頼（対応待ち）"
+        badge={maintRequests.length > 0 && <span className="pill pill-red" style={{ marginLeft: 8 }}>{maintRequests.length}件</span>}
+      >
         <div style={{ marginBottom: 10 }}>
           <button
             className="btn btn-primary"
@@ -196,14 +257,16 @@ export default function DashboardTab({
           {reqLim.more}
           </div>
         )}
-      </div>
+      </DashSection>
 
       {loans.some((l) => !l.returnedAt) && (
-        <div className="card" style={{ marginBottom: 14 }}>
-          <h3 className="card-title">
-            💳 貸出中のガソリンカード・ETCカード
-            <span className="pill pill-amber" style={{ marginLeft: 8 }}>{loans.filter((l) => !l.returnedAt).length}枚</span>
-          </h3>
+        <DashSection
+          id="card-loans"
+          role={role}
+          defaultOpen={openBy('admin', 'guest')}
+          title="💳 貸出中のガソリンカード・ETCカード"
+          badge={<span className="pill pill-amber" style={{ marginLeft: 8 }}>{loans.filter((l) => !l.returnedAt).length}枚</span>}
+        >
           <div className="alert-list">
             {loans
               .filter((l) => !l.returnedAt)
@@ -223,15 +286,17 @@ export default function DashboardTab({
                 );
               })}
           </div>
-        </div>
+        </DashSection>
       )}
 
       {activeRentals.length > 0 && (
-        <div className="card" style={{ marginBottom: 14 }}>
-          <h3 className="card-title">
-            🚗 レンタカーの利用・予約状況
-            <span className="pill pill-amber" style={{ marginLeft: 8 }}>{activeRentals.length}台</span>
-          </h3>
+        <DashSection
+          id="rentals"
+          role={role}
+          defaultOpen={openBy('admin', 'driver', 'guest')}
+          title="🚗 レンタカーの利用・予約状況"
+          badge={<span className="pill pill-amber" style={{ marginLeft: 8 }}>{activeRentals.length}台</span>}
+        >
           <div className="alert-list">
             {activeRentals.map((n) => {
               const booked = rentalReservations(data.reservations, n.id, today);
@@ -255,7 +320,7 @@ export default function DashboardTab({
               );
             })}
           </div>
-        </div>
+        </DashSection>
       )}
 
       {maintForm && currentDriver && (
