@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { kvGet, kvKeys, kvSet, runExclusive } from '@/lib/kv';
+import { blobEnabled } from '@/lib/photo-store';
 
 export const dynamic = 'force-dynamic';
 
 // 動作確認用：保存先（KV）と、書き込みロックが動いているかを返す。データの中身は返さない。
 export async function GET() {
-  const out: Record<string, unknown> = { ok: true, at: new Date().toISOString(), build: (process.env.NEXT_PUBLIC_BUILD_ID || '').slice(0, 7) };
+  const out: Record<string, unknown> = { ok: true, at: new Date().toISOString(), build: (process.env.NEXT_PUBLIC_BUILD_ID || '').slice(0, 7), photos: blobEnabled() ? 'blob' : 'kv' };
   try {
     const t0 = Date.now();
     await runExclusive(async () => {

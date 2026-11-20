@@ -150,3 +150,21 @@ describe('未送信の日報（オフライン）', () => {
     expect(ob.isNetworkError(Object.assign(new Error('x'), { status: 409 }))).toBe(false);
   });
 });
+
+describe('写真の保存（Blob が無いときは、これまでどおり Redis）', () => {
+  test('保存 → 表示 → 削除', async () => {
+    const up = await import(`${ROOT}/app/api/photos/route`);
+    const one = await import(`${ROOT}/app/api/photos/[id]/route`);
+    const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 0xff, 0xd9]);
+    const res = await up.POST(new NextRequest('http://localhost/api/photos', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ image: `data:image/jpeg;base64,${jpeg.toString('base64')}` }) }));
+    const { id } = await res.json();
+    expect(id.startsWith('p')).toBe(true);
+    const params = { params: Promise.resolve({ id }) };
+    const got = await one.GET(new NextRequest(`http://localhost/api/photos/${id}`), params);
+    expect(got.status).toBe(200);
+    expect(Buffer.from(await got.arrayBuffer()).equals(jpeg)).toBe(true);
+    expect((await one.DELETE(new NextRequest(`http://localhost/api/photos/${id}`, { method: 'DELETE' }), params)).status).toBe(200);
+    expect((await one.GET(new NextRequest(`http://localhost/api/photos/${id}`), params)).status).toBe(404);
+    expect((await up.POST(new NextRequest('http://localhost/api/photos', { method: 'POST', body: JSON.stringify({ image: 'data:image/png;base64,AAAA' }) }))).status).toBe(400);
+  });
+});

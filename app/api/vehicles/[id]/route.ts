@@ -1,3 +1,4 @@
+import { deletePhoto } from '@/lib/photo-store';
 import { NextRequest, NextResponse } from 'next/server';
 import { loadData, saveData } from '@/lib/store';
 import { ADMIN_COOKIE, isAdminCookieValid } from '@/lib/admin';
@@ -22,7 +23,7 @@ export const DELETE = withWriteLock(async function DELETE(
   }
   if (target?.shakenFileAt) await kvDel(`fleet:shaken:v1:${id}`);
   if (target?.recordFileAt) await kvDel(`fleet:shaken:v1:${id}:record`);
-  for (const pid of target?.photos || []) await kvDel(`fleet:photo:v1:${pid}`);
+  for (const pid of target?.photos || []) await deletePhoto(pid);
   pushLog(data, {
     actor: isAdminReq ? 'admin' : 'user',
     action: '車両削除',

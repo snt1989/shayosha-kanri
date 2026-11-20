@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
-import { kvSet } from '@/lib/kv';
+import { savePhoto } from '@/lib/photo-store';
 
 export const dynamic = 'force-dynamic';
 
-// 整備依頼・整備記録に添付する写真を保存する。端末側で小さく圧縮したJPEGだけを受け付ける（上限は約110KB）。
+// 整備依頼・整備記録に添付する写真を保存する（保存先は lib/photo-store.ts。Vercel Blob があれば Blob、無ければ Redis）。端末側で小さく圧縮したJPEGだけを受け付ける（上限は約110KB）。
 // 運転者・整備士のログインは端末側の確認なので、保存は誰でもできる。閲覧は推測できないid（ランダム）を知っている場合だけ。
 const PREFIX = 'data:image/jpeg;base64,';
 const MAX_CHARS = 150_000;
@@ -16,6 +16,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, message: '写真を保存できませんでした。' }, { status: 400 });
   }
   const id = 'p' + randomUUID().replace(/-/g, '');
-  await kvSet(`fleet:photo:v1:${id}`, { image, savedAt: new Date().toISOString() });
+  await savePhoto(id, image);
   return NextResponse.json({ success: true, id });
 }

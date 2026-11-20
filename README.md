@@ -199,3 +199,11 @@ CDN から読み込み、**ブラウザ内だけで**画像からテキストを
   `components/FleetApp.tsx` が、起動時・`online` イベント・30秒ごとに古い順で送る。サーバーが断ったもの（4xx）は理由つきで残す。
 - 最後に読み込めた `/api/data` を `fleet:data:cache:v1` に控え（日報は未帰着＋新しい50件、写真・操作ログは除く）、圏外で開いたときに表示する。
 - `public/sw.js`（v4）: トップの画面を控えて、圏外のときに返す（無ければ `offline.html`）。`/api/` には触らない。
+
+## 写真の保存先（Vercel Blob）
+
+- `lib/photo-store.ts`: 環境変数 `BLOB_READ_WRITE_TOKEN`（Vercel の Storage → Blob を作ってプロジェクトにつなぐと、自動で入る）があるときは、
+  写真の本体を Vercel Blob（`photos/{id}.jpg`）に置き、Redis の `fleet:photo:v1:{id}` には置き場所だけを残す。無いときは、これまでどおり Redis に本体を入れる。
+- 以前の写真（Redis に本体があるもの）は、表示されたときに、順に Blob へ移る。Blob への保存に失敗したら、Redis に保存する。
+- ストアは **private** で作る（`BLOB_ACCESS=public` を入れたときだけ public として扱う）。写真は、これまでどおり `/api/photos/{id}` 経由でだけ見せる。
+- 車検証・検査証記録事項の画像（`fleet:shaken:v1:…`）は対象外（Redis のまま）。いまの保存先は `GET /api/health` の `photos`（`blob`／`kv`）で確かめられる。
