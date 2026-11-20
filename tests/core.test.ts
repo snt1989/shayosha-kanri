@@ -292,3 +292,29 @@ describe('整備依頼の「整備中」', () => {
     expect((await post({ working: true })).status).toBe(409);
   });
 });
+
+describe('取締り・オービス情報（社内の注意地点）', () => {
+  test('登録はログインした人だけ。消せるのは本人か管理者。リンクは都道府県で変わる', async () => {
+    const tr = await import(`${ROOT}/lib/traffic`);
+    const route = await import(`${ROOT}/app/api/traffic-spots/route`);
+    const store = await import(`${ROOT}/lib/store`);
+    const d = await store.loadData();
+    const call = (method: string, body?: unknown, cookie = '') => route[method](new NextRequest('http://localhost/api/traffic-spots', { method, headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) }));
+    expect(tr.policeName('東京都')).toBe('警視庁');
+    expect(tr.policeName('千葉県')).toBe('千葉県警察');
+    expect(decodeURIComponent(tr.trafficLinks('大阪府')[0].url)).toContain('大阪府警察');
+    expect(tr.cleanSpot({ name: ' ' })).toBeNull();
+    expect(tr.cleanSpot({ name: 'A', kind: 'x', lat: 999, lng: 0 })).toEqual({ kind: 'other', name: 'A' });
+    expect((await call('POST', { name: '国道の交差点' })).status).toBe(401);
+    expect((await call('POST', { driverId: d.drivers[0].id, name: '' })).status).toBe(400);
+    const ok = await call('POST', { driverId: d.drivers[0].id, kind: 'orbis', name: '○○交差点の手前', road: '国道16号 上り', limit: '60km/h', lat: 35.123456789, lng: 139.5 });
+    expect(ok.status).toBe(200);
+    const spot = (await ok.json()).spot;
+    expect(spot.lat).toBe(35.123457);
+    expect(tr.spotMapUrl(spot)).toContain('35.123457,139.5');
+    expect((await (await route.GET()).json()).spots.length).toBe(1);
+    expect((await call('DELETE', { id: spot.id, driverId: d.drivers[1].id })).status).toBe(403);
+    expect((await call('DELETE', { id: spot.id, driverId: d.drivers[0].id })).status).toBe(200);
+    expect((await (await route.GET()).json()).spots.length).toBe(0);
+  });
+});

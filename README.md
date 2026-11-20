@@ -229,3 +229,9 @@ CDN から読み込み、**ブラウザ内だけで**画像からテキストを
 - ダッシュボードの「今日の車両の動き」：`lib/fleet-today.ts`（`fleetToday`：走行中／予約あり／帰着済み／整備の予定／待機中）と `components/FleetTodayPanel.tsx`。
 - 整備依頼の「整備中」：`Report.maintRequestWorking`（＋At・By）。`POST /api/reports/{id}/maint-request` に `{ working: true|false }`。対応済で消える。`fleetToday` は、この印のある車両を `maint`（`working: true`）にする。表示だけで、出庫は止めない。
 - 車両の保管場所：`Vehicle.location`（60文字まで）。選択肢はマスタ `storageLocations`（各種マスタ設定「車両の保管場所」。はじめは空）。カードの概要・今日の車両の動き・QRの車両画面・一覧表の「保管場所」列に出る。
+
+## 取締り・オービス情報
+
+- メニュー「取締り情報」（`components/TrafficTab.tsx`、`lib/traffic.ts`、`/api/traffic-spots`）。
+- 上段は、公式・公開の情報へのリンク（都道府県警の公開取締り情報・オービスの案内は Google 検索、近くのオービスは Google マップ検索、道路交通情報は JARTIC）。アプリ自身はオービス・取締りのデータを持たない。
+- 下段は、社内で共有する注意地点（`fleet:traffic-spots:v1`。最大300件。バックアップに入る）。登録は運転者・整備士・管理者、削除は本人か管理者。

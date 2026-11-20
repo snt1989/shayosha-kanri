@@ -1,5 +1,6 @@
 'use client';
 
+import TrafficTab from './TrafficTab';
 import { forgetPushAdmin, syncPushIdentity } from './usePush';
 import PinPrompt from './PinPrompt';
 import { OutboxItem, applyOutbox, enqueue, isNetworkError, loadDataCache, loadOutbox, saveDataCache, saveOutbox } from '@/lib/outbox';
@@ -30,7 +31,7 @@ import { DEFAULT_ORDER, MECHANIC_TABS, TabKey, loadOrder, saveOrder } from '@/li
 import AdminLoginModal from './AdminLoginModal';
 import DriverLoginModal from './DriverLoginModal';
 
-type Tab = 'dashboard' | 'reports' | 'maintenance' | 'vehicles' | 'fuel' | 'rental' | 'calendar' | 'cards' | 'help' | 'settings';
+type Tab = 'dashboard' | 'reports' | 'maintenance' | 'vehicles' | 'fuel' | 'rental' | 'calendar' | 'cards' | 'traffic' | 'help' | 'settings';
 type SyncStatus = 'idle' | 'saving' | 'error';
 const DRIVER_SESSION_KEY = 'fleet_current_driver_id';
 const MECHANIC_SESSION_KEY = 'fleet_current_mechanic';
@@ -830,6 +831,7 @@ export default function FleetApp() {
             onDeleteReservation={deleteReservation}
           />
         )}
+        {visibleTab === 'traffic' && <TrafficTab currentDriver={currentDriver} mechanic={activeMechanic} isAdmin={isAdmin} onRequestDriverLogin={() => requireDriverLogin()} />}
         {visibleTab === 'cards' && (
           <CardsTab
             data={viewData}

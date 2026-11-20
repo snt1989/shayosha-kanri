@@ -20,6 +20,7 @@ export const BACKUP_FIXED_KEYS = [
   'fleet:mech-notices:v1',
   'fleet:notices:v1',
   'fleet:pins:v1',
+  'fleet:traffic-spots:v1',
 ] as const;
 // 名前の先頭が決まっていて、いくつもあるキー（古い日報の保管分）
 export const BACKUP_PREFIXES = ['fleet:reports:archive:v1:'] as const;

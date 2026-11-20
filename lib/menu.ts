@@ -1,7 +1,7 @@
 // メニュー（タブ）の並び順。端末ごとに「設定」で並び替えられる（この端末のブラウザに保存）。
 // スマホの下のバーには、並び順の上から4つが出て、残りは「☰ メニュー」に入る。
 
-export type TabKey = 'dashboard' | 'reports' | 'maintenance' | 'vehicles' | 'fuel' | 'rental' | 'calendar' | 'cards' | 'help';
+export type TabKey = 'dashboard' | 'reports' | 'maintenance' | 'vehicles' | 'fuel' | 'rental' | 'calendar' | 'cards' | 'traffic' | 'help';
 
 export const TAB_META: Record<TabKey, { label: string; icon: string; admin?: boolean }> = {
   dashboard: { label: 'ダッシュボード', icon: '📊' },
@@ -10,12 +10,13 @@ export const TAB_META: Record<TabKey, { label: string; icon: string; admin?: boo
   rental: { label: 'レンタカー', icon: '🚗' },
   calendar: { label: 'カレンダー', icon: '📅' },
   cards: { label: 'カード貸出', icon: '💳' },
+  traffic: { label: '取締り情報', icon: '🚓' },
   maintenance: { label: '整備台帳', icon: '🔧' },
   vehicles: { label: '車両台帳', icon: '🚘' },
   help: { label: '使い方', icon: '❓' },
 };
 
-export const DEFAULT_ORDER: TabKey[] = ['dashboard', 'reports', 'fuel', 'rental', 'calendar', 'cards', 'maintenance', 'vehicles', 'help'];
+export const DEFAULT_ORDER: TabKey[] = ['dashboard', 'reports', 'fuel', 'rental', 'calendar', 'cards', 'maintenance', 'vehicles', 'traffic', 'help'];
 // 整備士だけでログインしているときに出すページ（運転日報・給油・レンタカー・カレンダー・カード貸出・設定は出さない）
 export const MECHANIC_TABS: TabKey[] = ['dashboard', 'maintenance', 'vehicles', 'help'];
 export const BAR_COUNT = 4; // スマホの下のバーに出る数（「メニュー」を除く）
