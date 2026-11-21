@@ -323,7 +323,7 @@
   /* 検索・絞り込み・ボタンの並び：絞り込みは2列、検索とボタンは横いっぱい */
   .toolbar2 .actions {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 8px;
   }
   .toolbar2 .actions > input,
@@ -494,7 +494,7 @@
 
 /* スマホ：給油台帳・レンタカーの1件を、見出し→車両・内容→項目→ボタンの順に詰めて表示する */
 @media (max-width: 640px) {
-  .filter-row { display: grid !important; grid-template-columns: 1fr 1fr; }
+  .filter-row { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .filter-row > select { width: 100%; min-width: 0; }
   table.data-table.fuel-table tbody tr,
   table.data-table.rental-table tbody tr {
@@ -648,7 +648,7 @@
   .help-item summary { padding: 10px 12px; font-size: 14px; line-height: 1.5; }
 
   /* 車両台帳：カードのボタンは2列で揃える */
-  .efoot .eactions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+  .efoot .eactions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; width: 100%; }
   .efoot .eactions .btn { width: 100%; min-height: 40px; justify-content: center; }
 }
 

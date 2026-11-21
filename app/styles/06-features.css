@@ -81,7 +81,7 @@ body::before {
 
 .incident-ins { border: 1px solid var(--sky-100); background: var(--sky-50); border-radius: 10px; padding: 10px 12px; margin: 0 0 10px; font-size: 13px; }
 .incident-ins-title { font-weight: 800; font-size: 12px; margin-bottom: 6px; color: var(--sky-700); }
-.incident-ins dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; }
+.incident-ins dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; }
 .incident-ins dt { color: var(--slate-500); font-size: 12px; }
 .incident-ins dd { margin: 0; font-weight: 700; }
 .incident-ins-no { font-size: 15px; letter-spacing: 0.04em; }
@@ -254,7 +254,7 @@ body::before {
 .tire-set.winter { background: #f0f9ff; border-color: #bae6fd; }
 .tire-set-title { font-size: 13px; font-weight: 700; color: var(--slate-800); margin-bottom: 6px; }
 .tire-set-title span { font-weight: 400; font-size: 11px; color: var(--slate-500); margin-left: 4px; }
-.tire-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 8px; }
+.tire-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 8px; }
 .tire-grid .field { margin-bottom: 8px; min-width: 0; }
 .tire-grid .field label { font-size: 11px; margin-bottom: 2px; }
 .tire-grid .field input { min-width: 0; width: 100%; }
@@ -306,7 +306,7 @@ body::before {
 /* 車両一覧：表に出す項目の選択 */
 .vlist-cols { border: 1px solid var(--slate-200); background: var(--slate-50); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
 .vlist-cols-title { font-size: 12px; color: var(--slate-500); margin-bottom: 6px; }
-.vlist-cols-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 4px 12px; margin-bottom: 8px; }
+.vlist-cols-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(130px, 100%), 1fr)); gap: 4px 12px; margin-bottom: 8px; }
 .vlist-cols-grid .checkbox-field { margin: 0; font-size: 13px; }
 
 /* 整備士向けのお知らせ：既読の状況 */
@@ -321,7 +321,7 @@ body::before {
   .incident-pill { height: 34px; padding: 0 10px; font-size: 12px; }
 }
 /* 電話ボタン：大きく、名前と番号を2段で */
-.incident-tels { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.incident-tels { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
 .incident-tel { display: flex; align-items: center; gap: 8px; text-align: left; min-height: 52px; padding: 8px 10px; text-decoration: none; }
 .incident-tel-ic { font-size: 22px; flex: none; }
 .incident-tel-tx { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
@@ -331,7 +331,7 @@ body::before {
 .incident-tel.incident-tow .incident-tel-ic { font-size: 30px; }
 .incident-tel.incident-tow strong { font-size: 15px; }
 .incident-tel.incident-tow small { font-size: 14px; font-weight: 700; }
-@media (max-width: 420px) { .incident-tels { grid-template-columns: 1fr; } }
+@media (max-width: 420px) { .incident-tels { grid-template-columns: minmax(0, 1fr); } }
 
 /* 車両のQRコードを読み取ったときの画面 */
 .vq-head { margin-bottom: 12px; }
@@ -373,7 +373,7 @@ body::before {
 .sticker-m .sticker-foot { font-size: 3.4mm; padding: 1mm 0; }
 .sticker-s .sticker-foot { font-size: 2.5mm; padding: 0.7mm 0; }
 .sticker-preview { display: flex; flex-wrap: wrap; gap: 8px; max-height: 340px; overflow: auto; padding: 6px; background: var(--slate-100); border-radius: 10px; }
-.sticker-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 4px 10px; max-height: 160px; overflow: auto; }
+.sticker-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); gap: 4px 10px; max-height: 160px; overflow: auto; }
 .sticker-pick .checkbox-field { margin: 0; font-size: 13px; }
 /* 画面には出さない。印刷のときだけ、ステッカーだけを並べて出す */
 .sticker-print-sheet { display: none; }
@@ -396,9 +396,9 @@ body::before {
 .ins-status { display: block; width: fit-content; max-width: 100%; white-space: normal; line-height: 1.5; padding: 6px 12px; font-size: 13px; }
 .ins-group { border-top: 1px solid var(--slate-200); padding-top: 10px; margin-top: 10px; }
 .ins-group-title { font-weight: 800; font-size: 13px; margin-bottom: 6px; color: var(--slate-700); }
-.ins-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0 12px; }
+.ins-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 0 12px; }
 .ins-preview { background: var(--sky-50); border: 1px solid var(--sky-100); border-radius: 10px; padding: 10px 12px; margin-top: 8px; font-size: 13px; }
-.ins-preview dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; }
+.ins-preview dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; }
 .ins-preview dt { color: var(--slate-500); font-size: 12px; }
 .ins-preview dd { margin: 0; font-weight: 700; }
 .ins-preview .ins-no { font-size: 15px; letter-spacing: 0.04em; }
@@ -420,12 +420,12 @@ button.tire-now { cursor: pointer; }
 .tire-summary { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
 .entity-card .ehead .tire-now, .ehead .tire-now { flex: none; align-self: flex-start; }
 /* 編集画面：大きなボタンで選ぶ */
-.tire-pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.tire-pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 8px; }
 .tire-pick-btn { display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 8px 12px; border: 2px solid var(--slate-200); border-radius: 12px; background: #fff; font-size: 14px; font-weight: 700; color: var(--slate-700); cursor: pointer; text-align: left; font-family: inherit; }
 .tire-pick-ic { font-size: 22px; }
 .tire-pick-now { margin-left: auto; flex: none; white-space: nowrap; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: #111827; color: #fff; }
 .tire-pick-btn > span:nth-child(2) { min-width: 0; }
-@media (max-width: 480px) { .tire-pick { grid-template-columns: 1fr; } }
+@media (max-width: 480px) { .tire-pick { grid-template-columns: minmax(0, 1fr); } }
 .tire-pick-btn.on.winter { background: #e0f2fe; border-color: #0369a1; color: #075985; }
 .tire-pick-btn.on.summer { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
 .tire-pick-btn.on.all { background: #d1fae5; border-color: #059669; color: #065f46; }
