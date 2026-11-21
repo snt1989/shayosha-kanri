@@ -332,3 +332,11 @@
   .vtabs { gap: 0; justify-content: space-between; }
   .vtab { padding: 7px 4px; font-size: 11.5px; }
 }
+
+/* 記録簿の表は横に長いので、画面では横にずらして見る（印刷はそのまま） */
+.alc-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+@media print { .alc-scroll { overflow: visible; } }
+/* ボタンや入力欄が、入れ物より広がらないように */
+.btn, input, select, textarea { max-width: 100%; }
+/* 画面の外にあるボタンを押したときなどに、ページ全体が横にずれないように */
+html, body { overflow-x: clip; }

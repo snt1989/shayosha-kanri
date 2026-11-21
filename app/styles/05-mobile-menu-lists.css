@@ -673,8 +673,8 @@
   .alert-item > .alert-actions .btn { min-height: 36px; }
 }
 @media (max-width: 640px) {
-  /* 依頼のボタンは、編集・削除・登録を1行に並べる */
-  .alert-item > .alert-actions { flex-wrap: nowrap !important; }
+  /* 依頼のボタン（編集・削除・整備中・登録）は、入りきらないときは次の段へ折り返す */
+  .alert-item > .alert-actions { flex-wrap: wrap !important; }
   .alert-item > .alert-actions .btn { flex: 1 1 auto; padding-left: 8px; padding-right: 8px; white-space: nowrap; }
   .alert-item > .alert-actions .btn-primary { flex: 2 1 auto; }
   /* 整備台帳：車両名が折り返さないよう、左の列を広めに */

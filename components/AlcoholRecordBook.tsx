@@ -220,7 +220,7 @@ export default function AlcoholRecordBook({ data, onClose }: { data: AppData; on
           <div className="empty-state">この月の記録はありません</div>
         ) : (
           <div className="table-wrap">
-            {table}
+            <div className="alc-scroll">{table}</div>
             {notes}
           </div>
         )}
